@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Machinery, Employee, FuelLog, MaintenanceLog, Expense, ServiceOrder, SilageOrder } from '../../types';
 import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
+import { calculateVehicleConsumptionMetrics } from '../../lib/fleetMetrics';
 
 interface VehicleHistoryModalProps {
   isOpen: boolean;
@@ -95,7 +96,7 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
   const [isAddingDriverExpense, setIsAddingDriverExpense] = useState(false);
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState<number | ''>('');
-  const [expenseCategory, setExpenseCategory] = useState<'alimentacao' | 'diaria' | 'salario' | 'outro'>('alimentacao');
+  const [expenseCategory, setExpenseCategory] = useState<'alimentacao' | 'diaria' | 'salario' | 'rescisao' | 'outro'>('alimentacao');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [expenseDriver, setExpenseDriver] = useState(
     vehicle.assignedDrivers && vehicle.assignedDrivers.length > 0
@@ -174,9 +175,17 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
       // Check if category relates to food / personnel and belongs to the vehicle's context
       const isPersonnel = exp.categoryId === 'cat_alimentacao' || 
                           exp.categoryId === 'cat_mao_de_obra' || 
+                          exp.categoryId === 'cat_salarios' ||
+                          exp.categoryId === 'cat_rescisao' ||
+                          exp.categoryId === 'cat_diarias' ||
                           exp.categoryName?.toLowerCase().includes('aliment') || 
                           exp.categoryName?.toLowerCase().includes('mão de obra') ||
-                          exp.categoryName?.toLowerCase().includes('diária');
+                          exp.categoryName?.toLowerCase().includes('salár') ||
+                          exp.categoryName?.toLowerCase().includes('salar') ||
+                          exp.categoryName?.toLowerCase().includes('rescis') ||
+                          exp.categoryName?.toLowerCase().includes('acerto') ||
+                          exp.categoryName?.toLowerCase().includes('diária') ||
+                          exp.categoryName?.toLowerCase().includes('diaria');
 
       if (isPersonnel && (exp.machineryId === vehicle.id || (vehicle.licensePlateOrSerial && exp.description.toLowerCase().includes(vehicle.licensePlateOrSerial.toLowerCase())))) {
         return true;
@@ -310,6 +319,38 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
 
   const totalVehicleExpenses = totalFuelCost + totalMaintenanceCost + totalOtherVehicleExpenses;
 
+  // Consumption Metrics (Average KM, Hours, Cost/KM, Cost/Hour)
+  const consumptionMetrics = useMemo(() => {
+    return calculateVehicleConsumptionMetrics(vehicle.id, fuelLogs);
+  }, [vehicle.id, fuelLogs]);
+
+  // Driver Expenses Breakdown (Alimentação, Salários, Rescisão, Diárias, Outros)
+  const driverExpensesBreakdown = useMemo(() => {
+    let alimentacao = 0;
+    let salarios = 0;
+    let rescisao = 0;
+    let diarias = 0;
+    let outros = 0;
+
+    driverExpenses.forEach(exp => {
+      const text = `${exp.categoryName || ''} ${exp.description || ''}`.toLowerCase();
+      if (text.includes('rescis') || text.includes('acerto') || text.includes('demiss') || text.includes('indeniz')) {
+        rescisao += exp.amount;
+      } else if (text.includes('aliment') || text.includes('refei') || text.includes('marmit') || text.includes('almoço') || text.includes('jantar') || text.includes('café')) {
+        alimentacao += exp.amount;
+      } else if (text.includes('diári') || text.includes('diari') || text.includes('pernoite') || text.includes('viagem')) {
+        diarias += exp.amount;
+      } else if (text.includes('salár') || text.includes('salar') || text.includes('adiant') || text.includes('folha') || text.includes('vale')) {
+        salarios += exp.amount;
+      } else {
+        outros += exp.amount;
+      }
+    });
+
+    const totalFromLogs = alimentacao + salarios + rescisao + diarias + outros;
+    return { alimentacao, salarios, rescisao, diarias, outros, totalFromLogs };
+  }, [driverExpenses]);
+
   // Driver Expenses Breakdown
   const totalDriverExpensesFromLogs = useMemo(() => {
     return driverExpenses.reduce((acc, curr) => acc + curr.amount, 0);
@@ -320,11 +361,27 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
     return assignedDriverObjs.reduce((acc, curr) => acc + (curr.salary || 0), 0);
   }, [assignedDriverObjs]);
 
-  const totalDriverCosts = totalDriverExpensesFromLogs > 0 ? totalDriverExpensesFromLogs : (totalDriversMonthlySalary || 0);
+  const totalDriverCosts = useMemo(() => {
+    if (totalDriverExpensesFromLogs > 0) {
+      // If driver expenses logged has salaries, use full total
+      if (driverExpensesBreakdown.salarios > 0) {
+        return totalDriverExpensesFromLogs;
+      }
+      // If driver expenses logged does not have salaries, combine logged expenses + base monthly salary
+      return totalDriverExpensesFromLogs + (totalDriversMonthlySalary || 0);
+    }
+    return totalDriversMonthlySalary || 0;
+  }, [totalDriverExpensesFromLogs, driverExpensesBreakdown.salarios, totalDriversMonthlySalary]);
 
   const totalOperatingCosts = totalVehicleExpenses + totalDriverCosts;
   const netVehicleProfit = totalRevenue - totalOperatingCosts;
   const profitMargin = totalRevenue > 0 ? (netVehicleProfit / totalRevenue) * 100 : 0;
+
+  // Unit operational cost indicators
+  const totalKmRecorded = consumptionMetrics.totalKmDriven || (vehicle.currentKm ? vehicle.currentKm : 0);
+  const totalHoursRecorded = consumptionMetrics.totalHoursWorked || (vehicle.hourMeter ? vehicle.hourMeter : 0);
+  const costPerKmAllInclusive = totalKmRecorded > 0 ? parseFloat((totalOperatingCosts / totalKmRecorded).toFixed(2)) : null;
+  const costPerHourAllInclusive = totalHoursRecorded > 0 ? parseFloat((totalOperatingCosts / totalHoursRecorded).toFixed(2)) : null;
 
   // Filtered orders list by search
   const filteredOrders = useMemo(() => {
@@ -390,6 +447,7 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
       alimentacao: { id: 'cat_alimentacao', name: 'Alimentação & Campo', color: '#ea580c' },
       diaria: { id: 'cat_mao_de_obra', name: 'Mão de Obra & Diárias', color: '#0284c7' },
       salario: { id: 'cat_mao_de_obra', name: 'Salários & Adiantamentos', color: '#0284c7' },
+      rescisao: { id: 'cat_rescisao', name: 'Rescisão & Encargos Trabalhistas', color: '#dc2626' },
       outro: { id: 'cat_outros', name: 'Outras Despesas de Motorista', color: '#6b7280' },
     };
 
@@ -875,9 +933,23 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
                   </div>
                   <div className="pl-4 mt-2 space-y-1 text-amber-700 dark:text-amber-400 text-xs">
                     <div className="flex justify-between">
-                      <span>• Combustível (Óleo Diesel S10 / Arla) - {vehicleFuelLogs.length} abastecimentos</span>
+                      <span>• Combustível ({consumptionMetrics.totalLiters.toLocaleString('pt-BR')} L em {vehicleFuelLogs.length} abastecimentos)</span>
                       <span>{formatCurrencyBRL(totalFuelCost)}</span>
                     </div>
+                    {(consumptionMetrics.avgKmPerLiter || consumptionMetrics.avgLitersPerHour) && (
+                      <div className="flex justify-between text-[11px] text-amber-800 dark:text-amber-300 font-semibold pl-2">
+                        <span>
+                          ↳ Média Consumo: {consumptionMetrics.avgKmPerLiter ? `${consumptionMetrics.avgKmPerLiter} km/L` : ''} 
+                          {consumptionMetrics.avgKmPerLiter && consumptionMetrics.avgLitersPerHour ? ' • ' : ''}
+                          {consumptionMetrics.avgLitersPerHour ? `${consumptionMetrics.avgLitersPerHour} L/h` : ''}
+                        </span>
+                        <span>
+                          {consumptionMetrics.avgCostPerKm ? `${formatCurrencyBRL(consumptionMetrics.avgCostPerKm)}/km` : ''}
+                          {consumptionMetrics.avgCostPerKm && consumptionMetrics.avgCostPerHour ? ' • ' : ''}
+                          {consumptionMetrics.avgCostPerHour ? `${formatCurrencyBRL(consumptionMetrics.avgCostPerHour)}/h` : ''}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>• Manutenção Preventiva, Corretiva & Peças - {vehicleMaintenanceLogs.length} ordens</span>
                       <span>{formatCurrencyBRL(totalMaintenanceCost)}</span>
@@ -900,12 +972,30 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
                   <div className="pl-4 mt-2 space-y-1 text-blue-700 dark:text-blue-400 text-xs">
                     <div className="flex justify-between">
                       <span>• Salários e Remuneração ({assignedDriverNames.join(', ') || 'Motoristas'})</span>
-                      <span>{formatCurrencyBRL(totalDriversMonthlySalary)}</span>
+                      <span>{formatCurrencyBRL(driverExpensesBreakdown.salarios > 0 ? driverExpensesBreakdown.salarios : totalDriversMonthlySalary)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>• Alimentação, Marmitas & Diárias de Campo</span>
-                      <span>{formatCurrencyBRL(totalDriverExpensesFromLogs)}</span>
+                      <span>• Alimentação, Marmitas & Refeições de Campo</span>
+                      <span>{formatCurrencyBRL(driverExpensesBreakdown.alimentacao)}</span>
                     </div>
+                    {driverExpensesBreakdown.rescisao > 0 && (
+                      <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
+                        <span>• Rescisões Trabalhistas, Acertos & Encargos</span>
+                        <span>{formatCurrencyBRL(driverExpensesBreakdown.rescisao)}</span>
+                      </div>
+                    )}
+                    {driverExpensesBreakdown.diarias > 0 && (
+                      <div className="flex justify-between">
+                        <span>• Diárias de Viagem & Pernoites</span>
+                        <span>{formatCurrencyBRL(driverExpensesBreakdown.diarias)}</span>
+                      </div>
+                    )}
+                    {driverExpensesBreakdown.outros > 0 && (
+                      <div className="flex justify-between">
+                        <span>• Outras Despesas de Motoristas</span>
+                        <span>{formatCurrencyBRL(driverExpensesBreakdown.outros)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -920,6 +1010,29 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
                   <span className={`text-lg sm:text-xl font-['Outfit'] ${netVehicleProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {formatCurrencyBRL(netVehicleProfit)}
                   </span>
+                </div>
+
+                {/* 5. Indicadores Unitários Operacionais (Custo por KM e por Hora) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700 font-sans">
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Custo Total por KM Rodado</span>
+                    <div className="text-base font-black text-stone-800 dark:text-stone-200 mt-0.5 font-mono">
+                      {costPerKmAllInclusive ? `${formatCurrencyBRL(costPerKmAllInclusive)} / km` : '--'}
+                    </div>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      (Combustível + Manutenção + Motorista) ÷ KM rodados
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700 font-sans">
+                    <span className="text-[10px] font-bold uppercase text-stone-500">Custo Total por Hora de Operação</span>
+                    <div className="text-base font-black text-stone-800 dark:text-stone-200 mt-0.5 font-mono">
+                      {costPerHourAllInclusive ? `${formatCurrencyBRL(costPerHourAllInclusive)} / h` : '--'}
+                    </div>
+                    <p className="text-[10px] text-stone-400 mt-0.5">
+                      (Combustível + Manutenção + Motorista) ÷ Horas trabalhadas
+                    </p>
+                  </div>
                 </div>
 
               </div>
@@ -1372,8 +1485,9 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
                     className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-stone-900 dark:text-stone-100"
                   >
                     <option value="alimentacao">Alimentação / Marmita / Café</option>
-                    <option value="diaria">Diária de Campo / Pernoite</option>
                     <option value="salario">Salário / Adiantamento</option>
+                    <option value="rescisao">Rescisão de Contrato / Encargos</option>
+                    <option value="diaria">Diária de Campo / Pernoite</option>
                     <option value="outro">Outras Despesas de Viagem</option>
                   </select>
                 </div>

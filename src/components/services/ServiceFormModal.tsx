@@ -1,0 +1,1775 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  X, 
+  Scissors, 
+  Wheat, 
+  Tractor, 
+  Wrench, 
+  FileText, 
+  ShoppingCart, 
+  Calendar, 
+  Clock, 
+  User, 
+  Plus, 
+  Check, 
+  Layers, 
+  Sparkles, 
+  Info, 
+  Truck, 
+  Trash2, 
+  TrendingUp, 
+  Gauge, 
+  UserPlus, 
+  ArrowRight, 
+  Calculator, 
+  ShieldCheck, 
+  AlertCircle,
+  Printer,
+  PrinterCheck,
+  Lock
+} from 'lucide-react';
+import { ServiceOrder, Machinery, Employee, Client, ServiceTruckItem } from '../../types';
+import { formatCurrencyBRL } from '../../lib/storage';
+import { QuickClientModal } from './QuickClientModal';
+import { TractorBlock } from './TractorBlock';
+import { TruckFleetSection } from './TruckFleetSection';
+import { DRESummaryBlock, TruckExpenseDetail } from './DRESummaryBlock';
+import { 
+  isForrageira, 
+  findLinkedOperator, 
+  formatEmployeeOptionLabel,
+  formatMachineryOptionLabel
+} from './serviceHelpers';
+
+export type ServiceTabType = 'corte' | 'colheita' | 'trator' | 'maquina' | 'orcamento' | 'venda';
+
+interface ServiceFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (service: ServiceOrder) => void;
+  activeTab: ServiceTabType;
+  clients?: Client[];
+  machineries?: Machinery[];
+  employees?: Employee[];
+  nextNumber?: string;
+  editRecord?: ServiceOrder | null;
+  onSaveClient?: (newClient: Client) => void;
+}
+
+export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  activeTab,
+  clients = [],
+  machineries = [],
+  employees = [],
+  nextNumber,
+  editRecord,
+  onSaveClient,
+}) => {
+  // Estado para Modal Rápida de Cliente (Nested Dialog)
+  const [isQuickClientOpen, setIsQuickClientOpen] = useState(false);
+
+  // 1. Identificação e Cliente
+  const [numero, setNumero] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [farmName, setFarmName] = useState('');
+  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [status, setStatus] = useState<'agendado' | 'em_andamento' | 'concluido' | 'cancelado'>('agendado');
+
+  // 2. Área e Unidades (Corte e Colheita)
+  const [unidadeArea, setUnidadeArea] = useState<'hectares' | 'alqueires' | 'hora'>('hectares');
+  const [quantidadeArea, setQuantidadeArea] = useState<number | ''>('');
+  const [valorPorHectare, setValorPorHectare] = useState<number | ''>('');
+  const [estimativaToneladas, setEstimativaToneladas] = useState<number | ''>('');
+
+  // 3. Bloco Forrageira / Ensiladeira (Borda Amarela)
+  const [forrageiraId, setForrageiraId] = useState('');
+  const [forrageiraNome, setForrageiraNome] = useState('');
+  const [operadorForrageiraId, setOperadorForrageiraId] = useState('');
+  const [operadorForrageiraNome, setOperadorForrageiraNome] = useState('');
+  const [segundoOperadorForrageiraId, setSegundoOperadorForrageiraId] = useState('');
+  const [segundoOperadorForrageiraNome, setSegundoOperadorForrageiraNome] = useState('');
+  const [horasTambor, setHorasTambor] = useState<number | ''>('');
+  const [horasMotor, setHorasMotor] = useState<number | ''>('');
+  const [valorHoraForrageira, setValorHoraForrageira] = useState<number | ''>('');
+  // Alternância (Toggles) e Comissão da Forrageira (3 modalidades)
+  const [modoComissaoForrageira, setModoComissaoForrageira] = useState<'tambor' | 'motor' | 'area'>('tambor');
+  const [qtdBaseComissaoForrageira, setQtdBaseComissaoForrageira] = useState<number | ''>('');
+  const [taxaComissaoForrageira, setTaxaComissaoForrageira] = useState<number | ''>('');
+
+  // 4. Bloco Trator / Máquina (Borda Azul) com Independência Total
+  const [tratorId, setTratorId] = useState('');
+  const [tratorNome, setTratorNome] = useState('');
+  const [operadorTratorId, setOperadorTratorId] = useState('');
+  const [operadorTratorNome, setOperadorTratorNome] = useState('');
+  const [segundoOperadorTratorId, setSegundoOperadorTratorId] = useState('');
+  const [segundoOperadorTratorNome, setSegundoOperadorTratorNome] = useState('');
+  // Faturamento da Máquina
+  const [modoCobrancaTrator, setModoCobrancaTrator] = useState<'horas' | 'area_alq' | 'area_ha'>('horas');
+  const [qtdCobrancaTrator, setQtdCobrancaTrator] = useState<number | ''>('');
+  const [valorUnitarioTrator, setValorUnitarioTrator] = useState<number | ''>('');
+  // Comissão do Operador (Independente)
+  const [modoComissaoOperador, setModoComissaoOperador] = useState<'horas' | 'area_alq' | 'area_ha'>('horas');
+  const [qtdBaseComissao, setQtdBaseComissao] = useState<number | ''>('');
+  const [taxaComissaoOperador, setTaxaComissaoOperador] = useState<number | ''>('');
+
+  // 5. Seção Dinâmica de Frotas / Caminhões
+  const [truckFleetPercentage, setTruckFleetPercentage] = useState<number | ''>(10);
+  const [trucks, setTrucks] = useState<ServiceTruckItem[]>([]);
+
+  // 6. Observações
+  const [observacoes, setObservacoes] = useState('');
+
+  // Conjunto de IDs de Maquinários já Selecionados (REGRA DE EXCLUSÃO)
+  const selectedMachineryIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (forrageiraId) ids.add(forrageiraId);
+    if (tratorId) ids.add(tratorId);
+    trucks.forEach((t) => {
+      if (t.machineryId) ids.add(t.machineryId);
+    });
+    return ids;
+  }, [forrageiraId, tratorId, trucks]);
+
+  // Lista estritamente filtrada de Forrageiras disponíveis
+  const forrageirasDisponiveis = useMemo(() => {
+    return machineries.filter((m) => {
+      if (!isForrageira(m)) return false;
+      return m.id === forrageiraId || !selectedMachineryIds.has(m.id);
+    });
+  }, [machineries, forrageiraId, selectedMachineryIds]);
+
+  // Carrega dados iniciais ou do registro em edição
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (editRecord) {
+      setNumero(editRecord.orderNumber || editRecord.id);
+      setClientId(editRecord.clientId || '');
+      setClientName(editRecord.clientName || '');
+      setFarmName(editRecord.farmName || '');
+      setServiceDate(editRecord.startDate || new Date().toISOString().split('T')[0]);
+      setStatus(editRecord.status || 'agendado');
+
+      setUnidadeArea(editRecord.areaUnit || 'hectares');
+      setQuantidadeArea(editRecord.areaQuantity ?? editRecord.areaHectares ?? '');
+      setValorPorHectare(editRecord.ratePerAreaUnit ?? editRecord.ratePerUnit ?? '');
+      setEstimativaToneladas(editRecord.tonsEstimated ?? '');
+
+      // Forrageira
+      setForrageiraId(editRecord.forageHarvesterId ?? '');
+      setForrageiraNome(editRecord.forageHarvesterName ?? '');
+      setOperadorForrageiraId(editRecord.forageOperatorId ?? '');
+      setOperadorForrageiraNome(editRecord.forageOperatorName ?? '');
+      setSegundoOperadorForrageiraId(editRecord.forageSecondOperatorId ?? '');
+      setSegundoOperadorForrageiraNome(editRecord.forageSecondOperatorName ?? '');
+      setHorasTambor(editRecord.forageDrumHours ?? '');
+      setHorasMotor(editRecord.forageEngineHours ?? '');
+      setValorHoraForrageira(editRecord.forageRatePerHour ?? '');
+      setModoComissaoForrageira(
+        editRecord.forageCommissionMode === 'tambor' || editRecord.forageCommissionMode === 'motor' || editRecord.forageCommissionMode === 'area'
+          ? editRecord.forageCommissionMode
+          : 'tambor'
+      );
+      setQtdBaseComissaoForrageira(editRecord.forageDrumHours ?? editRecord.areaQuantity ?? '');
+      setTaxaComissaoForrageira(editRecord.forageOperatorCommission ? (editRecord.forageOperatorCommission / (editRecord.forageDrumHours || 1)) : '');
+
+      // Trator
+      setTratorId(editRecord.tractorId ?? '');
+      setTratorNome(editRecord.tractorName ?? '');
+      setOperadorTratorId(editRecord.tractorOperatorId ?? '');
+      setOperadorTratorNome(editRecord.tractorOperatorName ?? '');
+      setSegundoOperadorTratorId(editRecord.tractorSecondOperatorId ?? '');
+      setSegundoOperadorTratorNome(editRecord.tractorSecondOperatorName ?? '');
+      
+      // Cobrança Trator
+      const tMode = editRecord.tractorBillingMode || editRecord.tractorCalculationMode || 'horas';
+      if (tMode === 'area') {
+        setModoCobrancaTrator(editRecord.areaUnit === 'alqueires' ? 'area_alq' : 'area_ha');
+        setQtdCobrancaTrator(editRecord.areaQuantity ?? editRecord.areaHectares ?? '');
+      } else {
+        setModoCobrancaTrator('horas');
+        setQtdCobrancaTrator(editRecord.tractorHours ?? '');
+      }
+      setValorUnitarioTrator(editRecord.tractorRatePerHour ?? '');
+
+      // Comissão Trator
+      const opMode = editRecord.tractorOperatorCommissionMode || 'horas';
+      if (opMode === 'area') {
+        setModoComissaoOperador(editRecord.areaUnit === 'alqueires' ? 'area_alq' : 'area_ha');
+        setQtdBaseComissao(editRecord.areaQuantity ?? editRecord.areaHectares ?? '');
+      } else {
+        setModoComissaoOperador('horas');
+        setQtdBaseComissao(editRecord.tractorOperatorHours ?? editRecord.tractorHours ?? '');
+      }
+      setTaxaComissaoOperador(editRecord.tractorOperatorCommissionRate ?? '');
+
+      // Frotas
+      setTruckFleetPercentage(editRecord.truckFleetPercentage ?? 10);
+      setTrucks(editRecord.trucks || []);
+      setObservacoes(editRecord.notes || '');
+    } else {
+      // Novo registro padrão
+      setNumero(nextNumber || `#${Date.now().toString().slice(-4)}`);
+      setClientId('');
+      setClientName('');
+      setFarmName('');
+      setServiceDate(new Date().toISOString().split('T')[0]);
+      setStatus('agendado');
+
+      setUnidadeArea('hectares');
+      setQuantidadeArea('');
+      setValorPorHectare('');
+      setEstimativaToneladas('');
+
+      // Forrageira
+      setForrageiraId('');
+      setForrageiraNome('');
+      setOperadorForrageiraId('');
+      setOperadorForrageiraNome('');
+      setSegundoOperadorForrageiraId('');
+      setSegundoOperadorForrageiraNome('');
+      setHorasTambor('');
+      setHorasMotor('');
+      setValorHoraForrageira('');
+      setModoComissaoForrageira('tambor');
+      setQtdBaseComissaoForrageira('');
+      setTaxaComissaoForrageira('');
+
+      // Trator
+      setTratorId('');
+      setTratorNome('');
+      setOperadorTratorId('');
+      setOperadorTratorNome('');
+      setSegundoOperadorTratorId('');
+      setSegundoOperadorTratorNome('');
+      setModoCobrancaTrator('horas');
+      setQtdCobrancaTrator('');
+      setValorUnitarioTrator('');
+      setModoComissaoOperador('horas');
+      setQtdBaseComissao('');
+      setTaxaComissaoOperador('');
+
+      // Frotas
+      setTruckFleetPercentage(10);
+      setTrucks([]);
+      setObservacoes('');
+    }
+  }, [isOpen, editRecord, nextNumber]);
+
+  // Sincroniza dados do cliente ao selecionar no select
+  const handleSelectClient = (selectedId: string) => {
+    setClientId(selectedId);
+    const client = clients.find((c) => c.id === selectedId);
+    if (client) {
+      setClientName(client.name);
+      setFarmName(client.farmName || '');
+      if (client.areaHectares && !quantidadeArea) {
+        setQuantidadeArea(client.areaHectares);
+      }
+    }
+  };
+
+  // Callback de sucesso da QuickClientModal
+  const handleQuickClientCreated = (newClient: Client) => {
+    if (onSaveClient) {
+      onSaveClient(newClient);
+    }
+    setClientId(newClient.id);
+    setClientName(newClient.name);
+    setFarmName(newClient.farmName || '');
+    if (newClient.areaHectares) {
+      setQuantidadeArea(newClient.areaHectares);
+    }
+    setIsQuickClientOpen(false);
+  };
+
+  // Limpeza / Opção Neutra para Forrageira
+  const handleClearForrageira = () => {
+    setForrageiraId('');
+    setForrageiraNome('');
+    setOperadorForrageiraId('');
+    setOperadorForrageiraNome('');
+    setSegundoOperadorForrageiraId('');
+    setSegundoOperadorForrageiraNome('');
+    setHorasTambor('');
+    setHorasMotor('');
+    setValorHoraForrageira('');
+    setQtdBaseComissaoForrageira('');
+    setTaxaComissaoForrageira('');
+  };
+
+  // Seleção de Forrageira com Autocompletar (Operador Principal) e Segundo Operador VAZIO
+  const handleSelectForrageira = (id: string) => {
+    if (!id) {
+      handleClearForrageira();
+      return;
+    }
+
+    const mach = machineries.find((m) => m.id === id);
+    if (!mach) return;
+
+    const nomeFormatado = formatMachineryOptionLabel(mach);
+    const linkedOp = findLinkedOperator(mach, employees);
+
+    setForrageiraId(mach.id);
+    setForrageiraNome(nomeFormatado);
+    // Preenche AUTOMATICAMENTE o OPERADOR PRINCIPAL
+    setOperadorForrageiraId(linkedOp.id);
+    setOperadorForrageiraNome(linkedOp.name);
+    // Segundo Operador NUNCA preenchido, inicia sempre vazio
+    setSegundoOperadorForrageiraId('');
+    setSegundoOperadorForrageiraNome('');
+
+    // Preenche taxa de comissão se o operador tiver configurada
+    if (linkedOp.id) {
+      const emp = employees.find((e) => e.id === linkedOp.id);
+      if (emp) {
+        if (emp.commissionPerHour) {
+          setModoComissaoForrageira('horas');
+          setTaxaComissaoForrageira(emp.commissionPerHour);
+        } else if (emp.commissionPerHectare || emp.commissionPerAlqueire) {
+          setModoComissaoForrageira('area');
+          setTaxaComissaoForrageira(emp.commissionPerHectare || emp.commissionPerAlqueire || '');
+        }
+      }
+    }
+  };
+
+  // Seleção de Trator dentro do TractorBlock (com suporte a Opção Neutra)
+  const handleSelectTrator = (id: string, nome: string, linkedOp: { id: string; name: string }) => {
+    if (!id) {
+      setTratorId('');
+      setTratorNome('');
+      setOperadorTratorId('');
+      setOperadorTratorNome('');
+      setSegundoOperadorTratorId('');
+      setSegundoOperadorTratorNome('');
+      setQtdCobrancaTrator('');
+      setValorUnitarioTrator('');
+      setQtdBaseComissao('');
+      setTaxaComissaoOperador('');
+      return;
+    }
+
+    setTratorId(id);
+    setTratorNome(nome);
+    // Preenche AUTOMATICAMENTE o OPERADOR PRINCIPAL
+    setOperadorTratorId(linkedOp.id);
+    setOperadorTratorNome(linkedOp.name);
+    // Segundo Operador NUNCA preenchido, inicia sempre vazio
+    setSegundoOperadorTratorId('');
+    setSegundoOperadorTratorNome('');
+
+    // Preenche comissão se o operador tiver configurada
+    if (linkedOp.id) {
+      const emp = employees.find((e) => e.id === linkedOp.id);
+      if (emp && emp.commissionPerHour) {
+        setTaxaComissaoOperador(emp.commissionPerHour);
+      }
+    }
+  };
+
+  // Manipulação de Frotas / Caminhões: Inicializa sempre em Branco para preenchimento manual ou escolha
+  const handleAddTruck = () => {
+    const newTruck: ServiceTruckItem = {
+      id: 'truck_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      machineryId: '',
+      truckName: '',
+      plate: '',
+      primaryDriverId: '',
+      primaryDriverName: '',
+      secondaryDriverId: '',
+      secondaryDriverName: '',
+      capacityM3: 0,
+      tripLoads: 0,
+      totalM3: 0,
+      driverHours: 0,
+      driverHourSource: 'manual',
+      additionalKm: 0,
+      ratePerKm: 0,
+      totalAdditionalKm: 0,
+      driverCommission: 0,
+    };
+
+    setTrucks((prev) => [...prev, newTruck]);
+  };
+
+  const handleRemoveTruck = (truckId: string) => {
+    setTrucks((prev) => prev.filter((t) => t.id !== truckId));
+  };
+
+  const handleUpdateTruck = (truckId: string, updates: Partial<ServiceTruckItem>) => {
+    setTrucks((prev) =>
+      prev.map((t) => (t.id === truckId ? { ...t, ...updates } : t))
+    );
+  };
+
+  // Sincronização em tempo real das Horas da Forrageira com os caminhões que utilizam 'tambor' ou 'motor'
+  useEffect(() => {
+    setTrucks((prevTrucks) => {
+      let changed = false;
+      const nextTrucks = prevTrucks.map((t) => {
+        if (t.driverHourSource === 'tambor') {
+          const val = typeof horasTambor === 'number' ? horasTambor : 0;
+          if (t.driverHours !== val) {
+            changed = true;
+            const mode = t.driverCommissionMode || 'horas';
+            const rate = typeof t.driverCommissionRate === 'number' && t.driverCommissionRate > 0 ? t.driverCommissionRate : 10;
+            const base = mode === 'horas' ? val : (t.tripLoads || 0);
+            return { ...t, driverHours: val, driverCommissionRate: rate, driverCommission: base * rate };
+          }
+        } else if (t.driverHourSource === 'motor') {
+          const val = typeof horasMotor === 'number' ? horasMotor : 0;
+          if (t.driverHours !== val) {
+            changed = true;
+            const mode = t.driverCommissionMode || 'horas';
+            const rate = typeof t.driverCommissionRate === 'number' && t.driverCommissionRate > 0 ? t.driverCommissionRate : 10;
+            const base = mode === 'horas' ? val : (t.tripLoads || 0);
+            return { ...t, driverHours: val, driverCommissionRate: rate, driverCommission: base * rate };
+          }
+        }
+        return t;
+      });
+      return changed ? nextTrucks : prevTrucks;
+    });
+  }, [horasTambor, horasMotor]);
+
+  // ==========================================
+  // MATEMÁTICA FINANCEIRA E REGRAS DE CÁLCULO
+  // ==========================================
+
+  // 1. Valor Base do Serviço (Área)
+  const valorBaseArea = useMemo(() => {
+    const qtd = typeof quantidadeArea === 'number' ? quantidadeArea : 0;
+    const taxa = typeof valorPorHectare === 'number' ? valorPorHectare : 0;
+    return qtd * taxa;
+  }, [quantidadeArea, valorPorHectare]);
+
+  // 2. Faturamento do Trator (Cobrança Máquina ao Cliente) - Zerado se Neutro
+  const subtotalTrator = useMemo(() => {
+    if (!tratorId && !tratorNome.trim()) return 0;
+    const qtd = typeof qtdCobrancaTrator === 'number' ? qtdCobrancaTrator : 0;
+    const taxa = typeof valorUnitarioTrator === 'number' ? valorUnitarioTrator : 0;
+    return qtd * taxa;
+  }, [tratorId, tratorNome, qtdCobrancaTrator, valorUnitarioTrator]);
+
+  // 3. Faturamento Forrageira (se aplicável) - Zerado se Neutro
+  const subtotalForrageira = useMemo(() => {
+    if (!forrageiraId && !forrageiraNome.trim()) return 0;
+    const hTambor = typeof horasTambor === 'number' ? horasTambor : 0;
+    const taxaH = typeof valorHoraForrageira === 'number' ? valorHoraForrageira : 0;
+    return hTambor * taxaH;
+  }, [forrageiraId, forrageiraNome, horasTambor, valorHoraForrageira]);
+
+  // 4. Adicional KM (Total de todos os caminhões quando alqueires)
+  const totalAdicionalKm = useMemo(() => {
+    if (unidadeArea !== 'alqueires') return 0;
+    return trucks.reduce((sum, t) => sum + (t.totalAdditionalKm || 0), 0);
+  }, [trucks, unidadeArea]);
+
+  // 5. TOTAL DO PEDIDO (Cobrado do Cliente)
+  const totalPedido = useMemo(() => {
+    return valorBaseArea + subtotalTrator + subtotalForrageira + totalAdicionalKm;
+  }, [valorBaseArea, subtotalTrator, subtotalForrageira, totalAdicionalKm]);
+
+  // =========================================================================
+  // REGRA 3: CORREÇÃO MATEMÁTICA NA DISTRIBUIÇÃO GLOBAL DE FROTAS
+  // Incide EXCLUSIVAMENTE sobre o "Valor Base do Serviço (Área)".
+  // O Trator é TOTALMENTE EXCLUÍDO da base de cálculo!
+  // =========================================================================
+  const valorDistribuicaoFrotas = useMemo(() => {
+    const pct = typeof truckFleetPercentage === 'number' ? truckFleetPercentage : 0;
+    return (valorBaseArea * pct) / 100;
+  }, [valorBaseArea, truckFleetPercentage]);
+
+  // =========================================================================
+  // REGRA 4: CÁLCULO DE RATIO PROPORCIONAL POR M³ INDIVIDUAL DOS CAMINHÕES
+  // 1. Total m³ = Capacidade × Cargas
+  // 2. Volume Geral Transportado = soma de todos os caminhões
+  // 3. Valor de cada caminhão = (m³ Caminhão / Volume Geral) × Distribuição
+  // =========================================================================
+  const totalVolumeGeralM3 = useMemo(() => {
+    return trucks.reduce((sum, t) => sum + ((t.capacityM3 || 0) * (t.tripLoads || 0)), 0);
+  }, [trucks]);
+
+  // =========================================================================
+  // COMISSÕES DOS OPERADORES (INFORMATIVAS - DRE)
+  // =========================================================================
+
+  // A) Comissões Forrageira (com suporte a alternância Horas vs Área e Travamento Automático)
+  const { comissaoForrageiraP1, comissaoForrageiraP2, formulaForrageiraP1, formulaForrageiraP2 } = useMemo(() => {
+    if (!forrageiraId && !forrageiraNome.trim()) {
+      return { comissaoForrageiraP1: 0, comissaoForrageiraP2: 0, formulaForrageiraP1: '', formulaForrageiraP2: '' };
+    }
+
+    // REGRA 2: 3 OPÇÕES DE COMISSÃO NA FORRAGEIRA
+    // "Por Hora (tambor)": trava horasTambor
+    // "Por Hora (h)": trava horasMotor
+    // "Por Área (alq)": trava quantidadeArea
+    const baseCalculada = modoComissaoForrageira === 'tambor'
+      ? (typeof horasTambor === 'number' ? horasTambor : 0)
+      : modoComissaoForrageira === 'motor'
+      ? (typeof horasMotor === 'number' ? horasMotor : 0)
+      : (typeof quantidadeArea === 'number' ? quantidadeArea : 0);
+
+    const taxaP1 = typeof taxaComissaoForrageira === 'number' ? taxaComissaoForrageira : 0;
+    const p1Val = baseCalculada * taxaP1;
+    const unLabel = modoComissaoForrageira === 'tambor'
+      ? 'h (tambor)'
+      : modoComissaoForrageira === 'motor'
+      ? 'h'
+      : (unidadeArea === 'alqueires' ? 'alq' : 'ha');
+    const p1Formula = taxaP1 > 0 && baseCalculada > 0 
+      ? `${formatCurrencyBRL(taxaP1)}/${unLabel} × ${baseCalculada} ${unLabel} = ${formatCurrencyBRL(p1Val)}`
+      : '';
+
+    let p2Val = 0;
+    let p2Formula = '';
+    if (segundoOperadorForrageiraNome.trim()) {
+      const empP2 = employees.find((e) => e.id === segundoOperadorForrageiraId);
+      const taxaP2 = empP2 && (empP2.commissionPerHour || empP2.commissionPerHectare || empP2.commissionPerAlqueire)
+        ? (empP2.commissionPerHour || empP2.commissionPerHectare || empP2.commissionPerAlqueire || 0)
+        : 0;
+      if (taxaP2 > 0 && baseCalculada > 0) {
+        p2Val = baseCalculada * taxaP2;
+        p2Formula = `${formatCurrencyBRL(taxaP2)}/${unLabel} × ${baseCalculada} ${unLabel} = ${formatCurrencyBRL(p2Val)}`;
+      }
+    }
+
+    return {
+      comissaoForrageiraP1: p1Val,
+      comissaoForrageiraP2: p2Val,
+      formulaForrageiraP1: p1Formula,
+      formulaForrageiraP2: p2Formula,
+    };
+  }, [
+    forrageiraId,
+    forrageiraNome,
+    operadorForrageiraNome,
+    segundoOperadorForrageiraNome,
+    segundoOperadorForrageiraId,
+    horasTambor,
+    horasMotor,
+    quantidadeArea,
+    modoComissaoForrageira,
+    taxaComissaoForrageira,
+    unidadeArea,
+    employees
+  ]);
+
+  // B) Comissões Trator (Totalmente independentes do faturamento da máquina e Zeradas se Neutro)
+  const { comissaoTratorP1, comissaoTratorP2, formulaTratorP1, formulaTratorP2 } = useMemo(() => {
+    if (!tratorId && !tratorNome.trim()) {
+      return { comissaoTratorP1: 0, comissaoTratorP2: 0, formulaTratorP1: '', formulaTratorP2: '' };
+    }
+
+    const qtdBase = typeof qtdBaseComissao === 'number' ? qtdBaseComissao : 0;
+    const taxa = typeof taxaComissaoOperador === 'number' ? taxaComissaoOperador : 0;
+    const p1Val = qtdBase * taxa;
+    const unidadeOp = modoComissaoOperador === 'horas' ? 'h' : modoComissaoOperador === 'area_alq' ? 'alq' : 'ha';
+    const p1Formula = taxa > 0 && qtdBase > 0 ? `${formatCurrencyBRL(taxa)}/${unidadeOp} × ${qtdBase}${unidadeOp} = ${formatCurrencyBRL(p1Val)}` : '';
+
+    // Segundo operador trator (se houver)
+    let p2Val = 0;
+    let p2Formula = '';
+    if (segundoOperadorTratorNome.trim()) {
+      const empP2 = employees.find((e) => e.id === segundoOperadorTratorId);
+      if (empP2 && empP2.commissionPerHour && qtdBase > 0) {
+        p2Val = empP2.commissionPerHour * qtdBase;
+        p2Formula = `${formatCurrencyBRL(empP2.commissionPerHour)}/h × ${qtdBase}h = ${formatCurrencyBRL(p2Val)}`;
+      }
+    }
+
+    return {
+      comissaoTratorP1: p1Val,
+      comissaoTratorP2: p2Val,
+      formulaTratorP1: p1Formula,
+      formulaTratorP2: p2Formula,
+    };
+  }, [tratorId, tratorNome, qtdBaseComissao, taxaComissaoOperador, modoComissaoOperador, segundoOperadorTratorNome, segundoOperadorTratorId, employees]);
+
+  // =========================================================================
+  // REGRA 5: DETALHAMENTO CIRÚRGICO NA DRE (BLOCO CUSTOS E PROVENTOS ADICIONAIS)
+  // Plotagem nominal de cada caminhão ativo: Placa, Motorista, Cargas, Cap m³, Total m³, % e Valor Proporcional + Adicional KM
+  // =========================================================================
+  const trucksExpenseDetails: TruckExpenseDetail[] = useMemo(() => {
+    return trucks.map((truck) => {
+      const cap = truck.capacityM3 || 0;
+      const loads = truck.tripLoads || 0;
+      const truckTotalM3 = cap * loads;
+      
+      // % de Distribuição Global do Caminhão = (Total m³ do Caminhão / Total Volume Geral) x 100
+      const ratioPercent = totalVolumeGeralM3 > 0 
+        ? (truckTotalM3 / totalVolumeGeralM3) * 100 
+        : 0;
+
+      // Valor do Rateio = (Total m³ do Caminhão / Total Volume Geral) x Valor Total Distribuído da Frota
+      const rateioCost = totalVolumeGeralM3 > 0 
+        ? (truckTotalM3 / totalVolumeGeralM3) * valorDistribuicaoFrotas 
+        : 0;
+
+      // Adicional KM individual do caminhão
+      const additionalKmCost = truck.totalAdditionalKm ?? ((truck.additionalKm || 0) * (truck.ratePerKm || 0));
+
+      // Comissão individual do Motorista do caminhão (Horas ou Cargas)
+      const mode = truck.driverCommissionMode || 'horas';
+      const baseComm = mode === 'cargas' ? loads : (typeof truck.driverHours === 'number' ? truck.driverHours : 0);
+      const driverCommissionCost = truck.driverCommission ?? (baseComm * (truck.driverCommissionRate || 0));
+
+      // Total Composto = Rateio + Adicional KM + Comissão do Motorista
+      const totalCost = rateioCost + additionalKmCost + driverCommissionCost;
+
+      return {
+        truckId: truck.id,
+        plate: truck.plate ? truck.plate.toUpperCase() : 'S/ Placa',
+        driverName: truck.primaryDriverName || 'Motorista',
+        loads: loads,
+        capacityM3: cap,
+        totalM3: truckTotalM3,
+        distributionPercent: ratioPercent,
+        rateioCost: rateioCost,
+        additionalKmCost: additionalKmCost,
+        driverCommissionCost: driverCommissionCost,
+        totalCost: totalCost,
+      };
+    });
+  }, [trucks, totalVolumeGeralM3, valorDistribuicaoFrotas]);
+
+  // TOTAL GERAL DESPESAS (Soma exata de todas as comissões e frotas discriminadas com Rateio + Adicional KM)
+  const totalGeralDespesas = useMemo(() => {
+    const totalTrucksExpense = trucksExpenseDetails.reduce((sum, item) => sum + item.totalCost, 0);
+    return comissaoForrageiraP1 + comissaoForrageiraP2 + comissaoTratorP1 + comissaoTratorP2 + totalTrucksExpense;
+  }, [comissaoForrageiraP1, comissaoForrageiraP2, comissaoTratorP1, comissaoTratorP2, trucksExpenseDetails]);
+
+  // RESULTADO FINAL (LUCRO ESTIMADO)
+  const lucroEstimado = useMemo(() => {
+    return totalPedido - totalGeralDespesas;
+  }, [totalPedido, totalGeralDespesas]);
+
+  const margemLucroPercent = useMemo(() => {
+    return totalPedido > 0 ? (lucroEstimado / totalPedido) * 100 : 0;
+  }, [totalPedido, lucroEstimado]);
+
+  // Salvar Ordem de Serviço
+  const handleSave = () => {
+    if (!clientName.trim()) {
+      alert('Por favor, selecione ou informe o Cliente / Produtor.');
+      return;
+    }
+
+    const updatedTrucks = trucks.map((t) => {
+      const m3 = (t.capacityM3 || 0) * (t.tripLoads || 0);
+      const ratio = totalVolumeGeralM3 > 0 ? (m3 / totalVolumeGeralM3) * 100 : 0;
+      const distVal = totalVolumeGeralM3 > 0 ? (m3 / totalVolumeGeralM3) * valorDistribuicaoFrotas : 0;
+      return {
+        ...t,
+        totalM3: m3,
+        ratioPercent: ratio,
+        distributedValue: distVal,
+      };
+    });
+
+    const newService: ServiceOrder = {
+      id: editRecord?.id || 'serv_' + Date.now(),
+      orderNumber: numero || `#${Date.now().toString().slice(-4)}`,
+      clientId,
+      clientName,
+      farmName,
+      serviceType: activeTab === 'corte' ? 'Corte de Silagem' : activeTab === 'colheita' ? 'Colheita' : activeTab === 'trator' ? 'Serviço de Trator' : 'Serviço de Máquina',
+      serviceTab: activeTab,
+      status,
+      startDate: serviceDate,
+
+      // Área
+      areaUnit: unidadeArea,
+      areaQuantity: typeof quantidadeArea === 'number' ? quantidadeArea : undefined,
+      ratePerAreaUnit: typeof valorPorHectare === 'number' ? valorPorHectare : undefined,
+      ratePerUnit: typeof valorPorHectare === 'number' ? valorPorHectare : 0,
+      tonsEstimated: typeof estimativaToneladas === 'number' ? estimativaToneladas : undefined,
+      subtotalArea: valorBaseArea,
+
+      // Trator
+      tractorId: tratorId,
+      tractorName: tratorNome,
+      tractorOperatorId: operadorTratorId,
+      tractorOperatorName: operadorTratorNome,
+      tractorSecondOperatorId: segundoOperadorTratorId,
+      tractorSecondOperatorName: segundoOperadorTratorNome,
+      tractorBillingMode: modoCobrancaTrator === 'horas' ? 'horas' : 'area',
+      tractorCalculationMode: modoCobrancaTrator === 'horas' ? 'horas' : 'area',
+      tractorHours: typeof qtdCobrancaTrator === 'number' ? qtdCobrancaTrator : undefined,
+      tractorRatePerHour: typeof valorUnitarioTrator === 'number' ? valorUnitarioTrator : undefined,
+      tractorTotalAmount: subtotalTrator,
+      tractorOperatorCommissionMode: modoComissaoOperador === 'horas' ? 'horas' : 'area',
+      tractorOperatorHours: typeof qtdBaseComissao === 'number' ? qtdBaseComissao : undefined,
+      tractorOperatorCommissionRate: typeof taxaComissaoOperador === 'number' ? taxaComissaoOperador : undefined,
+      tractorOperatorCommission: comissaoTratorP1 + comissaoTratorP2,
+
+      // Forrageira
+      forageHarvesterId: forrageiraId,
+      forageHarvesterName: forrageiraNome,
+      forageOperatorId: operadorForrageiraId,
+      forageOperatorName: operadorForrageiraNome,
+      forageSecondOperatorId: segundoOperadorForrageiraId,
+      forageSecondOperatorName: segundoOperadorForrageiraNome,
+      forageCommissionMode: modoComissaoForrageira,
+      forageDrumHours: typeof horasTambor === 'number' ? horasTambor : undefined,
+      forageEngineHours: typeof horasMotor === 'number' ? horasMotor : undefined,
+      forageRatePerHour: typeof valorHoraForrageira === 'number' ? valorHoraForrageira : undefined,
+      forageTotalAmount: subtotalForrageira,
+      forageOperatorCommission: comissaoForrageiraP1 + comissaoForrageiraP2,
+
+      // Frotas
+      trucks: updatedTrucks,
+      truckFleetPercentage: typeof truckFleetPercentage === 'number' ? truckFleetPercentage : undefined,
+      truckFleetTotalDistributed: valorDistribuicaoFrotas,
+      trucksTotalKmAdditional: totalAdicionalKm,
+
+      // Fechamento e DRE
+      totalAmount: totalPedido,
+      totalExpenses: totalGeralDespesas,
+      estimatedProfit: lucroEstimado,
+      notes: observacoes,
+    };
+
+    onSave(newService);
+    onClose();
+  };
+
+  // Configuração Dinâmica dos Estilos de Impressão Nativa (@media print)
+  // Via Cliente: Formato Cupom Térmico 80mm (@page { size: 80mm auto; margin: 0; })
+  // Via Completa: Formato A4 Gerencial (@page { size: A4; margin: 8mm; })
+  const setupPrintStyles = (mode: 'client' | 'full') => {
+    let styleEl = document.getElementById('dynamic-service-order-print-css') as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'dynamic-service-order-print-css';
+      document.head.appendChild(styleEl);
+    }
+
+    if (mode === 'client') {
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            width: 80mm !important;
+            min-width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 10px !important;
+            line-height: 1.25 !important;
+          }
+          #printable-modal-overlay {
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+          }
+          #printable-service-order-modal {
+            position: static !important;
+            display: block !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 3mm 2mm !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: visible !important;
+            max-height: none !important;
+          }
+          .modal-body-scroll {
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            padding: 0 !important;
+            gap: 4px !important;
+          }
+          /* REGRA CRÍTICA DE PRIVACIDADE: Oculta 100% bloco laranja, verde escuro e comissões */
+          .print-client-hide,
+          .print-hide-on-client,
+          .print-commission-info,
+          .print-commission-box {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            border: none !important;
+          }
+          .print\\:hidden,
+          button,
+          select {
+            display: none !important;
+          }
+          .thermal-receipt-badge {
+            display: block !important;
+            text-align: center !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            border-bottom: 1px dashed #000000 !important;
+            padding-bottom: 4px !important;
+            margin-bottom: 6px !important;
+          }
+          .print-signatures-area {
+            display: block !important;
+            margin-top: 10px !important;
+            padding-top: 6px !important;
+            border-top: 1px dashed #000000 !important;
+            text-align: center !important;
+          }
+          .print-signatures-area .signature-line {
+            margin-top: 16px !important;
+            border-top: 1px solid #000000 !important;
+            padding-top: 3px !important;
+          }
+        }
+      `;
+    } else {
+      styleEl.innerHTML = `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            width: 100% !important;
+            height: auto !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 9px !important;
+            line-height: 1.15 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          #printable-modal-overlay {
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+          #printable-service-order-modal {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .modal-body-scroll {
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            padding: 0 !important;
+            gap: 2px !important;
+          }
+          .modal-body-scroll > * {
+            margin-bottom: 3px !important;
+            padding: 3px 5px !important;
+            border-radius: 4px !important;
+            page-break-inside: avoid !important;
+          }
+          .print-client-hide,
+          .print-hide-on-client,
+          .print-commission-info,
+          .print-commission-box {
+            display: block !important;
+          }
+          .print\\:hidden,
+          button {
+            display: none !important;
+          }
+          .thermal-receipt-badge {
+            display: none !important;
+          }
+          .print-signatures-area {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 16px !important;
+            page-break-inside: avoid !important;
+            margin-top: 6px !important;
+            padding-top: 4px !important;
+          }
+        }
+      `;
+    }
+  };
+
+  // Título e Ícone Dinâmicos por Aba
+  const getTabConfig = () => {
+    switch (activeTab) {
+      case 'colheita':
+        return { title: 'Nova Colheita', icon: Wheat, color: 'text-amber-600' };
+      case 'trator':
+        return { title: 'Novo Serviço de Trator', icon: Tractor, color: 'text-blue-600' };
+      case 'maquina':
+        return { title: 'Novo Serviço de Máquina', icon: Wrench, color: 'text-purple-600' };
+      case 'orcamento':
+        return { title: 'Novo Orçamento', icon: FileText, color: 'text-cyan-600' };
+      case 'venda':
+        return { title: 'Nova Venda', icon: ShoppingCart, color: 'text-rose-600' };
+      case 'corte':
+      default:
+        return { title: 'Novo Corte de Silagem', icon: Scissors, color: 'text-emerald-700' };
+    }
+  };
+
+  const { title: modalTitle, icon: HeaderIcon, color: iconColor } = getTabConfig();
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Folha de Estilos Especializada para Impressão Nativa (Gerenciada dinamicamente por setupPrintStyles) */}
+      <style id="dynamic-service-order-print-css">{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            width: 100% !important;
+            height: auto !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 9px !important;
+            line-height: 1.15 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+          #printable-modal-overlay {
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: 100% !important;
+            inset: auto !important;
+          }
+          #printable-service-order-modal {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .modal-body-scroll {
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            padding: 0 !important;
+            gap: 2px !important;
+          }
+          .modal-body-scroll > * {
+            margin-bottom: 3px !important;
+            padding: 3px 5px !important;
+            border-radius: 4px !important;
+            page-break-inside: avoid !important;
+          }
+          .print:hidden,
+          button {
+            display: none !important;
+          }
+          .thermal-receipt-badge {
+            display: none !important;
+          }
+          .print-signatures-area {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 16px !important;
+            page-break-inside: avoid !important;
+            margin-top: 6px !important;
+            padding-top: 4px !important;
+          }
+        }
+      `}</style>
+
+      <div 
+        id="printable-modal-overlay"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+      >
+        <div 
+          id="printable-service-order-modal"
+          className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 flex flex-col max-h-[94vh] overflow-hidden my-auto"
+        >
+          {/* Badge para Cupom Térmico (Visível apenas em impressão 80mm) */}
+          <div className="hidden print:block thermal-receipt-badge text-center">
+            <p className="font-black text-xs uppercase tracking-wider">Silagem Fácil - Ordem de Serviço</p>
+            <p className="text-[9px] text-gray-700 font-mono">Comprovante de Execução Operacional</p>
+          </div>
+          
+          {/* CABEÇALHO DO MODAL (COMPACTO) */}
+          <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/90 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shadow-2xs shrink-0">
+                <HeaderIcon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${iconColor}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                    {modalTitle}
+                  </h3>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                  Preencha os dados operacionais, frotas e fechamento DRE
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-800 transition cursor-pointer print:hidden"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* CORPO DO FORMULÁRIO COM ROLAGEM (COMPACTO) */}
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 modal-body-scroll">
+            
+            {/* 1. DADOS DE IDENTIFICAÇÃO E CLIENTE */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-2.5">
+              
+              {/* Número do Serviço */}
+              <div className="sm:col-span-3">
+                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Número
+                </label>
+                <input
+                  type="text"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                  className="w-full px-3 py-1.5 sm:py-2 bg-gray-50 dark:bg-slate-800/60 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-mono font-bold"
+                />
+              </div>
+
+              {/* Cliente / Produtor com Botão + Novo */}
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Cliente / Produtor *</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickClientOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>+ Novo Cliente</span>
+                  </button>
+                </label>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="Selecione ou digite o Produtor..."
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {clients.length > 0 && (
+                      <select
+                        value={clientId}
+                        onChange={(e) => handleSelectClient(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                        title="Selecionar cliente da lista"
+                      >
+                        <option value="">-- Escolher Cliente Cadastrado --</option>
+                        {clients.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} {c.farmName ? `(${c.farmName})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickClientOpen(true)}
+                    className="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 transition cursor-pointer shrink-0"
+                    title="Cadastrar Novo Cliente Rápido"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Fazenda / Local */}
+              <div className="sm:col-span-4">
+                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Fazenda / Propriedade
+                </label>
+                <input
+                  type="text"
+                  value={farmName}
+                  onChange={(e) => setFarmName(e.target.value)}
+                  placeholder="Ex: Fazenda Boa Esperança"
+                  className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* 2. ÁREA E UNIDADES (CORTE E COLHEITA) - SEM ESTIMATIVA TONELADAS */}
+            {(activeTab === 'corte' || activeTab === 'colheita') && (
+              <div className="bg-emerald-50/40 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-slate-700 pb-2">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
+                    Área & Produção (Valor Base)
+                  </span>
+
+                  {/* Toggle Hectares / Alqueires / Hora */}
+                  <div className="inline-flex rounded-lg p-0.5 bg-gray-200 dark:bg-slate-700 self-start sm:self-auto text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setUnidadeArea('hectares')}
+                      className={`px-2.5 py-0.5 sm:py-1 font-semibold rounded-md transition cursor-pointer ${
+                        unidadeArea === 'hectares'
+                          ? 'bg-emerald-800 text-white shadow-xs font-bold'
+                          : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                      }`}
+                    >
+                      Por Hectare (ha)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUnidadeArea('alqueires')}
+                      className={`px-2.5 py-0.5 sm:py-1 font-semibold rounded-md transition cursor-pointer ${
+                        unidadeArea === 'alqueires'
+                          ? 'bg-emerald-800 text-white shadow-xs font-bold'
+                          : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                      }`}
+                    >
+                      Por Alqueire (alq)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUnidadeArea('hora')}
+                      className={`px-2.5 py-0.5 sm:py-1 font-semibold rounded-md transition cursor-pointer ${
+                        unidadeArea === 'hora'
+                          ? 'bg-emerald-800 text-white shadow-xs font-bold'
+                          : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                      }`}
+                    >
+                      Por Hora (h)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
+                      {unidadeArea === 'hectares' ? 'Quantidade (ha)' : unidadeArea === 'alqueires' ? 'Quantidade (alq)' : 'Quantidade (horas)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={quantidadeArea}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      onChange={(e) => setQuantidadeArea(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="Ex: 15.5"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
+                      R$ / {unidadeArea === 'hectares' ? 'Hectare' : unidadeArea === 'alqueires' ? 'Alqueire' : 'Hora'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={valorPorHectare}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      onChange={(e) => setValorPorHectare(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="Ex: 450.00"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
+                      Subtotal Área (Base)
+                    </label>
+                    <div className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/60 rounded-lg text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-300 flex items-center justify-between">
+                      <span>{formatCurrencyBRL(valorBaseArea)}</span>
+                      <span className="text-[10px] text-gray-400 font-normal">Base Frota</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. BLOCO FORRAGEIRA / ENSILADEIRA (BORDA AMARELA) COM OPÇÃO NEUTRA E TOGGLES DE COMISSÃO */}
+            {(activeTab === 'corte' || activeTab === 'colheita') && (
+              <div className={`border rounded-xl p-4 space-y-4 border-l-4 transition-colors ${
+                forrageiraId || forrageiraNome.trim()
+                  ? 'border-amber-300 dark:border-amber-700/60 bg-amber-50/40 dark:bg-amber-950/20 border-l-amber-500'
+                  : 'border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-900/40 border-l-gray-400'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 dark:border-amber-800/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Scissors className={`w-4 h-4 ${forrageiraId || forrageiraNome.trim() ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`} />
+                    <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                      Ensiladeira / Forrageira
+                    </span>
+                    {!(forrageiraId || forrageiraNome.trim()) && (
+                      <span className="text-[10px] uppercase font-bold text-gray-500 bg-gray-200 dark:bg-slate-800 px-2 py-0.5 rounded">
+                        Desativada / Nenhuma
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
+                      Horímetro, Tambor & Comissões
+                    </span>
+                    {(forrageiraId || forrageiraNome.trim()) && (
+                      <button
+                        type="button"
+                        onClick={handleClearForrageira}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer ml-1"
+                        title="Não utilizar forrageira e zerar custos"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Remover Forrageira</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Seleção de Forrageira (APENAS FORRAGEIRAS com OPÇÃO NEUTRA e REGRA DE EXCLUSÃO) */}
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
+                        Selecione uma Forrageira / Ensiladeira
+                      </label>
+                      <span className="text-[10px] text-gray-500 dark:text-slate-400">
+                        {forrageirasDisponiveis.length} forrageira(s) disponível(is)
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={forrageiraNome}
+                        onChange={(e) => setForrageiraNome(e.target.value)}
+                        placeholder="-- Não Utilizar Forrageira / Nenhuma (Clique para escolher) --"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 font-medium"
+                      />
+                      <select
+                        value={forrageiraId}
+                        onChange={(e) => handleSelectForrageira(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                        title="Selecionar forrageira cadastrada"
+                      >
+                        <option value="">-- Não Utilizar Forrageira / Nenhuma --</option>
+                        {forrageirasDisponiveis.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {formatMachineryOptionLabel(m)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {!(forrageiraId || forrageiraNome.trim()) ? (
+                    <div className="p-3.5 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/30 text-center text-xs text-gray-500 dark:text-slate-400">
+                      <p className="font-semibold text-gray-600 dark:text-slate-300">
+                        Nenhuma forrageira selecionada para este serviço.
+                      </p>
+                      <p className="text-[11px] mt-0.5">
+                        Os custos de cobrança e comissão da forrageira estão zerados e não afetarão o DRE final. Para selecionar uma máquina, clique no seletor acima.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Operador Principal (Autocompletado) e Segundo Operador (Opcional - inicia vazio) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>Operador da Forrageira (Principal)</span>
+                            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">Autocompletado</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={operadorForrageiraNome}
+                              onChange={(e) => {
+                                setOperadorForrageiraNome(e.target.value);
+                                setOperadorForrageiraId('');
+                              }}
+                              placeholder="Ex: Operador Roberto"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                            />
+                            {employees.length > 0 && (
+                              <select
+                                value={operadorForrageiraId}
+                                onChange={(e) => {
+                                  const emp = employees.find((em) => em.id === e.target.value);
+                                  setOperadorForrageiraId(e.target.value);
+                                  setOperadorForrageiraNome(emp ? emp.name : '');
+                                  if (emp) {
+                                    if (emp.commissionPerHour) {
+                                      setModoComissaoForrageira('horas');
+                                      setTaxaComissaoForrageira(emp.commissionPerHour);
+                                    } else if (emp.commissionPerHectare || emp.commissionPerAlqueire) {
+                                      setModoComissaoForrageira('area');
+                                      setTaxaComissaoForrageira(emp.commissionPerHectare || emp.commissionPerAlqueire || '');
+                                    }
+                                  }
+                                }}
+                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                title="Selecionar operador de forrageira"
+                              >
+                                <option value="">-- Escolher Operador --</option>
+                                {employees.map((emp) => (
+                                  <option key={emp.id} value={emp.id}>
+                                    {formatEmployeeOptionLabel(emp)}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>Segundo Operador (Opcional)</span>
+                            <span className="text-[10px] text-gray-400 font-medium">Inicia Vazio</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={segundoOperadorForrageiraNome}
+                              onChange={(e) => {
+                                setSegundoOperadorForrageiraNome(e.target.value);
+                                setSegundoOperadorForrageiraId('');
+                              }}
+                              placeholder="Ex: Auxiliar / Suplente"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                            />
+                            {employees.length > 0 && (
+                              <select
+                                value={segundoOperadorForrageiraId}
+                                onChange={(e) => {
+                                  const emp = employees.find((em) => em.id === e.target.value);
+                                  setSegundoOperadorForrageiraId(e.target.value);
+                                  setSegundoOperadorForrageiraNome(emp ? emp.name : '');
+                                }}
+                                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                title="Selecionar segundo operador de forrageira"
+                              >
+                                <option value="">-- Nenhum segundo operador --</option>
+                                {employees.map((emp) => (
+                                  <option key={emp.id} value={emp.id}>
+                                    {formatEmployeeOptionLabel(emp)}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Horímetros: Hora do Tambor e Hora do Motor */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">
+                            Hora do Tambor (H)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={horasTambor}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                            onChange={(e) => setHorasTambor(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder="Ex: 8.5"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">
+                            Hora do Motor (H)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={horasMotor}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                            onChange={(e) => setHorasMotor(e.target.value === '' ? '' : Number(e.target.value))}
+                            placeholder="Ex: 10.2"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* SUB-BLOCO COMISSÃO DO OPERADOR DA FORRAGEIRA (COM TOGGLES DE ALTERNÂNCIA) */}
+                      <div className="bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 rounded-lg p-3.5 space-y-3 print-client-hide">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                            <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                            Comissão do Operador da Forrageira (Independente)
+                          </span>
+
+                          {/* Botões de Alternância (Toggles): 3 Opções de Comissão da Forrageira */}
+                          <div className="inline-flex rounded-lg p-0.5 bg-amber-100 dark:bg-slate-800 self-start sm:self-auto text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setModoComissaoForrageira('tambor')}
+                              className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer ${
+                                modoComissaoForrageira === 'tambor'
+                                  ? 'bg-amber-600 text-white shadow-xs font-bold'
+                                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                              }`}
+                            >
+                              Por Hora (tambor)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setModoComissaoForrageira('motor')}
+                              className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer ${
+                                modoComissaoForrageira === 'motor'
+                                  ? 'bg-amber-600 text-white shadow-xs font-bold'
+                                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                              }`}
+                            >
+                              Por Hora (Motor)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setModoComissaoForrageira('area')}
+                              className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer ${
+                                modoComissaoForrageira === 'area'
+                                  ? 'bg-amber-600 text-white shadow-xs font-bold'
+                                  : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                              }`}
+                            >
+                              Por Área (alq)
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                              <span>Base da Comissão ({modoComissaoForrageira === 'tambor' ? 'Hora Tambor' : modoComissaoForrageira === 'motor' ? 'Hora Motor' : 'Área'})</span>
+                              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.2 rounded flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
+                                Travado ({modoComissaoForrageira === 'tambor' ? 'Hora Tambor' : modoComissaoForrageira === 'motor' ? 'Hora Motor' : 'Área'})
+                              </span>
+                            </label>
+                            <input
+                              type="number"
+                              readOnly
+                              value={
+                                modoComissaoForrageira === 'tambor'
+                                  ? (typeof horasTambor === 'number' && horasTambor > 0 ? horasTambor : '')
+                                  : modoComissaoForrageira === 'motor'
+                                  ? (typeof horasMotor === 'number' && horasMotor > 0 ? horasMotor : '')
+                                  : (typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : '')
+                              }
+                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                              placeholder={
+                                modoComissaoForrageira === 'tambor'
+                                  ? 'Puxado de Hora do Tambor (H)'
+                                  : modoComissaoForrageira === 'motor'
+                                  ? 'Puxado de Hora do Motor (H)'
+                                  : 'Puxado da Área Global'
+                              }
+                              className="w-full px-3 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-white font-bold cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
+                              R$ / {modoComissaoForrageira === 'tambor' ? 'Hora Tambor (R$/h)' : modoComissaoForrageira === 'motor' ? 'Hora Motor (R$/h)' : 'Área (R$/alq)'}
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={taxaComissaoForrageira}
+                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                              onChange={(e) => setTaxaComissaoForrageira(e.target.value === '' ? '' : Number(e.target.value))}
+                              placeholder="Ex: 25.00"
+                              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Card Informativo de Comissão Forrageira */}
+                        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-md p-2.5 space-y-1 text-xs text-amber-950 dark:text-amber-200">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold flex items-center gap-1.5">
+                              <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                              Comissão Operador ({operadorForrageiraNome || 'Não selecionado'}):
+                            </span>
+                            <span className="font-mono font-bold">
+                              {formulaForrageiraP1 ? `${formulaForrageiraP1} (informativo)` : `${formatCurrencyBRL(comissaoForrageiraP1)} (informativo)`}
+                            </span>
+                          </div>
+
+                          {segundoOperadorForrageiraNome && comissaoForrageiraP2 > 0 && (
+                            <div className="flex items-center justify-between pt-1 border-t border-amber-200 dark:border-amber-900/60">
+                              <span className="font-semibold">
+                                Comissão 2º Operador ({segundoOperadorForrageiraNome}):
+                              </span>
+                              <span className="font-mono font-bold">
+                                {formulaForrageiraP2 ? `${formulaForrageiraP2} (informativo)` : `${formatCurrencyBRL(comissaoForrageiraP2)} (informativo)`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 4. BLOCO TRATOR & COMPACTAÇÃO (BORDA AZUL) COM INDEPENDÊNCIA TOTAL */}
+            {(activeTab === 'corte' || activeTab === 'colheita' || activeTab === 'trator') && (
+              <TractorBlock
+                machineries={machineries}
+                employees={employees}
+                selectedMachineryIds={selectedMachineryIds}
+                quantidadeAreaGlobal={quantidadeArea}
+                tratorId={tratorId}
+                tratorNome={tratorNome}
+                onSelectTrator={handleSelectTrator}
+                onTratorNomeChange={(name) => {
+                  setTratorNome(name);
+                  setTratorId('');
+                }}
+                operadorTratorId={operadorTratorId}
+                operadorTratorNome={operadorTratorNome}
+                onOperadorChange={(id, name) => {
+                  setOperadorTratorId(id);
+                  setOperadorTratorNome(name);
+                }}
+                segundoOperadorTratorId={segundoOperadorTratorId}
+                segundoOperadorTratorNome={segundoOperadorTratorNome}
+                onSegundoOperadorChange={(id, name) => {
+                  setSegundoOperadorTratorId(id);
+                  setSegundoOperadorTratorNome(name);
+                }}
+                modoCobrancaTrator={modoCobrancaTrator}
+                onModoCobrancaChange={setModoCobrancaTrator}
+                qtdCobrancaTrator={qtdCobrancaTrator}
+                onQtdCobrancaChange={setQtdCobrancaTrator}
+                valorUnitarioTrator={valorUnitarioTrator}
+                onValorUnitarioChange={setValorUnitarioTrator}
+                subtotalTrator={subtotalTrator}
+                modoComissaoOperador={modoComissaoOperador}
+                onModoComissaoChange={setModoComissaoOperador}
+                qtdBaseComissao={qtdBaseComissao}
+                onQtdBaseComissaoChange={setQtdBaseComissao}
+                taxaComissaoOperador={taxaComissaoOperador}
+                onTaxaComissaoChange={setTaxaComissaoOperador}
+                comissaoTratorP1Total={comissaoTratorP1}
+                comissaoTratorP2Total={comissaoTratorP2}
+                comissaoFormulaP1={formulaTratorP1}
+                comissaoFormulaP2={formulaTratorP2}
+              />
+            )}
+
+            {/* 5. SEÇÃO DINÂMICA DE FROTAS / CAMINHÕES (DISTRIBUIÇÃO PROPORCIONAL POR M³) */}
+            {(activeTab === 'corte' || activeTab === 'colheita') && (
+              <TruckFleetSection
+                trucks={trucks}
+                machineries={machineries}
+                employees={employees}
+                selectedMachineryIds={selectedMachineryIds}
+                truckFleetPercentage={truckFleetPercentage}
+                onPercentageChange={setTruckFleetPercentage}
+                valorBaseArea={valorBaseArea}
+                valorDistribuicaoFrotas={valorDistribuicaoFrotas}
+                totalVolumeGeralM3={totalVolumeGeralM3}
+                horasTambor={horasTambor}
+                horasMotor={horasMotor}
+                unidadeArea={unidadeArea}
+                onAddTruck={handleAddTruck}
+                onRemoveTruck={handleRemoveTruck}
+                onUpdateTruck={handleUpdateTruck}
+              />
+            )}
+
+            {/* 6. OBSERVAÇÕES GERAIS */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                Observações do Pedido / Serviço
+              </label>
+              <textarea
+                rows={2}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Detalhes adicionais, condições do terreno, tipo de silagem ou observações financeiras..."
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 resize-none"
+              />
+            </div>
+
+            {/* 7. FECHAMENTO E DRE DA OPERAÇÃO (DETALHAMENTO CIRÚRGICO) */}
+            <DRESummaryBlock
+              valorBaseArea={valorBaseArea}
+              unidadeAreaLabel={unidadeArea === 'hectares' ? 'ha' : unidadeArea === 'alqueires' ? 'alq' : 'h'}
+              quantidadeArea={quantidadeArea}
+              volumeTotalFrotaM3={totalVolumeGeralM3}
+              subtotalTrator={subtotalTrator}
+              qtdCobrancaTrator={qtdCobrancaTrator}
+              modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'h' : modoCobrancaTrator === 'area_alq' ? 'alq' : 'ha'}
+              subtotalForrageira={subtotalForrageira}
+              totalAdicionalKm={totalAdicionalKm}
+              totalPedido={totalPedido}
+              operadorForrageiraNome={operadorForrageiraNome}
+              comissaoForrageiraP1={comissaoForrageiraP1}
+              segundoOperadorForrageiraNome={segundoOperadorForrageiraNome}
+              comissaoForrageiraP2={comissaoForrageiraP2}
+              operadorTratorNome={operadorTratorNome}
+              comissaoTratorP1={comissaoTratorP1}
+              segundoOperadorTratorNome={segundoOperadorTratorNome}
+              comissaoTratorP2={comissaoTratorP2}
+              trucksExpenseDetails={trucksExpenseDetails}
+              totalGeralDespesas={totalGeralDespesas}
+              lucroEstimado={lucroEstimado}
+              margemLucroPercent={margemLucroPercent}
+            />
+
+            {/* BLOCO DE ASSINATURAS (EXCLUSIVO PARA IMPRESSÃO) */}
+            <div className="hidden print:grid print-signatures-area grid-cols-2 gap-8 pt-6 mt-4 border-t border-gray-300 text-center text-xs text-gray-700">
+              <div className="space-y-1">
+                <div className="border-b border-gray-400 w-4/5 mx-auto mb-2 signature-line"></div>
+                <p className="font-bold text-gray-900">
+                  {clientName || 'Produtor Rural (Cliente)'}
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  Declaro conferência dos serviços e área discriminada
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="border-b border-gray-400 w-4/5 mx-auto mb-2 signature-line"></div>
+                <p className="font-bold text-gray-900">
+                  Silagem Fácil - Prestador de Serviços
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  Conferência operacional, horímetros e frotas
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          {/* RODAPÉ DO MODAL (AÇÕES COMPACTAS) */}
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 border-t border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/90 shrink-0 print:hidden">
+            {/* BOTÃO 1: Imprimir Via Cliente */}
+            <button
+              type="button"
+              onClick={() => {
+                setupPrintStyles('client');
+                window.print();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg shadow-2xs transition cursor-pointer hover:border-slate-400 dark:hover:border-slate-600"
+              title="Imprimir Via do Cliente (Cupom 80mm - oculta despesas de comissões e lucro)"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+              <span>Imprimir Via Cliente</span>
+            </button>
+
+            {/* BOTÃO 2: Imprimir Via Completa */}
+            <button
+              type="button"
+              onClick={() => {
+                setupPrintStyles('full');
+                window.print();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 hover:bg-blue-100/70 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold rounded-lg shadow-2xs transition cursor-pointer hover:border-blue-300 dark:hover:border-blue-800"
+              title="Imprimir Via Completa / Gerencial A4 (com DRE, comissões discriminadas e lucro)"
+            >
+              <PrinterCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Imprimir Via Completa</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-1.5 sm:py-2 bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition cursor-pointer"
+            >
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>Salvar Pedido</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Modal Sobreposta de Cadastro Rápido de Cliente */}
+      <QuickClientModal
+        isOpen={isQuickClientOpen}
+        onClose={() => setIsQuickClientOpen(false)}
+        onSave={handleQuickClientCreated}
+      />
+    </>
+  );
+};

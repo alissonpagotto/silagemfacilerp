@@ -86,6 +86,8 @@ export interface Client {
   state: string;
   phone: string;
   email?: string;
+  areaHectares?: number;
+  accessRoute?: string;
   cattleType: 'leite' | 'corte' | 'misto' | 'confinamento' | 'outro';
   headCount?: number;
   monthlyDemandTons?: number;
@@ -285,8 +287,10 @@ export interface ServiceOrder {
   id: string;
   orderNumber?: string;
   clientName: string;
+  clientId?: string;
   farmName?: string;
   serviceType: 'Ensilagem' | 'Colheita' | 'Plantio' | 'Pulverização' | 'Preparo de Solo' | 'Compactação de Silo' | 'Transporte / Frete' | string;
+  serviceTab?: string;
   areaHectares?: number;
   tonsEstimated?: number;
   ratePerUnit: number;
@@ -303,6 +307,78 @@ export interface ServiceOrder {
   fuelCostAllocated?: number;
   driverCostAllocated?: number;
   notes?: string;
+
+  // Unidade de Área e Valores Base
+  areaUnit?: 'hectares' | 'alqueires' | 'hora';
+  areaQuantity?: number;
+  ratePerAreaUnit?: number;
+  baseServiceAmount?: number;
+  subtotalArea?: number;
+
+  // Trator / Máquina
+  tractorId?: string;
+  tractorName?: string;
+  tractorOperatorId?: string;
+  tractorOperatorName?: string;
+  tractorSecondOperatorId?: string;
+  tractorSecondOperatorName?: string;
+  tractorCalculationMode?: 'horas' | 'area';
+  tractorBillingMode?: 'horas' | 'area';
+  tractorHours?: number;
+  tractorRatePerHour?: number;
+  tractorTotalAmount?: number;
+  tractorOperatorCommissionMode?: 'horas' | 'area';
+  tractorOperatorHours?: number;
+  tractorOperatorCommissionRate?: number;
+  tractorOperatorCommission?: number;
+
+  // Forrageira / Ensiladeira
+  forageHarvesterId?: string;
+  forageHarvesterName?: string;
+  forageOperatorId?: string;
+  forageOperatorName?: string;
+  forageSecondOperatorId?: string;
+  forageSecondOperatorName?: string;
+  forageDrumHours?: number; // Hora do Tambor (H)
+  forageEngineHours?: number; // Hora do Motor (H)
+  forageCommissionMode?: 'tambor' | 'motor' | 'area'; // Modalidade de comissão da forrageira
+  forageRatePerHour?: number;
+  forageTotalAmount?: number;
+  forageOperatorCommission?: number;
+
+  // Frotas / Caminhões
+  trucks?: ServiceTruckItem[];
+  truckFleetPercentage?: number; // % de distribuição para frotas/caminhões (ex: 10%)
+  truckFleetTotalDistributed?: number;
+  trucksTotalKmAdditional?: number;
+
+  // Fechamento e DRE da Operação
+  totalExpenses?: number; // Total Geral Despesas (comissões e custos adicionais)
+  estimatedProfit?: number; // Resultado Final (Lucro Estimado)
+}
+
+export interface ServiceTruckItem {
+  id: string;
+  machineryId?: string;
+  truckName?: string;
+  plate?: string;
+  primaryDriverId?: string;
+  primaryDriverName?: string;
+  secondaryDriverId?: string;
+  secondaryDriverName?: string;
+  capacityM3?: number;
+  tripLoads?: number; // Nº de Cargas
+  totalM3?: number; // Calculado (Capacidade x Cargas)
+  driverHours?: number; // Horas motorista
+  driverHourSource?: 'tambor' | 'motor' | 'manual'; // 'Usar Tambor' / 'Usar Motor'
+  additionalKm?: number; // KM Adicional (quando Alqueires)
+  ratePerKm?: number; // R$ / KM
+  totalAdditionalKm?: number; // Total Adicional KM (calculado)
+  driverCommissionMode?: 'horas' | 'cargas'; // Modo de comissão do motorista
+  driverCommissionRate?: number; // R$/hora ou R$/carga
+  driverCommission?: number; // Comissão informativa do motorista
+  distributedValue?: number; // Valor proporcional m³ da distribuição da frota
+  ratioPercent?: number; // % de participação no volume total da frota
 }
 
 export interface CropSeason {

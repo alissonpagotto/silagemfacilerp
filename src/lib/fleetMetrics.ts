@@ -89,12 +89,29 @@ export function calculateVehicleConsumptionMetrics(
     ? parseFloat((hourLitersSum / totalHourDelta).toFixed(2)) 
     : null;
 
+  const avgFuelPricePerLiter = totalLiters > 0 
+    ? parseFloat((totalFuelCost / totalLiters).toFixed(2)) 
+    : null;
+
+  const avgCostPerKm = totalKmDelta > 0 && totalFuelCost > 0 
+    ? parseFloat(((kmLitersSum > 0 && totalLiters > 0 ? (totalFuelCost * (kmLitersSum / totalLiters)) : totalFuelCost) / totalKmDelta).toFixed(2))
+    : (avgKmPerLiter && avgFuelPricePerLiter ? parseFloat((avgFuelPricePerLiter / avgKmPerLiter).toFixed(2)) : null);
+
+  const avgCostPerHour = totalHourDelta > 0 && totalFuelCost > 0 
+    ? parseFloat(((hourLitersSum > 0 && totalLiters > 0 ? (totalFuelCost * (hourLitersSum / totalLiters)) : totalFuelCost) / totalHourDelta).toFixed(2))
+    : (avgLitersPerHour && avgFuelPricePerLiter ? parseFloat((avgLitersPerHour * avgFuelPricePerLiter).toFixed(2)) : null);
+
   return {
     totalLiters,
     totalFuelCost,
     fuelLogsCount: vehicleLogs.length,
     avgKmPerLiter,
     avgLitersPerHour,
+    avgCostPerKm,
+    avgCostPerHour,
+    totalKmDriven: totalKmDelta > 0 ? parseFloat(totalKmDelta.toFixed(1)) : 0,
+    totalHoursWorked: totalHourDelta > 0 ? parseFloat(totalHourDelta.toFixed(1)) : 0,
+    avgFuelPricePerLiter,
     lastHourMeter,
     lastKm,
   };

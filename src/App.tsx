@@ -444,7 +444,9 @@ export default function App() {
               services={services}
               machineries={machineries}
               employees={employees}
+              clients={clients}
               onSaveServices={setServices}
+              onSaveClients={setClients}
             />
           )}
 

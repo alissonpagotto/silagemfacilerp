@@ -662,6 +662,9 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         fuelLogs={fuelLogs}
         maintenanceLogs={maintenanceLogs}
         machineries={machineries}
+        expenses={expenses}
+        services={services}
+        orders={orders}
         onAddExpense={onAddExpense}
       />
 

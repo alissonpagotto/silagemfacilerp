@@ -23,25 +23,126 @@
   display: none;
 }
 
+@page {
+  size: A4 portrait;
+  margin: 5mm 8mm;
+}
+
 @media print {
-  body * {
-    visibility: hidden;
+  .no-print,
+  .print\:hidden {
+    display: none !important;
   }
-  #printable-employee-sheet, #printable-employee-sheet * {
-    visibility: visible;
+
+  /* Impressão isolada da Ordem de Serviço (Novo Corte de Silagem e demais abas) */
+  body.printing-service-order {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
-  #printable-employee-sheet {
+
+  /* Oculta layout e elementos externos quando imprimindo a ordem de serviço */
+  body.printing-service-order #root > *:not(#printable-modal-overlay),
+  body.printing-service-order header,
+  body.printing-service-order nav,
+  body.printing-service-order aside,
+  body.printing-service-order .app-main-layout {
+    display: none !important;
+  }
+
+  body.printing-service-order #printable-modal-overlay {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    inset: auto !important;
+  }
+
+  body.printing-service-order #printable-service-order-modal {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.printing-service-order #printable-service-order-modal .modal-body-scroll {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    gap: 4px !important;
+  }
+
+  body.printing-service-order input,
+  body.printing-service-order select,
+  body.printing-service-order textarea {
+    border: 1px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    font-size: 9.5px !important;
+    padding: 2px 4px !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* VIA CLIENTE: Oculta por completo o Bloco 2 (Custos e Proventos) e Bloco 3 (Resultado Final / Lucro Estimado) */
+  body.print-client-mode .print-hide-on-client,
+  .print-mode-client .print-hide-on-client,
+  [data-print-mode="client"] .print-hide-on-client {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Suporte à Ficha de Colaborador (quando não for Ordem de Serviço) */
+  body:not(.printing-service-order) #printable-employee-sheet {
     display: block !important;
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20mm;
+    padding: 15mm;
     font-family: Arial, sans-serif;
     color: #000;
   }
-  .no-print {
-    display: none !important;
+
+  /* Cores exatas para impressão de tags e destaques */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+}
+
+/* Ocultar setas nativas de rolagem/incremento (spin buttons) de TODOS os inputs numéricos */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

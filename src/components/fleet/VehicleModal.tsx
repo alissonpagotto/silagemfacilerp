@@ -27,7 +27,7 @@ import {
   Calendar,
   Weight
 } from 'lucide-react';
-import { Machinery, Employee, FuelLog, MaintenanceLog } from '../../types';
+import { Machinery, Employee, FuelLog, MaintenanceLog, Expense, ServiceOrder, SilageOrder } from '../../types';
 import { 
   formatCurrencyBRL, 
   formatDateBR, 
@@ -39,6 +39,7 @@ import {
 import { calculateVehicleConsumptionMetrics } from '../../lib/fleetMetrics';
 import { VehicleCategoriesModal } from './VehicleCategoriesModal';
 import { VehicleOwnershipModal } from './VehicleOwnershipModal';
+import { VehicleHistoryDreTab } from './VehicleHistoryDreTab';
 
 interface VehicleModalProps {
   isOpen: boolean;
@@ -49,6 +50,9 @@ interface VehicleModalProps {
   fuelLogs?: FuelLog[];
   maintenanceLogs?: MaintenanceLog[];
   machineries?: Machinery[];
+  expenses?: Expense[];
+  services?: ServiceOrder[];
+  orders?: SilageOrder[];
   onAddExpense?: (expense: any) => void;
 }
 
@@ -61,6 +65,9 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
   fuelLogs = [],
   maintenanceLogs = [],
   machineries = [],
+  expenses,
+  services,
+  orders,
   onAddExpense,
 }) => {
   if (!isOpen) return null;
@@ -599,7 +606,7 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
               }`}
             >
               <Clock className="w-4 h-4" />
-              <span>Histórico & Abastecimentos</span>
+              <span>Histórico, Consumo & DRE</span>
             </button>
           </div>
         </div>
@@ -1468,149 +1475,19 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
           </form>
         )}
 
-        {/* TAB 2: HISTÓRICO DO VEÍCULO */}
+        {/* TAB 2: HISTÓRICO, CONSUMO & DRE */}
         {activeTab === 'historico' && (
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
-            {/* KPI Summary Header */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700">
-                <span className="text-[11px] font-bold text-stone-500 uppercase">Abastecimentos</span>
-                <div className="text-xl font-black text-amber-600 mt-0.5">
-                  {vehicleFuelLogs.length} <span className="text-xs font-semibold">registros</span>
-                </div>
-                <p className="text-[11px] text-stone-500">
-                  {consumptionMetrics.totalLiters.toLocaleString('pt-BR')} L abastecidos ({formatCurrencyBRL(consumptionMetrics.totalFuelCost)})
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700">
-                <span className="text-[11px] font-bold text-stone-500 uppercase">Manutenções</span>
-                <div className="text-xl font-black text-sky-600 mt-0.5">
-                  {vehicleMaintenanceLogs.length} <span className="text-xs font-semibold">ordens</span>
-                </div>
-                <p className="text-[11px] text-stone-500">
-                  Total de {formatCurrencyBRL(vehicleMaintenanceLogs.reduce((a, c) => a + c.totalCost, 0))}
-                </p>
-              </div>
-
-              <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700">
-                <span className="text-[11px] font-bold text-stone-500 uppercase">Leituras Registradas</span>
-                <div className="text-sm font-black text-stone-800 dark:text-stone-200 mt-1">
-                  ⏱ Horímetro: {editingVehicle?.hourMeter ? `${editingVehicle.hourMeter.toLocaleString('pt-BR')} h` : '--'}
-                </div>
-                <div className="text-sm font-black text-stone-800 dark:text-stone-200">
-                  🚗 Odômetro: {editingVehicle?.currentKm ? `${editingVehicle.currentKm.toLocaleString('pt-BR')} km` : '--'}
-                </div>
-              </div>
-            </div>
-
-            {/* List of Fuel Logs */}
-            <div>
-              <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
-                <Fuel className="w-4 h-4 text-amber-600" />
-                <span>Últimos Abastecimentos deste Veículo</span>
-              </h4>
-              {vehicleFuelLogs.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-stone-200 dark:border-stone-700 rounded-xl text-stone-400 text-xs">
-                  Nenhum abastecimento registrado ainda para este veículo.
-                </div>
-              ) : (
-                <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-bold border-b border-stone-200 dark:border-stone-700">
-                      <tr>
-                        <th className="p-2.5">Data</th>
-                        <th className="p-2.5">Combustível</th>
-                        <th className="p-2.5">Litros</th>
-                        <th className="p-2.5">Valor Total</th>
-                        <th className="p-2.5">Leitura</th>
-                        <th className="p-2.5">Média</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                      {vehicleFuelLogs.slice(0, 8).map((log) => (
-                        <tr key={log.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50">
-                          <td className="p-2.5 font-medium">{formatDateBR(log.date)}</td>
-                          <td className="p-2.5">{log.fuelType}</td>
-                          <td className="p-2.5 font-bold text-amber-600">{log.liters.toLocaleString('pt-BR')} L</td>
-                          <td className="p-2.5 font-bold">{formatCurrencyBRL(log.totalAmount)}</td>
-                          <td className="p-2.5 font-mono">
-                            {log.currentHourMeter ? `${log.currentHourMeter} h` : ''}
-                            {log.currentKm ? `${log.currentKm} km` : ''}
-                            {!log.currentHourMeter && !log.currentKm ? (log.currentHourMeterOrKm || '--') : ''}
-                          </td>
-                          <td className="p-2.5 text-emerald-600 font-bold">
-                            {log.averageKmPerLiter ? `${log.averageKmPerLiter} km/L` : ''}
-                            {log.averageLitersPerHour ? `${log.averageLitersPerHour} L/h` : ''}
-                            {!log.averageKmPerLiter && !log.averageLitersPerHour ? '--' : ''}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* List of Maintenance Logs */}
-            <div>
-              <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
-                <Wrench className="w-4 h-4 text-sky-600" />
-                <span>Últimas Manutenções Realizadas</span>
-              </h4>
-              {vehicleMaintenanceLogs.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-stone-200 dark:border-stone-700 rounded-xl text-stone-400 text-xs">
-                  Nenhuma ordem de manutenção registrada ainda para este veículo.
-                </div>
-              ) : (
-                <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-bold border-b border-stone-200 dark:border-stone-700">
-                      <tr>
-                        <th className="p-2.5">Data</th>
-                        <th className="p-2.5">Categoria / Serviço</th>
-                        <th className="p-2.5">Tipo</th>
-                        <th className="p-2.5">Horímetro / KM</th>
-                        <th className="p-2.5">Custo Total</th>
-                        <th className="p-2.5">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                      {vehicleMaintenanceLogs.slice(0, 8).map((log) => (
-                        <tr key={log.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50">
-                          <td className="p-2.5 font-medium">{formatDateBR(log.date)}</td>
-                          <td className="p-2.5 font-semibold text-stone-800 dark:text-stone-200">
-                            {log.serviceCategory || log.description}
-                          </td>
-                          <td className="p-2.5 capitalize">{log.type}</td>
-                          <td className="p-2.5 font-mono">{log.currentHourMeterOrKm || '--'}</td>
-                          <td className="p-2.5 font-bold text-rose-600">{formatCurrencyBRL(log.totalCost)}</td>
-                          <td className="p-2.5">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              log.status === 'concluida' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              {log.status === 'concluida' ? 'Concluída' : 'Em andamento'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Close Button */}
-            <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2 rounded-xl bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold hover:bg-stone-300 transition cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
+          <VehicleHistoryDreTab
+            vehicle={editingVehicle}
+            employees={employees}
+            fuelLogs={fuelLogs}
+            maintenanceLogs={maintenanceLogs}
+            expenses={expenses}
+            services={services}
+            orders={orders}
+            onAddExpense={onAddExpense}
+            onClose={onClose}
+          />
         )}
 
       </div>
