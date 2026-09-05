@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, 
   Printer, 
@@ -14,7 +14,8 @@ import {
   User, 
   Calendar, 
   X,
-  Lock
+  Lock,
+  Users
 } from 'lucide-react';
 import { formatCurrencyBRL } from '../../lib/storage';
 import { ServiceTruckItem } from '../../types';
@@ -131,6 +132,40 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
   const displayOrderNumber = orderNumber || `#${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
 
+  // =========================================================================
+  // CÁLCULOS MATEMÁTICOS DE TOTAIS E CUSTOS DE TRANSPORTE
+  // =========================================================================
+  // 1. Totais acumulados da frota de caminhões (para rodapé da tabela e cabeçalhos)
+  const totalCargasViagens = useMemo(() => {
+    return trucks.reduce((sum, t) => sum + (Number(t.tripLoads) || 0), 0);
+  }, [trucks]);
+
+  const totalVolumeTransportadoM3 = useMemo(() => {
+    return trucks.reduce((sum, t) => {
+      const vol = typeof t.totalM3 === 'number' && t.totalM3 > 0 
+        ? t.totalM3 
+        : (Number(t.capacityM3) || 0) * (Number(t.tripLoads) || 0);
+      return sum + vol;
+    }, 0);
+  }, [trucks]);
+
+  const totalKmAdicionalSoma = useMemo(() => {
+    return trucks.reduce((sum, t) => sum + (Number(t.additionalKm) || 0), 0);
+  }, [trucks]);
+
+  const totalKmAdicionalValor = useMemo(() => {
+    return trucks.reduce((sum, t) => sum + (Number(t.totalAdditionalKm) || 0), 0);
+  }, [trucks]);
+
+  // 2. Subtotais para discriminação detalhada no DRE Gerencial
+  const subtotalTransporteFrotas = useMemo(() => {
+    return trucksExpenseDetails.reduce((sum, t) => sum + (t.rateioCost + t.additionalKmCost), 0);
+  }, [trucksExpenseDetails]);
+
+  const subtotalComissoesMotoristas = useMemo(() => {
+    return trucksExpenseDetails.reduce((sum, t) => sum + (t.driverCommissionCost || 0), 0);
+  }, [trucksExpenseDetails]);
+
   // Disparo da impressão isolada em nova janela (Blob URL / window.open) para contornar sandboxing do iframe
   const handlePrint = () => {
     const printableElement = document.getElementById('printable-document-content');
@@ -145,7 +180,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
     const styles = `
       @page {
         size: ${isThermal ? '80mm auto' : 'A4 portrait'};
-        margin: ${isThermal ? '0' : '8mm'};
+        margin: ${isThermal ? '0' : '5mm 6mm'};
       }
       * {
         box-sizing: border-box;
@@ -154,19 +189,19 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
       }
       body {
         margin: 0;
-        padding: ${isThermal ? '3mm 2mm' : '0'};
+        padding: ${isThermal ? '2mm 1mm' : '0'};
         background-color: #ffffff;
         color: #0f172a;
         font-family: ${isThermal ? 'monospace, -apple-system, sans-serif' : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
-        font-size: ${isThermal ? '11px' : '12px'};
-        line-height: ${isThermal ? '1.25' : '1.4'};
+        font-size: ${isThermal ? '10px' : '10.5px'};
+        line-height: ${isThermal ? '1.2' : '1.25'};
         width: ${isThermal ? '80mm' : '100%'};
         max-width: ${isThermal ? '80mm' : '100%'};
       }
       @media screen {
         body {
           background-color: #0f172a;
-          padding: 20px 10px 40px;
+          padding: 16px 8px 32px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -176,16 +211,21 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
           width: ${isThermal ? '80mm' : '210mm'};
           min-height: ${isThermal ? 'auto' : '297mm'};
-          padding: ${isThermal ? '4mm' : '10mm 12mm'};
+          padding: ${isThermal ? '3mm' : '5mm 7mm'};
         }
       }
       @media print {
+        html, body {
+          height: 100% !important;
+          overflow: hidden !important;
+        }
         .no-print {
           display: none !important;
         }
         body {
           background-color: #ffffff !important;
-          padding: ${isThermal ? '2mm' : '0'} !important;
+          padding: 0 !important;
+          margin: 0 !important;
         }
         .page-container {
           box-shadow: none !important;
@@ -193,7 +233,33 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           width: 100% !important;
           max-width: 100% !important;
           padding: 0 !important;
+          margin: 0 !important;
+          page-break-after: avoid !important;
+          break-after: avoid !important;
         }
+        .a4-sheet {
+          box-shadow: none !important;
+          border: none !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          height: 100% !important;
+          max-height: 287mm !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+        }
+      }
+      .break-avoid {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
       }
       .toolbar {
         position: sticky;
@@ -203,14 +269,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
         z-index: 9999;
         background: #1e293b;
         color: #f8fafc;
-        padding: 10px 16px;
+        padding: 8px 14px;
         border-radius: 8px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         max-width: 900px;
         width: 100%;
@@ -219,10 +285,10 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 14px;
+        padding: 6px 12px;
         border-radius: 6px;
         font-weight: 700;
-        font-size: 12px;
+        font-size: 11px;
         cursor: pointer;
         border: none;
         transition: background-color 0.15s;
@@ -246,7 +312,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
         border-collapse: collapse;
       }
       th, td {
-        padding: ${isThermal ? '2px 3px' : '4px 6px'};
+        padding: ${isThermal ? '1.5px 2px' : '3px 5px'};
         text-align: left;
       }
       .border-t-dashed {
@@ -603,6 +669,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                         </div>
                       ))}
                     </div>
+
+                    {/* Somatórios da frota na Via Completa */}
+                    {contentType === 'full' && (
+                      <div className="flex justify-between font-bold border-t border-dotted border-gray-400 pt-0.5 mt-1 text-[9.5px]">
+                        <span>Total Cargas / Volume:</span>
+                        <span className="font-mono">{totalCargasViagens} vg • {totalVolumeTransportadoM3.toFixed(1)} m³</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -642,13 +716,34 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
               {contentType === 'full' && (
                 <div className="py-2 border-b-2 border-dashed border-gray-800 space-y-1.5 text-[10px] bg-gray-50 p-1.5 rounded">
                   <p className="font-black uppercase tracking-wide text-center bg-orange-100 text-orange-900 py-0.5 border border-orange-300">
-                    DRE & COMISSÕES OPERACIONAIS
+                    DRE & CUSTOS DA OPERAÇÃO
                   </p>
+
+                  {/* Custos de Transporte das Frotas (Rateio + Adicional KM) */}
+                  {trucksExpenseDetails.length > 0 && (
+                    <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
+                      <div className="flex justify-between font-bold text-gray-700">
+                        <span>Custos Transporte Frotas:</span>
+                        <span>R$ {formatCurrencyBRL(subtotalTransporteFrotas)}</span>
+                      </div>
+                      {trucksExpenseDetails.map((truckItem) => {
+                        const transpVal = truckItem.rateioCost + truckItem.additionalKmCost;
+                        return (
+                          <div key={`80mm-transp-${truckItem.truckId}`} className="flex justify-between pl-1 text-[9px]">
+                            <span className="truncate max-w-[135px]">
+                              • Transp. {truckItem.plate} ({truckItem.driverName || 'Motorista'}) [{truckItem.loads}vg, {truckItem.distributionPercent.toFixed(0)}%]
+                            </span>
+                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(transpVal)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Comissões Nominais Forrageira */}
                   {(comissaoForrageiraP1 > 0 || comissaoForrageiraP2 > 0) && (
                     <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
-                      <span className="font-bold text-gray-700 block">Comissão Forrageira:</span>
+                      <span className="font-bold text-gray-700 block">Comissão Ensiladeira:</span>
                       {comissaoForrageiraP1 > 0 && (
                         <div className="flex justify-between pl-1">
                           <span>{operadorForrageiraNome || 'Operador Principal'}:</span>
@@ -686,7 +781,10 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   {/* Comissões Motoristas */}
                   {trucksExpenseDetails.filter(t => (t.driverCommissionCost || 0) > 0).length > 0 && (
                     <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
-                      <span className="font-bold text-gray-700 block">Comissão Motoristas:</span>
+                      <div className="flex justify-between font-bold text-gray-700">
+                        <span>Comissão Motoristas:</span>
+                        <span>R$ {formatCurrencyBRL(subtotalComissoesMotoristas)}</span>
+                      </div>
                       {trucksExpenseDetails
                         .filter(t => (t.driverCommissionCost || 0) > 0)
                         .map(truckItem => (
@@ -698,9 +796,9 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     </div>
                   )}
 
-                  {/* Total de Custos */}
-                  <div className="flex justify-between font-bold pt-0.5">
-                    <span>Total Despesas / Comissões:</span>
+                  {/* Total Geral de Despesas */}
+                  <div className="flex justify-between font-bold pt-0.5 text-orange-950">
+                    <span>Total Geral Despesas:</span>
                     <span>R$ {formatCurrencyBRL(totalGeralDespesas)}</span>
                   </div>
 
@@ -752,18 +850,18 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           {/* ========================================================================= */}
           {paperFormat === 'a4' && (
             <div 
-              className="w-[210mm] max-w-[210mm] min-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-8 sm:p-10 font-sans text-xs shadow-2xl border border-gray-300 rounded-none my-2 selection:bg-blue-100 flex flex-col justify-between"
+              className="a4-sheet w-[210mm] max-w-[210mm] min-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-5 sm:p-6 font-sans text-[11px] leading-tight shadow-2xl border border-gray-300 rounded-none my-2 selection:bg-blue-100 flex flex-col justify-between"
               style={{ boxSizing: 'border-box' }}
             >
-              <div>
+              <div className="space-y-2">
                 {/* CABEÇALHO EXECUTIVO A4 */}
-                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4 mb-4">
+                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-2 break-avoid">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl font-black tracking-tight text-slate-900 uppercase">
+                      <span className="text-lg font-black tracking-tight text-slate-900 uppercase">
                         SILAGEM FÁCIL
                       </span>
-                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${
+                      <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded border ${
                         contentType === 'client'
                           ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
                           : 'bg-indigo-100 text-indigo-900 border-indigo-300'
@@ -771,7 +869,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                         {contentType === 'client' ? 'Comprovante do Cliente (Via Produtor)' : 'Via Completa / DRE Gerencial'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 font-medium">
+                    <p className="text-[10px] text-slate-600 font-medium">
                       Gestão Agrícola Integrada, Colheita e Fechamento Operacional
                     </p>
                   </div>
@@ -780,130 +878,160 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     <p className="text-xs font-bold text-slate-900">
                       ORDEM DE SERVIÇO Nº {displayOrderNumber}
                     </p>
-                    <p className="text-[11px] text-slate-600">
+                    <p className="text-[10px] text-slate-600">
                       Data da Emissão: <strong className="text-slate-900">{serviceDate || 'Hoje'}</strong>
                     </p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[9.5px] text-slate-500">
                       Modalidade: <strong className="text-slate-800 uppercase">{serviceTypeTitle}</strong>
                     </p>
                   </div>
                 </div>
 
                 {/* SEÇÃO 1: DADOS CADASTRAIS DO CLIENTE E LOCAL */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] break-avoid">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Produtor / Cliente</span>
-                    <span className="font-bold text-slate-900">{clientName || 'Não Informado'}</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Produtor / Cliente</span>
+                    <span className="font-bold text-slate-900 truncate block">{clientName || 'Não Informado'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Fazenda / Propriedade</span>
-                    <span className="font-bold text-slate-900">{farmName || 'Não Informada'}</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Fazenda / Propriedade</span>
+                    <span className="font-bold text-slate-900 truncate block">{farmName || 'Não Informada'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Localidade</span>
-                    <span className="text-slate-800">{location || 'Não Informada'}</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Localidade</span>
+                    <span className="text-slate-800 truncate block">{location || 'Não Informada'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Telefone de Contato</span>
-                    <span className="text-slate-800">{clientPhone || 'Não Informado'}</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Telefone de Contato</span>
+                    <span className="text-slate-800 truncate block">{clientPhone || 'Não Informado'}</span>
                   </div>
                 </div>
 
                 {/* SEÇÃO 2: ESPECIFICAÇÕES OPERACIONAIS (FORRAGEIRA, TRATOR, FROTAS) */}
-                <div className="border border-slate-200 rounded-lg p-3 mb-4 space-y-3">
-                  <h3 className="text-xs font-bold uppercase text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
+                <div className="border border-slate-200 rounded-lg p-2 mb-2 space-y-1.5 break-avoid">
+                  <h3 className="text-[11px] font-bold uppercase text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-1">
                     <Scissors className="w-3.5 h-3.5 text-emerald-700" />
-                    Especificações Operacionais da Operação
+                    Especificações Operacionais da Colheita
                   </h3>
 
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Área da Colheita</span>
-                      <span className="font-extrabold text-slate-900 text-sm">{quantidadeArea || 0} {unidadeAreaLabel}</span>
+                  <div className="grid grid-cols-3 gap-2 text-[10.5px]">
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Área da Colheita</span>
+                      <span className="font-black text-slate-900 text-xs">{quantidadeArea || 0} {unidadeAreaLabel}</span>
                     </div>
 
-                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Ensiladeira / Forrageira</span>
-                      <span className="font-bold text-slate-800">{forageHarvesterName || 'Não vinculada'}</span>
-                      <span className="text-[10px] text-slate-500 block">
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Ensiladeira / Forrageira</span>
+                      <span className="font-bold text-slate-800 truncate block">{forageHarvesterName || 'Não vinculada'}</span>
+                      <span className="text-[9px] text-slate-500 block">
                         Tambor: {horasTambor || 0}h | Motor: {horasMotor || 0}h
                       </span>
                     </div>
 
-                    <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase block">Trator Compactador</span>
-                      <span className="font-bold text-slate-800">{tractorName || 'Não vinculado'}</span>
-                      <span className="text-[10px] text-slate-500 block">
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Trator Compactador</span>
+                      <span className="font-bold text-slate-800 truncate block">{tractorName || 'Não vinculado'}</span>
+                      <span className="text-[9px] text-slate-500 block">
                         Horímetro: {tractorHours || 0}h ({modoCobrancaTratorLabel})
                       </span>
                     </div>
                   </div>
 
-                  {/* TABELA DE CAMINHÕES (SEM COMISSÕES NA VIA CLIENTE) */}
+                  {/* TABELA DE CAMINHÕES COM LINHA DE TOTAIS (VIA COMPLETA) */}
                   {trucks.length > 0 && (
-                    <div className="pt-1">
-                      <span className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Frota de Caminhões ({trucks.length} veículos):
-                      </span>
-                      <table className="w-full text-left border-collapse text-[11px]">
+                    <div className="pt-0.5">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[10px] font-bold text-slate-700 uppercase">
+                          Frota de Caminhões ({trucks.length} veículos):
+                        </span>
+                        {contentType === 'full' && (
+                          <span className="text-[9.5px] font-mono text-slate-500">
+                            Total acumulado: {totalCargasViagens} viagens • {totalVolumeTransportadoM3.toFixed(1)} m³
+                          </span>
+                        )}
+                      </div>
+                      <table className="w-full text-left border-collapse text-[10px]">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
-                            <th className="py-1 px-2">Veículo / Placa</th>
-                            <th className="py-1 px-2">Motorista</th>
-                            <th className="py-1 px-2 text-center">Capacidade</th>
-                            <th className="py-1 px-2 text-center">Viagens</th>
-                            <th className="py-1 px-2 text-center">Total m³</th>
-                            <th className="py-1 px-2 text-right">KM Adicional</th>
+                          <tr className="bg-slate-100 text-slate-700 border-b border-slate-300 font-bold">
+                            <th className="py-0.5 px-2">Veículo / Placa</th>
+                            <th className="py-0.5 px-2">Motorista</th>
+                            <th className="py-0.5 px-2 text-center">Capacidade</th>
+                            <th className="py-0.5 px-2 text-center">Viagens</th>
+                            <th className="py-0.5 px-2 text-center">Total m³</th>
+                            <th className="py-0.5 px-2 text-right">KM Adicional</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {trucks.map((t, i) => (
                             <tr key={t.id} className="hover:bg-slate-50">
-                              <td className="py-1 px-2 font-semibold">{t.truckName || t.plate || `Caminhão ${i + 1}`}</td>
-                              <td className="py-1 px-2">{t.primaryDriverName || 'Não Informado'}</td>
-                              <td className="py-1 px-2 text-center">{t.capacityM3 || 0} m³</td>
-                              <td className="py-1 px-2 text-center font-bold">{t.tripLoads || 0}</td>
-                              <td className="py-1 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1)} m³</td>
-                              <td className="py-1 px-2 text-right">
+                              <td className="py-0.5 px-2 font-semibold text-slate-900">{t.truckName || t.plate || `Caminhão ${i + 1}`}</td>
+                              <td className="py-0.5 px-2 text-slate-700">{t.primaryDriverName || 'Não Informado'}</td>
+                              <td className="py-0.5 px-2 text-center">{t.capacityM3 || 0} m³</td>
+                              <td className="py-0.5 px-2 text-center font-bold text-slate-900">{t.tripLoads || 0}</td>
+                              <td className="py-0.5 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1)} m³</td>
+                              <td className="py-0.5 px-2 text-right">
                                 {(t.additionalKm || 0) > 0 ? `${t.additionalKm} km (R$ ${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'}
                               </td>
                             </tr>
                           ))}
                         </tbody>
+                        {/* LINHA DE TOTAIS NO RODAPÉ (TFOOT) - REQUISITO DA VIA COMPLETA */}
+                        {contentType === 'full' && (
+                          <tfoot>
+                            <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
+                              <td colSpan={3} className="py-1 px-2 uppercase text-[9.5px] tracking-wide text-slate-700">
+                                Totais Acumulados da Frota:
+                              </td>
+                              <td className="py-1 px-2 text-center font-black text-slate-950">
+                                {totalCargasViagens}
+                              </td>
+                              <td className="py-1 px-2 text-center font-black text-slate-950">
+                                {totalVolumeTransportadoM3.toFixed(1)} m³
+                              </td>
+                              <td className="py-1 px-2 text-right font-black text-slate-950">
+                                {totalKmAdicionalSoma > 0 
+                                  ? `${totalKmAdicionalSoma} km (R$ ${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` 
+                                  : totalAdicionalKm > 0 
+                                    ? `R$ ${formatCurrencyBRL(totalAdicionalKm)}` 
+                                    : '-'}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        )}
                       </table>
                     </div>
                   )}
                 </div>
 
                 {/* SEÇÃO 3: RESUMO DO PEDIDO / FATURAMENTO BRUTO COBRADO DO CLIENTE */}
-                <div className="border border-emerald-300 bg-emerald-50/40 rounded-lg p-3 mb-4 space-y-2 border-l-4 border-l-emerald-600">
-                  <div className="flex items-center justify-between border-b border-emerald-200 pb-1.5">
-                    <span className="font-bold text-xs uppercase text-emerald-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      1. Resumo do Pedido (Cobrado do Cliente / Faturamento Bruto)
+                <div className="border border-emerald-300 bg-emerald-50/40 rounded-lg p-2 mb-2 space-y-1 border-l-4 border-l-emerald-600 break-avoid">
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
+                    <span className="font-bold text-[11px] uppercase text-emerald-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      1. Resumo do Pedido (Faturamento Cobrado do Produtor)
                     </span>
-                    <span className="font-black text-sm text-emerald-800">
+                    <span className="font-black text-xs text-emerald-900 font-mono">
                       Total a Pagar: R$ {formatCurrencyBRL(totalPedido)}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-xs pt-1">
-                    <div className="bg-white p-2 rounded border border-emerald-100">
-                      <span className="text-[10px] text-slate-500 font-bold block">Serviço Base ({unidadeAreaLabel})</span>
-                      <span className="font-bold text-slate-900">R$ {formatCurrencyBRL(valorBaseArea)}</span>
-                      <span className="text-[10px] text-slate-500 block">{quantidadeArea || 0} {unidadeAreaLabel} x R$ {valorHectare || 0}</span>
+                  <div className="grid grid-cols-3 gap-2 text-[10.5px] pt-0.5">
+                    <div className="bg-white p-1.5 rounded border border-emerald-100">
+                      <span className="text-[9px] text-slate-500 font-bold block">Serviço Base ({unidadeAreaLabel})</span>
+                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(valorBaseArea)}</span>
+                      <span className="text-[9px] text-slate-500 block">{quantidadeArea || 0} {unidadeAreaLabel} x R$ {valorHectare || 0}</span>
                     </div>
 
-                    <div className="bg-white p-2 rounded border border-emerald-100">
-                      <span className="text-[10px] text-slate-500 font-bold block">Compactação Trator</span>
-                      <span className="font-bold text-slate-900">R$ {formatCurrencyBRL(subtotalTrator)}</span>
-                      <span className="text-[10px] text-slate-500 block">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
+                    <div className="bg-white p-1.5 rounded border border-emerald-100">
+                      <span className="text-[9px] text-slate-500 font-bold block">Compactação Trator</span>
+                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(subtotalTrator)}</span>
+                      <span className="text-[9px] text-slate-500 block">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
                     </div>
 
-                    <div className="bg-white p-2 rounded border border-emerald-100">
-                      <span className="text-[10px] text-slate-500 font-bold block">Frete / KM Adicional Frotas</span>
-                      <span className="font-bold text-slate-900">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
-                      <span className="text-[10px] text-slate-500 block">Cobrança de deslocamento</span>
+                    <div className="bg-white p-1.5 rounded border border-emerald-100">
+                      <span className="text-[9px] text-slate-500 font-bold block">Frete / KM Adicional Frotas</span>
+                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
+                      <span className="text-[9px] text-slate-500 block">Cobrança de deslocamento</span>
                     </div>
                   </div>
                 </div>
@@ -911,104 +1039,159 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 {/* SEÇÃO 4 & 5 (EXCLUSIVO VIA COMPLETA): DRE E LUCRO OPERACIONAL */}
                 {contentType === 'full' && (
                   <>
-                    {/* BLOCO 2: DRE GERENCIAL (CUSTOS OPERACIONAIS E PROVENTOS ADICIONAIS - BORDA LARANJA) */}
-                    <div className="border border-orange-300 bg-orange-50/40 rounded-lg p-3 mb-4 space-y-2.5 border-l-4 border-l-orange-600">
-                      <div className="flex items-center justify-between border-b border-orange-200 pb-1.5">
-                        <span className="font-bold text-xs uppercase text-orange-900 flex items-center gap-1.5">
-                          <AlertCircle className="w-4 h-4 text-orange-600" />
+                    {/* BLOCO 2: DRE GERENCIAL (CUSTOS OPERACIONAIS E TRANSPORTE COMPLETO) */}
+                    <div className="border border-orange-300 bg-orange-50/40 rounded-lg p-2 mb-2 space-y-1.5 border-l-4 border-l-orange-600 break-avoid">
+                      <div className="flex items-center justify-between border-b border-orange-200 pb-1">
+                        <span className="font-bold text-[11px] uppercase text-orange-900 flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-orange-600" />
                           2. Custos e Proventos Adicionais (DRE Gerencial da Operação)
                         </span>
-                        <span className="font-bold text-xs text-orange-800">
-                          Total de Custos: R$ {formatCurrencyBRL(totalGeralDespesas)}
+                        <span className="font-black text-xs text-orange-900 font-mono">
+                          Total Geral Despesas: R$ {formatCurrencyBRL(totalGeralDespesas)}
                         </span>
                       </div>
 
-                      {/* DISCRIMINAÇÃO NOMINAL DE CADA MOTORISTA ATIVO */}
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] font-bold text-orange-950 flex items-center gap-1">
-                          <Truck className="w-3.5 h-3.5 text-orange-600" />
-                          Comissão Individual dos Motoristas de Caminhão:
-                        </p>
-                        
-                        {trucksExpenseDetails && trucksExpenseDetails.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {trucksExpenseDetails.map((truck) => (
-                              <div key={truck.truckId} className="bg-white p-2 rounded border border-orange-200 flex justify-between items-center text-[11px]">
-                                <div>
-                                  <strong className="text-slate-900">{truck.driverName || 'Motorista Sem Nome'}</strong>
-                                  <span className="text-slate-500 block text-[10px]">{truck.plate || 'Veículo'} • {truck.loads} viagens</span>
+                      {/* 1. DETALHAMENTO DOS CUSTOS DE TRANSPORTE DAS FROTAS (RATEIO + ADICIONAL KM) */}
+                      {trucksExpenseDetails && trucksExpenseDetails.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <p className="font-bold text-orange-950 flex items-center gap-1 uppercase">
+                              <Truck className="w-3.5 h-3.5 text-orange-600" />
+                              Custos de Transporte das Frotas (Rateio Global & Adicional KM):
+                            </p>
+                            <span className="font-bold text-orange-800 text-[9.5px] font-mono">
+                              Subtotal Transporte: R$ {formatCurrencyBRL(subtotalTransporteFrotas)}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1">
+                            {trucksExpenseDetails.map((truck) => {
+                              const transportTotal = truck.rateioCost + truck.additionalKmCost;
+                              return (
+                                <div 
+                                  key={`a4-transp-${truck.truckId}`}
+                                  className="bg-white px-2 py-1 rounded border border-orange-200 flex items-center justify-between gap-2 text-[9.5px] break-avoid"
+                                >
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-mono font-bold text-slate-900">
+                                      Transp. {truck.plate || 'Veículo'}
+                                    </span>
+                                    <span className="text-slate-600 font-medium">
+                                      ({truck.driverName || 'Motorista'})
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-700">
+                                      <strong>{truck.loads}</strong> Cargas (Cap: {truck.capacityM3 || 0} m³ | Total: <strong>{truck.totalM3.toFixed(1)} m³</strong>)
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-700">
+                                      <strong>{truck.distributionPercent.toFixed(1)}%</strong> Distribuição ({formatCurrencyBRL(truck.rateioCost)})
+                                    </span>
+                                    {truck.additionalKmCost > 0 && (
+                                      <span className="text-amber-800 font-semibold bg-amber-50 px-1 rounded border border-amber-200 text-[8.5px]">
+                                        + KM ({formatCurrencyBRL(truck.additionalKmCost)})
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-right font-mono font-black text-orange-900 text-[10px] shrink-0">
+                                    R$ {formatCurrencyBRL(transportTotal)}
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <span className="font-black text-orange-700 text-xs">
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. COMISSÃO INDIVIDUAL DOS MOTORISTAS */}
+                      {trucksExpenseDetails && trucksExpenseDetails.some((t) => (t.driverCommissionCost || 0) > 0) && (
+                        <div className="space-y-1 pt-1 border-t border-orange-200/60">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <p className="font-bold text-orange-950 flex items-center gap-1 uppercase">
+                              <Users className="w-3.5 h-3.5 text-orange-600" />
+                              Comissões Individuais dos Motoristas:
+                            </p>
+                            <span className="font-bold text-orange-800 text-[9.5px] font-mono">
+                              Subtotal Motoristas: R$ {formatCurrencyBRL(subtotalComissoesMotoristas)}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            {trucksExpenseDetails
+                              .filter((t) => (t.driverCommissionCost || 0) > 0)
+                              .map((truck) => (
+                                <div key={`a4-comm-${truck.truckId}`} className="bg-white px-2 py-1 rounded border border-orange-200 flex justify-between items-center text-[9.5px] break-avoid">
+                                  <div className="truncate pr-1">
+                                    <strong className="text-slate-900 block truncate">{truck.driverName || 'Motorista'}</strong>
+                                    <span className="text-slate-500 text-[8.5px] block font-mono">{truck.plate} • {truck.loads} vg</span>
+                                  </div>
+                                  <span className="font-bold font-mono text-orange-700 text-[9.5px] whitespace-nowrap">
                                     R$ {formatCurrencyBRL(truck.driverCommissionCost || 0)}
                                   </span>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
-                        ) : (
-                          <p className="text-[10px] text-slate-500 italic pl-2">
-                            Nenhum motorista com comissão ativa cadastrado.
-                          </p>
-                        )}
-                      </div>
-
-                      {/* COMISSÕES DE FORRAGEIRA E TRATOR */}
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="bg-white p-2 rounded border border-orange-200 text-[11px] flex justify-between items-center">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-500 block">Operador Ensiladeira</span>
-                            <strong className="text-slate-900">{operadorForrageiraNome || 'Sem Operador'}</strong>
-                            {segundoOperadorForrageiraNome && (
-                              <span className="text-[10px] text-slate-500 block">+ {segundoOperadorForrageiraNome}</span>
-                            )}
-                          </div>
-                          <span className="font-bold text-orange-700 text-xs">
-                            R$ {formatCurrencyBRL(comissaoForrageiraP1 + comissaoForrageiraP2)}
-                          </span>
                         </div>
+                      )}
 
-                        <div className="bg-white p-2 rounded border border-orange-200 text-[11px] flex justify-between items-center">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-500 block">Operador Trator</span>
-                            <strong className="text-slate-900">{operadorTratorNome || 'Sem Operador'}</strong>
-                            {segundoOperadorTratorNome && (
-                              <span className="text-[10px] text-slate-500 block">+ {segundoOperadorTratorNome}</span>
-                            )}
+                      {/* 3. COMISSÕES OPERADORES (ENSILADEIRA E TRATOR) */}
+                      {(comissaoForrageiraP1 > 0 || comissaoForrageiraP2 > 0 || comissaoTratorP1 > 0 || comissaoTratorP2 > 0) && (
+                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-orange-200/60">
+                          <div className="bg-white px-2 py-1 rounded border border-orange-200 text-[9.5px] flex justify-between items-center break-avoid">
+                            <div>
+                              <span className="text-[8.5px] font-bold text-slate-500 block uppercase">Operador Ensiladeira</span>
+                              <strong className="text-slate-900">{operadorForrageiraNome || 'Sem Operador'}</strong>
+                              {segundoOperadorForrageiraNome && (
+                                <span className="text-[8.5px] text-slate-500 block">+ {segundoOperadorForrageiraNome}</span>
+                              )}
+                            </div>
+                            <span className="font-bold font-mono text-orange-700 text-[10px] whitespace-nowrap">
+                              R$ {formatCurrencyBRL(comissaoForrageiraP1 + comissaoForrageiraP2)}
+                            </span>
                           </div>
-                          <span className="font-bold text-orange-700 text-xs">
-                            R$ {formatCurrencyBRL(comissaoTratorP1 + comissaoTratorP2)}
-                          </span>
+
+                          <div className="bg-white px-2 py-1 rounded border border-orange-200 text-[9.5px] flex justify-between items-center break-avoid">
+                            <div>
+                              <span className="text-[8.5px] font-bold text-slate-500 block uppercase">Operador Trator</span>
+                              <strong className="text-slate-900">{operadorTratorNome || 'Sem Operador'}</strong>
+                              {segundoOperadorTratorNome && (
+                                <span className="text-[8.5px] text-slate-500 block">+ {segundoOperadorTratorNome}</span>
+                              )}
+                            </div>
+                            <span className="font-bold font-mono text-orange-700 text-[10px] whitespace-nowrap">
+                              R$ {formatCurrencyBRL(comissaoTratorP1 + comissaoTratorP2)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* BLOCO 3: RESULTADO FINAL (LUCRO ESTIMADO - DESTAQUE VERDE ESCURO) */}
-                    <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-lg p-3.5 mb-4 shadow-sm space-y-2">
-                      <div className="flex items-center justify-between border-b border-emerald-700/60 pb-2">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-emerald-300" />
-                          <span className="font-bold text-xs uppercase tracking-wide">
-                            3. Resultado Final da Operação (Lucro Estimado)
+                    <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-lg p-2 mb-2 shadow-sm space-y-1.5 break-avoid">
+                      <div className="flex items-center justify-between border-b border-emerald-700/60 pb-1">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
+                          <span className="font-bold text-[11px] uppercase tracking-wide">
+                            3. Resultado Final da Operação (Lucro Líquido Estimado)
                           </span>
                         </div>
-                        <span className="text-xs bg-emerald-700/50 px-2 py-0.5 rounded font-mono">
+                        <span className="text-[10px] bg-emerald-700/50 px-2 py-0.5 rounded font-mono font-bold">
                           Margem: {margemLucroPercent.toFixed(1)}%
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 text-center pt-1">
-                        <div className="bg-emerald-950/40 p-2 rounded">
-                          <span className="text-[10px] text-emerald-200 block uppercase font-medium">Receita Bruta</span>
-                          <strong className="text-xs text-white">R$ {formatCurrencyBRL(totalPedido)}</strong>
+                      <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
+                        <div className="bg-emerald-950/40 p-1.5 rounded">
+                          <span className="text-[9px] text-emerald-200 block uppercase font-medium">Receita Bruta</span>
+                          <strong className="text-xs text-white font-mono">R$ {formatCurrencyBRL(totalPedido)}</strong>
                         </div>
-                        <div className="bg-emerald-950/40 p-2 rounded">
-                          <span className="text-[10px] text-emerald-200 block uppercase font-medium">(-) Custos Operacionais</span>
-                          <strong className="text-xs text-amber-300">R$ {formatCurrencyBRL(totalGeralDespesas)}</strong>
+                        <div className="bg-emerald-950/40 p-1.5 rounded">
+                          <span className="text-[9px] text-emerald-200 block uppercase font-medium">(-) Custos Operacionais</span>
+                          <strong className="text-xs text-amber-300 font-mono">R$ {formatCurrencyBRL(totalGeralDespesas)}</strong>
                         </div>
-                        <div className="bg-emerald-700/60 p-2 rounded border border-emerald-500/40">
-                          <span className="text-[10px] text-emerald-100 block uppercase font-bold">(=) Lucro Líquido Estimado</span>
-                          <strong className="text-sm text-emerald-100 font-black">R$ {formatCurrencyBRL(lucroEstimado)}</strong>
+                        <div className="bg-emerald-700/60 p-1.5 rounded border border-emerald-500/40">
+                          <span className="text-[9px] text-emerald-100 block uppercase font-bold">(=) Lucro Líquido Estimado</span>
+                          <strong className="text-xs text-emerald-100 font-black font-mono">R$ {formatCurrencyBRL(lucroEstimado)}</strong>
                         </div>
                       </div>
                     </div>
@@ -1017,31 +1200,31 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
                 {/* OBSERVAÇÕES GERAIS */}
                 {observacoes && (
-                  <div className="border border-slate-200 bg-slate-50 rounded p-2.5 mb-4 text-[11px]">
-                    <span className="font-bold text-slate-700 uppercase block text-[10px]">Observações Gerais da OS:</span>
+                  <div className="border border-slate-200 bg-slate-50 rounded p-1.5 mb-2 text-[10px] break-avoid">
+                    <span className="font-bold text-slate-700 uppercase block text-[9px]">Observações Gerais da OS:</span>
                     <p className="text-slate-800 italic">{observacoes}</p>
                   </div>
                 )}
               </div>
 
               {/* SEÇÃO 6: ASSINATURAS GERENCIAIS (FIM DA FOLHA A4) */}
-              <div className="pt-6 mt-4 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-xs text-slate-700">
-                <div className="space-y-1">
-                  <div className="border-b border-slate-400 w-4/5 mx-auto mb-2"></div>
+              <div className="pt-3 mt-auto border-t border-slate-300 grid grid-cols-2 gap-6 text-center text-[10.5px] text-slate-700 break-avoid">
+                <div className="space-y-0.5">
+                  <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
                   <p className="font-bold text-slate-900">
                     {clientName || 'Assinatura do Produtor Rural'}
                   </p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[9px] text-slate-500">
                     Declaro haver conferido a medição e execução dos serviços
                   </p>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="border-b border-slate-400 w-4/5 mx-auto mb-2"></div>
+                <div className="space-y-0.5">
+                  <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
                   <p className="font-bold text-slate-900">
                     {operatorName || 'Silagem Fácil - Responsável Técnico'}
                   </p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[9px] text-slate-500">
                     {contentType === 'client' ? 'Conferência e encerramento operacional' : 'Validação de DRE e encerramento financeiro'}
                   </p>
                 </div>
