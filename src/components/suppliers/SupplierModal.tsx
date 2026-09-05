@@ -34,8 +34,6 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
   onSave,
   initialName = '',
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState(initialName);
   const [tradeName, setTradeName] = useState('');
   const [category, setCategory] = useState('Combustível');
@@ -166,6 +164,8 @@ export const SupplierModal: React.FC<SupplierModalProps> = ({
     onSave(newSupplier);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-70 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">

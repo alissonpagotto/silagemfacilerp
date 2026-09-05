@@ -19,8 +19,6 @@ export const LovableIntegrationModal: React.FC<LovableIntegrationModalProps> = (
   onClose,
   onDataImported,
 }) => {
-  if (!isOpen) return null;
-
   const [rawJsonInput, setRawJsonInput] = useState('');
   const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
@@ -58,6 +56,8 @@ export const LovableIntegrationModal: React.FC<LovableIntegrationModalProps> = (
       reader.readAsText(file);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

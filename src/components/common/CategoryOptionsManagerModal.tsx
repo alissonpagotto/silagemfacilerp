@@ -22,8 +22,6 @@ export const CategoryOptionsManagerModal: React.FC<CategoryOptionsManagerModalPr
   placeholder = 'Nome da nova opção / categoria...',
   onSelectItem,
 }) => {
-  if (!isOpen) return null;
-
   const [newItemName, setNewItemName] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState('');
@@ -104,6 +102,8 @@ export const CategoryOptionsManagerModal: React.FC<CategoryOptionsManagerModalPr
   const filteredItems = items.filter((it) =>
     it.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

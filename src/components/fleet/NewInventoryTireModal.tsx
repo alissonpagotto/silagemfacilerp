@@ -13,8 +13,6 @@ export const NewInventoryTireModal: React.FC<NewInventoryTireModalProps> = ({
   onClose,
   onSave,
 }) => {
-  if (!isOpen) return null;
-
   const [fireNumber, setFireNumber] = useState('');
   const [brand, setBrand] = useState('Michelin');
   const [model, setModel] = useState('');
@@ -63,6 +61,8 @@ export const NewInventoryTireModal: React.FC<NewInventoryTireModalProps> = ({
     onSave(newTire);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">

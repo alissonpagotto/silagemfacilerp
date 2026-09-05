@@ -19,8 +19,6 @@ export const FuelModal: React.FC<FuelModalProps> = ({
   machineries,
   employees,
 }) => {
-  if (!isOpen) return null;
-
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [machineryId, setMachineryId] = useState('');
   const [fuelType, setFuelType] = useState<FuelLog['fuelType']>('Diesel S10');
@@ -195,6 +193,8 @@ export const FuelModal: React.FC<FuelModalProps> = ({
     onSave(log, createExpense && !editingLog);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/75 backdrop-blur-xs animate-in fade-in duration-150">

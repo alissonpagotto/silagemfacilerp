@@ -23,8 +23,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   onSave,
   editingClient,
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState('');
   const [farmName, setFarmName] = useState('');
   const [cpfCnpj, setCpfCnpj] = useState('');
@@ -207,6 +205,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     onSave(client);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

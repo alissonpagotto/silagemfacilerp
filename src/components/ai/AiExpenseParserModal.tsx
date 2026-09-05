@@ -19,8 +19,6 @@ export const AiExpenseParserModal: React.FC<AiExpenseParserModalProps> = ({
   costCenters,
   machineries,
 }) => {
-  if (!isOpen) return null;
-
   const [inputPrompt, setInputPrompt] = useState('');
   const [parsedPreview, setParsedPreview] = useState<Partial<Expense> | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -150,6 +148,8 @@ export const AiExpenseParserModal: React.FC<AiExpenseParserModalProps> = ({
     onAddExpense(finalExpense);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

@@ -8,13 +8,19 @@ import {
   Sun, 
   Pencil, 
   Menu,
-  Sparkles
+  Sparkles,
+  Cloud,
+  RefreshCw,
+  LogIn,
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
 import { 
   CustomizeShortcutsModal, 
   ALL_SHORTCUTS, 
   DEFAULT_SHORTCUT_IDS 
 } from './CustomizeShortcutsModal';
+import { FirebaseStatusControl } from './FirebaseStatusControl';
 
 interface TopBarProps {
   activeTab: string;
@@ -180,9 +186,12 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         </div>
 
-        {/* Right Tools: Notifications & Theme */}
+        {/* Right Tools: Firebase, Notifications & Theme */}
         <div className="flex items-center space-x-2 shrink-0 pl-2 border-l border-stone-200 dark:border-stone-800">
           
+          {/* Firebase Cloud Sync & Auth status */}
+          <FirebaseStatusControl />
+
           {/* Notification Bell */}
           <button
             onClick={() => setActiveTab('funcionarios')}

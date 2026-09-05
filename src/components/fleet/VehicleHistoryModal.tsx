@@ -40,7 +40,8 @@ import { calculateVehicleConsumptionMetrics } from '../../lib/fleetMetrics';
 interface VehicleHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  vehicle: Machinery | null;
+  vehicle?: Machinery | null;
+  machinery?: Machinery | null;
   employees: Employee[];
   fuelLogs: FuelLog[];
   maintenanceLogs: MaintenanceLog[];
@@ -53,7 +54,7 @@ interface VehicleHistoryModalProps {
   onAddExpense?: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
 }
 
-export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
+const VehicleHistoryModalContent: React.FC<VehicleHistoryModalProps & { vehicle: Machinery }> = ({
   isOpen,
   onClose,
   vehicle,
@@ -68,8 +69,6 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
   onAddService,
   onAddExpense,
 }) => {
-  if (!isOpen || !vehicle) return null;
-
   // Tabs: 'resumo' | 'pedidos' | 'combustivel' | 'manutencoes' | 'motoristas' | 'dre'
   const [activeTab, setActiveTab] = useState<'resumo' | 'pedidos' | 'combustivel' | 'manutencoes' | 'motoristas' | 'dre'>('pedidos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,9 +86,9 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
   const [newRatePerUnit, setNewRatePerUnit] = useState<number | ''>(120);
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [newDriverSelected, setNewDriverSelected] = useState(
-    vehicle.assignedDrivers && vehicle.assignedDrivers.length > 0
+    vehicle?.assignedDrivers && vehicle.assignedDrivers.length > 0
       ? vehicle.assignedDrivers[0]
-      : (vehicle.operatorOrDriver || '')
+      : (vehicle?.operatorOrDriver || '')
   );
 
   // Quick Driver Expense Creation Modal state
@@ -99,9 +98,9 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
   const [expenseCategory, setExpenseCategory] = useState<'alimentacao' | 'diaria' | 'salario' | 'rescisao' | 'outro'>('alimentacao');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [expenseDriver, setExpenseDriver] = useState(
-    vehicle.assignedDrivers && vehicle.assignedDrivers.length > 0
+    vehicle?.assignedDrivers && vehicle.assignedDrivers.length > 0
       ? vehicle.assignedDrivers[0]
-      : (vehicle.operatorOrDriver || '')
+      : (vehicle?.operatorOrDriver || '')
   );
 
   // --- 1. Identify Drivers Associated With Vehicle ---
@@ -1550,4 +1549,10 @@ export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = ({
 
     </div>
   );
+};
+
+export const VehicleHistoryModal: React.FC<VehicleHistoryModalProps> = (props) => {
+  const activeVehicle = props.vehicle || props.machinery || null;
+  if (!props.isOpen || !activeVehicle) return null;
+  return <VehicleHistoryModalContent {...props} vehicle={activeVehicle} />;
 };

@@ -35,6 +35,11 @@ import { TractorBlock } from './TractorBlock';
 import { TruckFleetSection } from './TruckFleetSection';
 import { DRESummaryBlock, TruckExpenseDetail } from './DRESummaryBlock';
 import { 
+  ServiceDocumentPreview, 
+  PrintContentType, 
+  PrintPaperFormat 
+} from './ServiceDocumentPreview';
+import { 
   isForrageira, 
   findLinkedOperator, 
   formatEmployeeOptionLabel,
@@ -122,6 +127,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
 
   // 6. Observações
   const [observacoes, setObservacoes] = useState('');
+
+  // 7. Estados para o Modal / Tela de Prévia e Impressão
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [printPreviewContentType, setPrintPreviewContentType] = useState<PrintContentType>('client');
+  const [printPreviewPaperFormat, setPrintPreviewPaperFormat] = useState<PrintPaperFormat>('thermal_80mm');
 
   // Conjunto de IDs de Maquinários já Selecionados (REGRA DE EXCLUSÃO)
   const selectedMachineryIds = useMemo(() => {
@@ -935,6 +945,306 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     }
   };
 
+  // Dispara a impressão isolada em uma nova janela (window.open / Blob URL) para contornar a restrição de sandbox do iframe (allow-modals)
+  const handlePrintInNewWindow = (mode: 'client' | 'full') => {
+    setupPrintStyles(mode);
+
+    const modalEl = document.getElementById('printable-service-order-modal');
+    if (!modalEl) {
+      try {
+        window.print();
+      } catch (err) {
+        console.warn('Fallback window.print error:', err);
+      }
+      return;
+    }
+
+    // Clona o elemento do modal e sincroniza com precisão os valores atuais dos campos
+    const clone = modalEl.cloneNode(true) as HTMLElement;
+
+    const originalInputs = modalEl.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select');
+    const cloneInputs = clone.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select');
+
+    originalInputs.forEach((orig, idx) => {
+      const c = cloneInputs[idx];
+      if (!c) return;
+      if (c.tagName === 'SELECT') {
+        const origSel = orig as HTMLSelectElement;
+        const cSel = c as HTMLSelectElement;
+        cSel.value = origSel.value;
+        Array.from(cSel.options).forEach((opt) => {
+          if (opt.value === origSel.value) opt.setAttribute('selected', 'selected');
+          else opt.removeAttribute('selected');
+        });
+      } else if (c.tagName === 'TEXTAREA') {
+        c.textContent = (orig as HTMLTextAreaElement).value;
+        (c as HTMLTextAreaElement).value = (orig as HTMLTextAreaElement).value;
+      } else {
+        const origInp = orig as HTMLInputElement;
+        const cInp = c as HTMLInputElement;
+        cInp.setAttribute('value', origInp.value);
+        cInp.value = origInp.value;
+        if (origInp.checked) {
+          cInp.setAttribute('checked', 'checked');
+        } else {
+          cInp.removeAttribute('checked');
+        }
+      }
+    });
+
+    // Remove elementos de controle de tela (como o rodapé com os botões de ação e o botão fechar 'X')
+    clone.querySelectorAll('.print\\:hidden').forEach((el) => el.remove());
+
+    // Coleta folhas de estilo do documento para preservar classes Tailwind e fontes
+    const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map((el) => el.outerHTML)
+      .join('\n');
+
+    const isClient = mode === 'client';
+    const docTitle = isClient
+      ? `Silagem Fácil - Comprovante do Cliente (80mm) - ${numero || 'OS'}`
+      : `Silagem Fácil - Ordem de Serviço Completa (DRE A4) - ${numero || 'OS'}`;
+
+    const printPageStyles = `
+      <style>
+        *, *::before, *::after {
+          box-sizing: border-box !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #f8fafc !important;
+          color: #0f172a !important;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        }
+        .no-print {
+          display: flex;
+        }
+        .print-page-wrapper {
+          display: flex;
+          justify-content: center;
+          padding: 24px 16px;
+          min-height: calc(100vh - 60px);
+          background: #f1f5f9;
+        }
+        #printable-service-order-modal {
+          position: relative !important;
+          display: block !important;
+          margin: 0 auto !important;
+          max-height: none !important;
+          height: auto !important;
+          overflow: visible !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1) !important;
+          background: #ffffff !important;
+          color: #0f172a !important;
+        }
+        .modal-body-scroll {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
+        }
+        input, textarea, select {
+          border: 1px solid #cbd5e1 !important;
+          background-color: #ffffff !important;
+          color: #0f172a !important;
+          pointer-events: none !important;
+        }
+        button:not(.no-print button), select.opacity-0 {
+          display: none !important;
+        }
+        ${
+          isClient
+            ? `
+          /* Formato 80mm - Cupom Térmico */
+          #printable-service-order-modal {
+            width: 80mm !important;
+            max-width: 80mm !important;
+            min-width: 80mm !important;
+            padding: 4mm 3mm !important;
+            font-size: 10px !important;
+            line-height: 1.25 !important;
+          }
+          .thermal-receipt-badge {
+            display: block !important;
+            text-align: center !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            border-bottom: 1px dashed #000000 !important;
+            padding-bottom: 4px !important;
+            margin-bottom: 6px !important;
+          }
+          .print-signatures-area {
+            display: block !important;
+            margin-top: 10px !important;
+            padding-top: 6px !important;
+            border-top: 1px dashed #000000 !important;
+            text-align: center !important;
+          }
+          .print-signatures-area .signature-line {
+            margin-top: 16px !important;
+            border-top: 1px solid #000000 !important;
+            padding-top: 3px !important;
+          }
+          .print-client-hide,
+          .print-hide-on-client,
+          .print-commission-info,
+          .print-commission-box {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            border: none !important;
+          }
+        `
+            : `
+          /* Formato A4 Completo - DRE Gerencial */
+          #printable-service-order-modal {
+            width: 210mm !important;
+            max-width: 100% !important;
+            padding: 12mm 10mm !important;
+            font-size: 9.5px !important;
+            line-height: 1.2 !important;
+          }
+          .thermal-receipt-badge {
+            display: none !important;
+          }
+          .print-signatures-area {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 16px !important;
+            margin-top: 8px !important;
+            padding-top: 6px !important;
+          }
+          .print-client-hide,
+          .print-hide-on-client,
+          .print-commission-info,
+          .print-commission-box {
+            display: block !important;
+          }
+        `
+        }
+
+        @media print {
+          @page {
+            size: ${isClient ? '80mm auto' : 'A4 portrait'};
+            margin: ${isClient ? '0' : '8mm'};
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-page-wrapper {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            display: block !important;
+          }
+          #printable-service-order-modal {
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 auto !important;
+            padding: ${isClient ? '2mm' : '0'} !important;
+            width: ${isClient ? '80mm' : '100%'} !important;
+            max-width: ${isClient ? '80mm' : '100%'} !important;
+            min-width: 0 !important;
+          }
+        }
+      </style>
+    `;
+
+    const fullHtml = `<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${docTitle}</title>
+  ${headStyles}
+  ${printPageStyles}
+</head>
+<body>
+  <!-- BARRA DE FERRAMENTAS ISOLADA (NÃO IMPRESSA) -->
+  <div class="no-print" style="position: sticky; top: 0; left: 0; right: 0; z-index: 9999; background: #0f172a; color: #ffffff; padding: 10px 18px; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-weight: 800; font-size: 14px; letter-spacing: 0.5px; color: #10b981;">SILAGEM FÁCIL</span>
+      <span style="font-size: 12px; background: rgba(255, 255, 255, 0.12); padding: 4px 10px; border-radius: 6px; font-weight: 600;">
+        ${isClient ? '📄 Cupom Térmico 80mm (Via Cliente)' : '📊 Folha A4 Completa (Via Gerencial DRE)'}
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button onclick="window.print()" style="background: #059669; color: #ffffff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+        🖨️ Imprimir Agora / Salvar PDF
+      </button>
+      <button onclick="window.close()" style="background: #334155; color: #cbd5e1; border: none; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+        ✕ Fechar
+      </button>
+    </div>
+  </div>
+
+  <div class="print-page-wrapper">
+    ${clone.outerHTML}
+  </div>
+
+  <script>
+    function triggerAutoPrint() {
+      setTimeout(function() {
+        try {
+          window.focus();
+          window.print();
+        } catch (err) {
+          console.warn('Auto print failed:', err);
+        }
+      }, 400);
+    }
+    if (document.readyState === 'complete') {
+      triggerAutoPrint();
+    } else {
+      window.addEventListener('load', triggerAutoPrint);
+    }
+  </script>
+</body>
+</html>`;
+
+    // 1. Tenta abrir via Blob URL (isolamento de processo top-level, contornando o sandbox do iframe)
+    try {
+      const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const printWin = window.open(blobUrl, '_blank');
+      if (printWin) {
+        printWin.focus();
+        return;
+      }
+    } catch (err) {
+      console.warn('Falha ao abrir via Blob URL:', err);
+    }
+
+    // 2. Fallback: document.write direto no window.open
+    try {
+      const printWin = window.open('', '_blank');
+      if (printWin) {
+        printWin.document.open();
+        printWin.document.write(fullHtml);
+        printWin.document.close();
+        printWin.focus();
+        return;
+      }
+    } catch (err) {
+      console.warn('Falha ao abrir via document.write:', err);
+    }
+
+    // 3. Último recurso: disparo direto
+    try {
+      window.print();
+    } catch (err) {
+      console.error('Erro geral ao imprimir:', err);
+    }
+  };
+
   // Título e Ícone Dinâmicos por Aba
   const getTabConfig = () => {
     switch (activeTab) {
@@ -1720,11 +2030,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                setupPrintStyles('client');
-                window.print();
+                setPrintPreviewContentType('client');
+                setPrintPreviewPaperFormat('thermal_80mm');
+                setShowPrintPreview(true);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-lg shadow-2xs transition cursor-pointer hover:border-slate-400 dark:hover:border-slate-600"
-              title="Imprimir Via do Cliente (Cupom 80mm - oculta despesas de comissões e lucro)"
+              title="Abrir prévia e impressão da Via Cliente (Cupom 80mm pré-ativado, comissões ocultas)"
             >
               <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
               <span>Imprimir Via Cliente</span>
@@ -1734,11 +2045,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                setupPrintStyles('full');
-                window.print();
+                setPrintPreviewContentType('full');
+                setPrintPreviewPaperFormat('a4');
+                setShowPrintPreview(true);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-950/30 hover:bg-blue-100/70 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold rounded-lg shadow-2xs transition cursor-pointer hover:border-blue-300 dark:hover:border-blue-800"
-              title="Imprimir Via Completa / Gerencial A4 (com DRE, comissões discriminadas e lucro)"
+              title="Abrir prévia e impressão da Via Completa (Folha A4 pré-ativada, com DRE e comissões)"
             >
               <PrinterCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Imprimir Via Completa</span>
@@ -1770,6 +2082,53 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
         onClose={() => setIsQuickClientOpen(false)}
         onSave={handleQuickClientCreated}
       />
+
+      {/* TELA DE PRÉVIA E IMPRESSÃO (VIA CLIENTE / COMPLETA & 80MM / A4) */}
+      {showPrintPreview && (
+        <ServiceDocumentPreview
+          initialContentType={printPreviewContentType}
+          initialPaperFormat={printPreviewPaperFormat}
+          onClose={() => setShowPrintPreview(false)}
+          orderNumber={numero}
+          serviceTypeTitle={getTabConfig().title}
+          clientName={clientName}
+          clientPhone={clients.find((c) => c.id === clientId)?.phone || ''}
+          farmName={farmName}
+          location={clients.find((c) => c.id === clientId)?.address || ''}
+          serviceDate={serviceDate}
+          operatorName={operadorForrageiraNome}
+          tractorOperatorName={operadorTratorNome}
+          unidadeArea={unidadeArea}
+          unidadeAreaLabel={unidadeArea === 'hectares' ? 'Hectares (ha)' : unidadeArea === 'alqueires' ? 'Alqueires (alq)' : 'Horas (h)'}
+          quantidadeArea={quantidadeArea}
+          valorBaseArea={valorBaseArea}
+          valorHectare={valorPorHectare}
+          horasTambor={horasTambor}
+          horasMotor={horasMotor}
+          forageHarvesterName={forrageiraNome || machineries.find((m) => m.id === forrageiraId)?.name}
+          tractorName={tratorNome}
+          tractorHours={typeof qtdCobrancaTrator === 'number' ? qtdCobrancaTrator : ''}
+          subtotalTrator={subtotalTrator}
+          qtdCobrancaTrator={qtdCobrancaTrator}
+          modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'Horas (h)' : modoCobrancaTrator === 'area_alq' ? 'Alqueires (alq)' : 'Hectares (ha)'}
+          trucks={trucks}
+          totalAdicionalKm={totalAdicionalKm}
+          totalPedido={totalPedido}
+          operadorForrageiraNome={operadorForrageiraNome}
+          comissaoForrageiraP1={comissaoForrageiraP1}
+          segundoOperadorForrageiraNome={segundoOperadorForrageiraNome}
+          comissaoForrageiraP2={comissaoForrageiraP2}
+          operadorTratorNome={operadorTratorNome}
+          comissaoTratorP1={comissaoTratorP1}
+          segundoOperadorTratorNome={segundoOperadorTratorNome}
+          comissaoTratorP2={comissaoTratorP2}
+          trucksExpenseDetails={trucksExpenseDetails}
+          totalGeralDespesas={totalGeralDespesas}
+          lucroEstimado={lucroEstimado}
+          margemLucroPercent={margemLucroPercent}
+          observacoes={observacoes}
+        />
+      )}
     </>
   );
 };

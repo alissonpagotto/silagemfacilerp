@@ -15,8 +15,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onSave,
   clients,
 }) => {
-  if (!isOpen) return null;
-
   const [clientId, setClientId] = useState(clients[0]?.id || '');
   const [productType, setProductType] = useState<any>('Milho Planta Inteira');
   const [tons, setTons] = useState<string>('50');
@@ -57,6 +55,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     onSave(newOrder);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

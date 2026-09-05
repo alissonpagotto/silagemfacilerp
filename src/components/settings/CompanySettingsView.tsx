@@ -16,12 +16,17 @@ import {
   Sparkles,
   SlidersHorizontal,
   Database,
-  Trash2
+  Trash2,
+  Cloud,
+  RefreshCw,
+  LogIn,
+  CheckCircle2
 } from 'lucide-react';
 import { CompanyProfile, ExpenseCategory, CostCenter } from '../../types';
 import { DEFAULT_FORAGE_HARVESTER_LOGO } from '../../lib/initialData';
 import { PrintPreviewModal } from '../common/PrintPreviewModal';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import { 
   formatCpfCnpj, 
   formatIE, 
@@ -40,6 +45,7 @@ interface CompanySettingsViewProps {
   onOpenCategoryManager?: () => void;
   onOpenIntegrationModal?: () => void;
   onResetAllData?: () => void;
+  onSyncFirebase?: () => Promise<void>;
 }
 
 export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
@@ -50,7 +56,10 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
   onOpenCategoryManager,
   onOpenIntegrationModal,
   onResetAllData,
+  onSyncFirebase,
 }) => {
+  const { currentUser, isConnectedToFirebase, isSyncing, lastSyncedAt, signIn } = useAuth();
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   // Form State initialized from props
   const [formData, setFormData] = useState<CompanyProfile>({
     ...companyProfile,
@@ -653,7 +662,114 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
           </div>
         </div>
 
-        {/* Card 5: Gerenciamento do Banco de Dados / Limpeza */}
+        {/* Card 5: Banco de Dados na Nuvem (Google Firebase Firestore) */}
+        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-emerald-100 dark:border-stone-800 p-3.5 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2 text-emerald-700 dark:text-emerald-400">
+              <Cloud className="w-4 h-4" />
+              <h2 className="text-xs font-bold">Nuvem Google Firebase & Firestore</h2>
+            </div>
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>{isConnectedToFirebase ? 'Firestore Ativo' : 'Offline'}</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-3">
+            <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200/60 dark:border-stone-700/60 space-y-1">
+              <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Infraestrutura em Nuvem</p>
+              <p className="text-stone-500 dark:text-stone-400 text-[11px]">
+                <strong className="text-stone-700 dark:text-stone-300">Projeto:</strong> light-ratio-507718-p5
+              </p>
+              <p className="text-stone-500 dark:text-stone-400 text-[11px]">
+                <strong className="text-stone-700 dark:text-stone-300">Região:</strong> us-west2 (Google Cloud)
+              </p>
+              <p className="text-stone-500 dark:text-stone-400 text-[11px]">
+                <strong className="text-stone-700 dark:text-stone-300">Regras de Segurança:</strong> Role-Based & UID Isolado
+              </p>
+            </div>
+
+            <div className="p-3 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200/60 dark:border-stone-700/60 flex flex-col justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300">Conta Autenticada</p>
+                {currentUser ? (
+                  <div className="mt-1 flex items-center space-x-2">
+                    {currentUser.photoURL && (
+                      <img 
+                        src={currentUser.photoURL} 
+                        alt="User" 
+                        className="w-6 h-6 rounded-full border border-emerald-500" 
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <div className="text-[11px] truncate">
+                      <p className="font-semibold text-stone-800 dark:text-stone-200">{currentUser.displayName || 'Usuário Google'}</p>
+                      <p className="text-stone-400 text-[10px] truncate">{currentUser.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+                    Nenhuma conta Google conectada no momento.
+                  </p>
+                )}
+              </div>
+
+              {lastSyncedAt && (
+                <p className="text-[10px] text-stone-400 mt-2">
+                  Última sincronização: {lastSyncedAt.toLocaleString('pt-BR')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+            <div>
+              {syncFeedback && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center space-x-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{syncFeedback}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {!currentUser ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await signIn();
+                    } catch (e: any) {
+                      setSyncFeedback(e?.message || 'Falha ao conectar conta');
+                    }
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Conectar Conta Google</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSyncing}
+                  onClick={async () => {
+                    if (onSyncFirebase) {
+                      await onSyncFirebase();
+                      setSyncFeedback('Dados sincronizados com o Firestore com sucesso!');
+                      setTimeout(() => setSyncFeedback(null), 4000);
+                    }
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Dados Agora'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 6: Gerenciamento do Banco de Dados / Limpeza */}
         <div className="bg-white dark:bg-stone-900 rounded-2xl border border-rose-100 dark:border-stone-800 p-3.5 shadow-xs">
           <div className="flex items-center space-x-2 text-rose-700 dark:text-rose-400 mb-2">
             <Database className="w-4 h-4" />

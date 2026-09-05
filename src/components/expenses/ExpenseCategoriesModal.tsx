@@ -36,8 +36,6 @@ export const ExpenseCategoriesModal: React.FC<ExpenseCategoriesModalProps> = ({
   onSaveCostCenters,
   onSelectCategory,
 }) => {
-  if (!isOpen) return null;
-
   const [activeTab, setActiveTab] = useState<'categories' | 'costCenters'>('categories');
 
   // New Category State
@@ -196,6 +194,8 @@ export const ExpenseCategoriesModal: React.FC<ExpenseCategoriesModalProps> = ({
     updated[index + 1] = item;
     onSaveCostCenters(updated);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">

@@ -28,18 +28,16 @@ export const TireInspectionModal: React.FC<TireInspectionModalProps> = ({
   vehiclePlate,
   onSaveTire,
 }) => {
-  if (!isOpen || !tire) return null;
-
-  const [fireNumber, setFireNumber] = useState(tire.fireNumber || '');
-  const [brand, setBrand] = useState(tire.brand || '');
-  const [model, setModel] = useState(tire.model || '');
-  const [size, setSize] = useState(tire.size || '295/80 R22.5');
-  const [treadDepthMm, setTreadDepthMm] = useState<string>(String(tire.treadDepthMm || 12));
-  const [originalTreadDepthMm, setOriginalTreadDepthMm] = useState<string>(String(tire.originalTreadDepthMm || 18));
-  const [pressurePsi, setPressurePsi] = useState<string>(String(tire.pressurePsi || 110));
-  const [status, setStatus] = useState<TireItem['status']>(tire.status || 'em_uso');
-  const [retreadCount, setRetreadCount] = useState<number>(tire.retreadCount || 0);
-  const [notes, setNotes] = useState(tire.notes || '');
+  const [fireNumber, setFireNumber] = useState(tire?.fireNumber || '');
+  const [brand, setBrand] = useState(tire?.brand || '');
+  const [model, setModel] = useState(tire?.model || '');
+  const [size, setSize] = useState(tire?.size || '295/80 R22.5');
+  const [treadDepthMm, setTreadDepthMm] = useState<string>(String(tire?.treadDepthMm || 12));
+  const [originalTreadDepthMm, setOriginalTreadDepthMm] = useState<string>(String(tire?.originalTreadDepthMm || 18));
+  const [pressurePsi, setPressurePsi] = useState<string>(String(tire?.pressurePsi || 110));
+  const [status, setStatus] = useState<TireItem['status']>(tire?.status || 'em_uso');
+  const [retreadCount, setRetreadCount] = useState<number>(tire?.retreadCount || 0);
+  const [notes, setNotes] = useState(tire?.notes || '');
 
   useEffect(() => {
     if (tire) {
@@ -77,6 +75,8 @@ export const TireInspectionModal: React.FC<TireInspectionModalProps> = ({
     onSaveTire(updated);
     onClose();
   };
+
+  if (!isOpen || !tire) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">

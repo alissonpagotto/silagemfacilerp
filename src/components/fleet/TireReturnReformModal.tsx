@@ -15,15 +15,14 @@ export const TireReturnReformModal: React.FC<TireReturnReformModalProps> = ({
   tire,
   onConfirmReturn,
 }) => {
-  if (!isOpen || !tire) return null;
-
   const [newTreadMm, setNewTreadMm] = useState<string>('15.0');
-  const [cost, setCost] = useState<string>(tire.reformCost ? String(tire.reformCost) : '');
-  const [workshop, setWorkshop] = useState<string>(tire.reformWorkshop || '');
+  const [cost, setCost] = useState<string>(tire?.reformCost ? String(tire.reformCost) : '');
+  const [workshop, setWorkshop] = useState<string>(tire?.reformWorkshop || '');
   const [notes, setNotes] = useState<string>('Retorno de recapagem em perfeito estado de carcaça e banda nova.');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tire) return;
     onConfirmReturn(
       tire,
       parseFloat(newTreadMm) || 15.0,
@@ -33,6 +32,8 @@ export const TireReturnReformModal: React.FC<TireReturnReformModalProps> = ({
     );
     onClose();
   };
+
+  if (!isOpen || !tire) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">

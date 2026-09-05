@@ -27,8 +27,6 @@ export const VehicleCategoriesModal: React.FC<VehicleCategoriesModalProps> = ({
   onSaveCategories,
   onSelectCategory,
 }) => {
-  if (!isOpen) return null;
-
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -108,6 +106,8 @@ export const VehicleCategoriesModal: React.FC<VehicleCategoriesModalProps> = ({
       setTimeout(() => setSuccessMsg(''), 2500);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">

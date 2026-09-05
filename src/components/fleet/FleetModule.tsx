@@ -696,6 +696,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
             setIsHistoryModalOpen(false);
             setHistoryVehicle(null);
           }}
+          vehicle={historyVehicle}
           machinery={historyVehicle}
           services={services}
           orders={orders}

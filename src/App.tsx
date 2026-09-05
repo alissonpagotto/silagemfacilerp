@@ -100,6 +100,8 @@ import { CompanySettingsView } from './components/settings/CompanySettingsView';
 import { QuickMemoModal } from './components/quick/QuickMemoModal';
 import { TrialInfoModal } from './components/quick/TrialInfoModal';
 import { LovableIntegrationModal } from './components/integration/LovableIntegrationModal';
+import { useAuth } from './context/AuthContext';
+import { uploadAllDataToFirestore, fetchAllDataFromFirestore } from './lib/firebaseSync';
 
 export default function App() {
   // State Initialization from LocalStorage
@@ -126,6 +128,72 @@ export default function App() {
   const [advances, setAdvances] = useState<SalaryAdvance[]>(() => getStoredSalaryAdvances());
 
   const { confirm } = useConfirm();
+  const { currentUser, setIsSyncing, setLastSyncedAt } = useAuth();
+
+  const handleSyncFirebase = async () => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      await uploadAllDataToFirestore(currentUser.uid, {
+        expenses,
+        clients,
+        orders,
+        machineries,
+        services,
+        companyProfile
+      });
+      setLastSyncedAt(new Date());
+    } catch (err) {
+      console.error('Failed to sync to Firebase:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // When user logs in, if cloud data exists, fetch it and populate
+  useEffect(() => {
+    if (!currentUser) return;
+    let isMounted = true;
+    (async () => {
+      try {
+        const cloudData = await fetchAllDataFromFirestore(currentUser.uid);
+        if (cloudData && isMounted) {
+          if (cloudData.expenses?.length > 0) {
+            setExpenses(prev => {
+              const existingIds = new Set(prev.map(e => e.id));
+              const newItems = cloudData.expenses.filter(e => !existingIds.has(e.id));
+              return [...prev, ...newItems];
+            });
+          }
+          if (cloudData.clients?.length > 0) {
+            setClients(prev => {
+              const existingIds = new Set(prev.map(c => c.id));
+              const newItems = cloudData.clients.filter(c => !existingIds.has(c.id));
+              return [...prev, ...newItems];
+            });
+          }
+          if (cloudData.orders?.length > 0) {
+            setOrders(prev => {
+              const existingIds = new Set(prev.map(o => o.id));
+              const newItems = cloudData.orders.filter(o => !existingIds.has(o.id));
+              return [...prev, ...newItems];
+            });
+          }
+          if (cloudData.machineries?.length > 0) {
+            setMachineries(prev => {
+              const existingIds = new Set(prev.map(m => m.id));
+              const newItems = cloudData.machineries.filter(m => !existingIds.has(m.id));
+              return [...prev, ...newItems];
+            });
+          }
+          setLastSyncedAt(new Date());
+        }
+      } catch (e) {
+        console.error('Error fetching initial cloud data:', e);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [currentUser?.uid]);
 
   const handleSaveBankAccounts = (newAccounts: BankAccount[]) => {
 
@@ -643,6 +711,7 @@ export default function App() {
               onOpenCategoryManager={() => setIsCategoryManagerOpen(true)}
               onOpenIntegrationModal={() => setIsIntegrationModalOpen(true)}
               onResetAllData={handleResetAllData}
+              onSyncFirebase={handleSyncFirebase}
             />
           )}
 

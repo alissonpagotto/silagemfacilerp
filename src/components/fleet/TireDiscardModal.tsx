@@ -20,8 +20,6 @@ export const TireDiscardModal: React.FC<TireDiscardModalProps> = ({
   vehiclePlate,
   onConfirmDiscard,
 }) => {
-  if (!isOpen || !tire) return null;
-
   const [reason, setReason] = useState<string>('Fim de vida útil / TWI atingido');
   const [customReason, setCustomReason] = useState('');
   const [notes, setNotes] = useState('');
@@ -42,6 +40,8 @@ export const TireDiscardModal: React.FC<TireDiscardModalProps> = ({
     onConfirmDiscard(tire, finalReason, notes);
     onClose();
   };
+
+  if (!isOpen || !tire) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">

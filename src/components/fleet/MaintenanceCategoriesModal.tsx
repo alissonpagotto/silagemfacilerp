@@ -48,8 +48,6 @@ export const MaintenanceCategoriesModal: React.FC<MaintenanceCategoriesModalProp
   onSaveCategories,
   onSelectCategory,
 }) => {
-  if (!isOpen) return null;
-
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -156,6 +154,8 @@ export const MaintenanceCategoriesModal: React.FC<MaintenanceCategoriesModalProp
       onSaveCategories(updated);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">

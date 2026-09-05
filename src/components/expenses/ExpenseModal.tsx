@@ -55,8 +55,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onSaveTeams,
   onSaveSuppliers,
 }) => {
-  if (!isOpen) return null;
-
   const today = new Date().toISOString().split('T')[0];
 
   const [description, setDescription] = useState('');
@@ -487,6 +485,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <>

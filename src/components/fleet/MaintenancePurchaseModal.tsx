@@ -33,8 +33,6 @@ export const MaintenancePurchaseModal: React.FC<MaintenancePurchaseModalProps> =
   maintenanceLogs,
   machineries,
 }) => {
-  if (!isOpen) return null;
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('todos');
   const [selectedUrgency, setSelectedUrgency] = useState<string>('todos');
@@ -74,6 +72,8 @@ export const MaintenancePurchaseModal: React.FC<MaintenancePurchaseModalProps> =
         return { label: '☕ Baixa', color: 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border-stone-300' };
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">

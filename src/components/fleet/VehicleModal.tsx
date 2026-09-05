@@ -70,8 +70,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
   orders,
   onAddExpense,
 }) => {
-  if (!isOpen) return null;
-
   // Active Tab: 'dados' (Dados do Veículo) vs 'historico' (Histórico do Veículo)
   const [activeTab, setActiveTab] = useState<'dados' | 'historico'>('dados');
 
@@ -552,6 +550,8 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
     onSave(vehicleData);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/75 backdrop-blur-xs animate-in fade-in duration-150">

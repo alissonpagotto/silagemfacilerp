@@ -77,8 +77,6 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   suppliers = [],
   employees = [],
 }) => {
-  if (!isOpen) return null;
-
   // Active subtab inside modal for clean navigation
   const [activeTab, setActiveTab] = useState<'geral' | 'local_execucao' | 'pecas' | 'fiscal_financeiro'>('geral');
 
@@ -410,6 +408,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">

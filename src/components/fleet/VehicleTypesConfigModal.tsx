@@ -36,8 +36,6 @@ export const VehicleTypesConfigModal: React.FC<VehicleTypesConfigModalProps> = (
   vehicleTypes,
   onSaveVehicleTypes,
 }) => {
-  if (!isOpen) return null;
-
   const [typesList, setTypesList] = useState<VehicleTypeDefinition[]>(vehicleTypes);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [typeName, setTypeName] = useState('');
@@ -112,6 +110,8 @@ export const VehicleTypesConfigModal: React.FC<VehicleTypesConfigModalProps> = (
     setTypesList(updated);
     onSaveVehicleTypes(updated);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">
