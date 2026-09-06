@@ -1,7 +1,7 @@
 import React from 'react';
-import { DollarSign, AlertCircle, TrendingUp, Truck, Tractor, Scissors } from 'lucide-react';
+import { DollarSign, AlertCircle, TrendingUp, Truck, Tractor, Scissors, Fuel, UtensilsCrossed, Plus, Trash2 } from 'lucide-react';
 import { formatCurrencyBRL } from '../../lib/storage';
-import { ServiceTruckItem } from '../../types';
+import { ServiceTruckItem, ServiceFuelEntry, ServiceMealExpense } from '../../types';
 
 export interface TruckExpenseDetail {
   truckId: string;
@@ -27,8 +27,20 @@ interface DRESummaryBlockProps {
   modoCobrancaTratorLabel: string;
   subtotalForrageira: number;
   totalAdicionalKm: number;
+  fretePrancha?: number | '';
   totalPedido: number;
   volumeTotalFrotaM3?: number;
+
+  // NOVO CARD: Consumo de Combustível e Alimentação
+  fuelEntries?: ServiceFuelEntry[];
+  onFuelEntryChange?: (vehicleId: string, field: 'liters' | 'pricePerLiter', val: number | '') => void;
+  totalCombustivelGeral?: number;
+
+  mealExpenses?: ServiceMealExpense[];
+  onAddMealExpense?: () => void;
+  onRemoveMealExpense?: (id: string) => void;
+  onMealExpenseChange?: (id: string, field: 'description' | 'date' | 'amount', val: any) => void;
+  totalAlimentacaoGeral?: number;
 
   // Bloco 2: Custos e Proventos Adicionais (Borda Laranja - Comissões Discriminadas)
   operadorForrageiraNome: string;
@@ -61,8 +73,20 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
   modoCobrancaTratorLabel,
   subtotalForrageira,
   totalAdicionalKm,
+  fretePrancha,
   totalPedido,
   volumeTotalFrotaM3 = 0,
+
+  fuelEntries = [],
+  onFuelEntryChange,
+  totalCombustivelGeral = 0,
+
+  mealExpenses = [],
+  onAddMealExpense,
+  onRemoveMealExpense,
+  onMealExpenseChange,
+  totalAlimentacaoGeral = 0,
+
   operadorForrageiraNome,
   comissaoForrageiraP1,
   segundoOperadorForrageiraNome,
@@ -143,12 +167,262 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
             </div>
           )}
 
+          {typeof fretePrancha === 'number' && fretePrancha > 0 && (
+            <div className="flex items-center justify-between text-gray-700 dark:text-slate-300 py-0.5">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                Frete Prancha:
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-white font-mono">
+                {formatCurrencyBRL(fretePrancha)}
+              </span>
+            </div>
+          )}
+
           <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800 flex items-center justify-between font-bold text-sm text-emerald-950 dark:text-emerald-200">
             <span>Total do Pedido:</span>
             <span className="text-base font-extrabold font-mono text-emerald-800 dark:text-emerald-300">
               {formatCurrencyBRL(totalPedido)}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* NOVO CARD DEDICADO: CONSUMO DE COMBUSTÍVEL E ALIMENTAÇÃO (ENTRE RESUMO DO PEDIDO E COMISSÕES) */}
+      <div className="border border-sky-300 dark:border-sky-800/80 bg-sky-50/50 dark:bg-sky-950/20 rounded-xl p-3.5 space-y-3 border-l-4 border-l-sky-600 shadow-2xs print-client-hide print-hide-on-client">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 dark:border-sky-800/40 pb-2">
+          <div className="flex items-center gap-2">
+            <Fuel className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              Consumo de Combustível & Alimentação (Despesas da Operação)
+            </h4>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/60 px-2 py-0.5 rounded">
+              Dedutível no DRE
+            </span>
+            <span className="text-xs font-extrabold text-sky-950 dark:text-sky-200 font-mono">
+              Total do Card: {formatCurrencyBRL(totalCombustivelGeral + totalAlimentacaoGeral)}
+            </span>
+          </div>
+        </div>
+
+        {/* A) SUBSÉÇÃO: CONSUMO DE COMBUSTÍVEL (Estrutura fixa por veículo envolvido) */}
+        <div className="space-y-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-lg border border-sky-100 dark:border-sky-900/40">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-1">
+            <span className="text-[11px] font-bold text-gray-800 dark:text-slate-200 uppercase flex items-center gap-1.5">
+              <Fuel className="w-3.5 h-3.5 text-sky-600" />
+              A. Consumo de Combustível por Veículo
+            </span>
+            <span className="text-[11px] font-mono font-bold text-sky-800 dark:text-sky-300">
+              Total Geral de Combustível: {formatCurrencyBRL(totalCombustivelGeral)}
+            </span>
+          </div>
+
+          {fuelEntries.length === 0 ? (
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 italic py-1">
+              Nenhum veículo ativo selecionado na operação (Ensiladeira, Trator ou Caminhões).
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase px-1">
+                <span className="sm:col-span-5">Veículo / Máquina Ativa</span>
+                <span className="sm:col-span-2 text-right">Qtd. Litros</span>
+                <span className="sm:col-span-2 text-right">Valor / Litro (R$)</span>
+                <span className="sm:col-span-3 text-right">Subtotal Combustível</span>
+              </div>
+
+              {fuelEntries.map((entry) => (
+                <div
+                  key={entry.vehicleId}
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-gray-50/80 dark:bg-slate-800/60 p-2 rounded-md border border-gray-200/70 dark:border-slate-700/60 text-xs"
+                >
+                  <div className="sm:col-span-5 font-semibold text-gray-800 dark:text-slate-200 truncate flex items-center gap-1.5">
+                    {entry.vehicleType === 'forrageira' ? (
+                      <Scissors className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    ) : entry.vehicleType === 'trator' ? (
+                      <Tractor className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    ) : (
+                      <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    )}
+                    <span className="truncate" title={entry.vehicleName}>
+                      {entry.vehicleName}
+                    </span>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] text-gray-500 dark:text-slate-400 font-medium sm:hidden">
+                      Quantidade de Litros:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={entry.liters}
+                        placeholder="0.0"
+                        onChange={(e) =>
+                          onFuelEntryChange?.(
+                            entry.vehicleId,
+                            'liters',
+                            e.target.value === '' ? '' : Number(e.target.value)
+                          )
+                        }
+                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-medium focus:ring-1 focus:ring-sky-500 text-right pr-6"
+                      />
+                      <span className="absolute right-2 top-1 text-[10px] text-gray-400">L</span>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] text-gray-500 dark:text-slate-400 font-medium sm:hidden">
+                      Valor por Litro (R$):
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={entry.pricePerLiter}
+                        placeholder="0.00"
+                        onChange={(e) =>
+                          onFuelEntryChange?.(
+                            entry.vehicleId,
+                            'pricePerLiter',
+                            e.target.value === '' ? '' : Number(e.target.value)
+                          )
+                        }
+                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-medium focus:ring-1 focus:ring-sky-500 text-right pr-6"
+                      />
+                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-400">R$</span>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-3 flex sm:justify-end items-center justify-between">
+                    <span className="text-[10px] text-gray-500 dark:text-slate-400 sm:hidden">
+                      Subtotal:
+                    </span>
+                    <span className="font-bold font-mono text-gray-900 dark:text-white text-xs">
+                      {formatCurrencyBRL(entry.subtotal)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* B) SUBSEÇÃO: ALIMENTAÇÃO E DIÁRIAS (Estrutura Dinâmica) */}
+        <div className="space-y-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-lg border border-sky-100 dark:border-sky-900/40">
+          <div className="flex flex-wrap items-center justify-between gap-1 border-b border-gray-100 dark:border-slate-800 pb-1">
+            <span className="text-[11px] font-bold text-gray-800 dark:text-slate-200 uppercase flex items-center gap-1.5">
+              <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
+              B. Alimentação e Diárias da Operação
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-bold text-amber-800 dark:text-amber-300">
+                Total Geral de Alimentação: {formatCurrencyBRL(totalAlimentacaoGeral)}
+              </span>
+              {onAddMealExpense && (
+                <button
+                  type="button"
+                  onClick={onAddMealExpense}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10.5px] font-bold cursor-pointer transition shadow-2xs"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>+ Adicionar Refeição/Despesa</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {mealExpenses.length === 0 ? (
+            <div className="text-[11px] text-gray-500 dark:text-slate-400 italic py-1 flex items-center justify-between">
+              <span>Nenhuma refeição ou diária lançada.</span>
+              {onAddMealExpense && (
+                <button
+                  type="button"
+                  onClick={onAddMealExpense}
+                  className="text-amber-700 dark:text-amber-400 font-semibold hover:underline text-[11px] cursor-pointer"
+                >
+                  + Adicionar Refeição/Despesa
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="hidden sm:grid sm:grid-cols-12 gap-1.5 text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase px-1">
+                <span className="sm:col-span-5">Descrição / Tipo</span>
+                <span className="sm:col-span-3">Data / Dia do Gasto</span>
+                <span className="sm:col-span-3 text-right">Valor (R$)</span>
+                <span className="sm:col-span-1 text-center">Ação</span>
+              </div>
+
+              {mealExpenses.map((meal) => (
+                <div
+                  key={meal.id}
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center bg-gray-50/80 dark:bg-slate-800/60 p-1.5 rounded-md border border-gray-200/70 dark:border-slate-700/60 text-xs"
+                >
+                  <div className="sm:col-span-5">
+                    <select
+                      value={meal.description}
+                      onChange={(e) => onMealExpenseChange?.(meal.id, 'description', e.target.value)}
+                      className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-medium focus:ring-1 focus:ring-amber-500"
+                    >
+                      <option value="Café da manhã">Café da manhã</option>
+                      <option value="Almoço">Almoço</option>
+                      <option value="Janta">Janta</option>
+                      <option value="Diária">Diária da Equipe</option>
+                      <option value="Marmitas da Equipe">Marmitas da Equipe</option>
+                      <option value="Lanche / Bebidas">Lanche / Bebidas</option>
+                      <option value="Outra Despesa">Outra Despesa</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <input
+                      type="date"
+                      value={meal.date}
+                      onChange={(e) => onMealExpenseChange?.(meal.id, 'date', e.target.value)}
+                      className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono text-gray-700 dark:text-slate-200 focus:ring-1 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={meal.amount}
+                        placeholder="0.00"
+                        onChange={(e) =>
+                          onMealExpenseChange?.(
+                            meal.id,
+                            'amount',
+                            e.target.value === '' ? '' : Number(e.target.value)
+                          )
+                        }
+                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-bold text-gray-900 dark:text-white focus:ring-1 focus:ring-amber-500 text-right pr-6"
+                      />
+                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-400">R$</span>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => onRemoveMealExpense?.(meal.id)}
+                      className="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition cursor-pointer"
+                      title="Excluir refeição"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -269,25 +543,39 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
       </div>
 
       {/* 3. CARD DE DESTAQUE VERDE: RESULTADO FINAL (LUCRO ESTIMADO) */}
-      <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-xl p-3.5 shadow-sm space-y-1.5 print-client-hide print-hide-on-client">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-xl p-3.5 shadow-sm space-y-2 print-client-hide print-hide-on-client">
+        <div className="flex items-center justify-between border-b border-emerald-700/60 pb-1.5">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-300 shrink-0" />
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-200">
-              Resultado Final (Lucro Estimado)
+              3. Resultado Final da Operação (Lucro Líquido Estimado)
             </span>
           </div>
-          <span className="text-xs font-extrabold px-2 py-0.5 bg-white/20 rounded-full backdrop-blur-xs text-white">
+          <span className="text-xs font-extrabold px-2.5 py-0.5 bg-white/20 rounded-full backdrop-blur-xs text-white font-mono">
             Margem: {margemLucroPercent.toFixed(1)}%
           </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
-          <div className="text-xs text-emerald-100">
-            Total Pedido ({formatCurrencyBRL(totalPedido)}) - Total Despesas ({formatCurrencyBRL(totalGeralDespesas)})
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1 text-center">
+          <div className="bg-emerald-950/40 p-2 rounded flex flex-col justify-center">
+            <span className="text-[10px] text-emerald-200 block uppercase font-medium mb-0.5">Receita Bruta (Pedido)</span>
+            <strong className="text-sm font-mono text-white block">{formatCurrencyBRL(totalPedido)}</strong>
           </div>
-          <div className="text-2xl font-black font-mono tracking-tight text-white">
-            {formatCurrencyBRL(lucroEstimado)}
+          <div className="bg-emerald-950/40 p-2 rounded flex flex-col justify-center">
+            <span className="text-[10px] text-emerald-200 block uppercase font-medium mb-0.5">(-) Comissões & Frotas</span>
+            <strong className="text-sm font-mono text-amber-300 block">
+              {formatCurrencyBRL(totalGeralDespesas - (totalCombustivelGeral + totalAlimentacaoGeral))}
+            </strong>
+          </div>
+          <div className="bg-emerald-950/40 p-2 rounded flex flex-col justify-center">
+            <span className="text-[10px] text-emerald-200 block uppercase font-medium mb-0.5">(-) Combustível & Refeições</span>
+            <strong className="text-sm font-mono text-amber-300 block">
+              {formatCurrencyBRL(totalCombustivelGeral + totalAlimentacaoGeral)}
+            </strong>
+          </div>
+          <div className="bg-emerald-700/60 border border-emerald-500/40 p-2 rounded flex flex-col justify-center">
+            <span className="text-[10px] text-emerald-100 block uppercase font-extrabold mb-0.5">(=) Lucro Líquido</span>
+            <strong className="text-base font-black font-mono text-emerald-100 block">{formatCurrencyBRL(lucroEstimado)}</strong>
           </div>
         </div>
       </div>

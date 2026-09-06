@@ -293,6 +293,8 @@ export interface ServiceOrder {
   serviceTab?: string;
   areaHectares?: number;
   tonsEstimated?: number;
+  densityKg?: number; // Peso por m³ (Kg) da silagem para cubagem
+  weightPerM3Kg?: number; // Peso por m³ (Kg)
   ratePerUnit: number;
   totalAmount: number;
   startDate: string;
@@ -352,9 +354,35 @@ export interface ServiceOrder {
   truckFleetTotalDistributed?: number;
   trucksTotalKmAdditional?: number;
 
+  // Frete Prancha
+  fretePrancha?: number;
+  flatbedFreight?: number;
+
+  // Consumo de Combustível e Alimentação
+  fuelEntries?: ServiceFuelEntry[];
+  totalFuelCost?: number;
+  mealExpenses?: ServiceMealExpense[];
+  totalMealCost?: number;
+
   // Fechamento e DRE da Operação
   totalExpenses?: number; // Total Geral Despesas (comissões e custos adicionais)
   estimatedProfit?: number; // Resultado Final (Lucro Estimado)
+}
+
+export interface ServiceFuelEntry {
+  vehicleId: string;
+  vehicleType: 'forrageira' | 'trator' | 'caminhao' | 'outro';
+  vehicleName: string;
+  liters: number | '';
+  pricePerLiter: number | '';
+  subtotal: number;
+}
+
+export interface ServiceMealExpense {
+  id: string;
+  description: string; // ex: 'Café da manhã', 'Almoço', 'Janta', 'Diária'
+  date: string; // YYYY-MM-DD
+  amount: number | '';
 }
 
 export interface ServiceTruckItem {

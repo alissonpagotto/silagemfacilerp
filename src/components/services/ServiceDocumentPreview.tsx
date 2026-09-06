@@ -15,10 +15,12 @@ import {
   Calendar, 
   X,
   Lock,
-  Users
+  Users,
+  Fuel,
+  UtensilsCrossed
 } from 'lucide-react';
-import { formatCurrencyBRL, getStoredCompanyProfile } from '../../lib/storage';
-import { ServiceTruckItem, CompanyProfile } from '../../types';
+import { formatCurrencyBRL, formatDateBR, getStoredCompanyProfile } from '../../lib/storage';
+import { ServiceTruckItem, CompanyProfile, ServiceFuelEntry, ServiceMealExpense } from '../../types';
 import { TruckExpenseDetail } from './DRESummaryBlock';
 
 export type PrintContentType = 'client' | 'full';
@@ -33,6 +35,7 @@ export interface ServiceDocumentPreviewProps {
   // Identificação Geral
   orderNumber?: string;
   serviceTypeTitle: string;
+  serviceTab?: string;
   clientName: string;
   clientPhone: string;
   farmName: string;
@@ -63,7 +66,14 @@ export interface ServiceDocumentPreviewProps {
   totalAdicionalKm: number;
 
   // Resumo Financeiro Pedido
+  fretePrancha?: number | '';
   totalPedido: number;
+
+  // Custos Operacionais (Combustível & Alimentação)
+  fuelEntries?: ServiceFuelEntry[];
+  totalCombustivelGeral?: number;
+  mealExpenses?: ServiceMealExpense[];
+  totalAlimentacaoGeral?: number;
 
   // DRE Gerencial (Exclusivo Modo Full)
   operadorForrageiraNome: string;
@@ -92,6 +102,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
   onClose,
   orderNumber,
   serviceTypeTitle,
+  serviceTab,
   clientName,
   clientPhone,
   farmName,
@@ -114,7 +125,12 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
   modoCobrancaTratorLabel,
   trucks,
   totalAdicionalKm,
+  fretePrancha,
   totalPedido,
+  fuelEntries,
+  totalCombustivelGeral,
+  mealExpenses,
+  totalAlimentacaoGeral,
   operadorForrageiraNome,
   comissaoForrageiraP1,
   segundoOperadorForrageiraNome,
@@ -131,6 +147,31 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 }) => {
   const [contentType, setContentType] = useState<PrintContentType>(initialContentType);
   const [paperFormat, setPaperFormat] = useState<PrintPaperFormat>(initialPaperFormat);
+
+  // Título dinâmico por modalidade conforme a aba ativa
+  const operationalSpecsTitle = useMemo(() => {
+    const tab = (serviceTab || '').toLowerCase();
+    const title = (serviceTypeTitle || '').toLowerCase();
+    if (tab === 'corte' || title.includes('corte')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DO CORTE';
+    }
+    if (tab === 'colheita' || title.includes('colheita')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DA COLHEITA';
+    }
+    if (tab === 'trator' || title.includes('trator')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DO SERVIÇO DE TRATOR';
+    }
+    if (tab === 'maquina' || title.includes('máquina') || title.includes('maquina')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DO SERVIÇO DE MÁQUINA';
+    }
+    if (tab === 'orcamento' || title.includes('orçamento') || title.includes('orcamento')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DO ORÇAMENTO';
+    }
+    if (tab === 'venda' || title.includes('venda')) {
+      return 'ESPECIFICAÇÕES OPERACIONAIS DA VENDA';
+    }
+    return 'ESPECIFICAÇÕES OPERACIONAIS DO CORTE';
+  }, [serviceTab, serviceTypeTitle]);
 
   // Perfil da empresa prestadora (via props ou armazenamento local sincronizado)
   const company = useMemo(() => companyProfile || getStoredCompanyProfile(), [companyProfile]);
@@ -921,7 +962,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Data:</span>
-                  <span className="font-bold">{serviceDate || 'Hoje'}</span>
+                  <span className="font-bold">{serviceDate ? formatDateBR(serviceDate) : 'Hoje'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Modalidade:</span>
@@ -954,7 +995,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
               {/* DADOS OPERACIONAIS DA EXECUÇÃO */}
               <div className="py-2 border-b border-dashed border-gray-400 space-y-1 text-[10px]">
                 <p className="font-bold uppercase text-gray-700 border-b border-dotted border-gray-300 pb-0.5">
-                  EXECUÇÃO OPERACIONAL
+                  {operationalSpecsTitle}
                 </p>
                 <div className="flex justify-between">
                   <span>{unidadeAreaLabel}:</span>
@@ -1056,6 +1097,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   </div>
                 )}
 
+                {Number(fretePrancha) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Frete Prancha:</span>
+                    <span>R$ {formatCurrencyBRL(Number(fretePrancha))}</span>
+                  </div>
+                )}
+
                 <div className="border-t-2 border-black pt-1 mt-1 flex justify-between items-baseline font-black text-[11px]">
                   <span>TOTAL A PAGAR:</span>
                   <span className="text-xs font-black">R$ {formatCurrencyBRL(totalPedido)}</span>
@@ -1068,6 +1116,32 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   <p className="font-black uppercase tracking-wide text-center bg-orange-100 text-orange-900 py-0.5 border border-orange-300">
                     DRE & CUSTOS DA OPERAÇÃO
                   </p>
+
+                  {/* Custos Operacionais: Combustível e Alimentação */}
+                  {((totalCombustivelGeral || 0) > 0 || (totalAlimentacaoGeral || 0) > 0) && (
+                    <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
+                      <div className="flex justify-between font-bold text-gray-700">
+                        <span>Combustível & Refeições:</span>
+                        <span>R$ {formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}</span>
+                      </div>
+                      {fuelEntries && fuelEntries.some(f => (f.subtotal || 0) > 0) && (
+                        fuelEntries.filter(f => (f.subtotal || 0) > 0).map(f => (
+                          <div key={`80mm-fuel-${f.vehicleId}`} className="flex justify-between pl-1 text-[9px]">
+                            <span className="truncate max-w-[135px]">• Diesel {f.vehicleName}: {f.liters}L</span>
+                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(f.subtotal || 0)}</span>
+                          </div>
+                        ))
+                      )}
+                      {mealExpenses && mealExpenses.some(m => Number(m.amount) > 0) && (
+                        mealExpenses.filter(m => Number(m.amount) > 0).map(m => (
+                          <div key={`80mm-meal-${m.id}`} className="flex justify-between pl-1 text-[9px]">
+                            <span className="truncate max-w-[135px]">• {m.description || 'Alimentação'}</span>
+                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(Number(m.amount) || 0)}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
 
                   {/* Custos de Transporte das Frotas (Rateio + Adicional KM) */}
                   {trucksExpenseDetails.length > 0 && (
@@ -1277,7 +1351,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       ORDEM DE SERVIÇO Nº {displayOrderNumber}
                     </p>
                     <p className="text-[10px] text-slate-600">
-                      Data da Emissão: <strong className="text-slate-900">{serviceDate || 'Hoje'}</strong>
+                      Data da Emissão: <strong className="text-slate-900">{serviceDate ? formatDateBR(serviceDate) : 'Hoje'}</strong>
                     </p>
                     <p className="text-[9.5px] text-slate-500">
                       Modalidade: <strong className="text-slate-800 uppercase">{serviceTypeTitle}</strong>
@@ -1309,7 +1383,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 <div className="border border-slate-200 rounded-lg p-2 mb-2 space-y-1.5 break-avoid">
                   <h3 className="text-[11px] font-bold uppercase text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-1">
                     <Scissors className="w-3.5 h-3.5 text-emerald-700" />
-                    Especificações Operacionais da Colheita
+                    {operationalSpecsTitle}
                   </h3>
 
                   <div className="grid grid-cols-3 gap-2 text-[10.5px]">
@@ -1409,7 +1483,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-[10.5px] pt-0.5">
+                  <div className={`grid gap-2 text-[10.5px] pt-0.5 ${Number(fretePrancha) > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                     <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
                       <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Serviço Base ({unidadeAreaLabel})</span>
                       <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(valorBaseArea)}</span>
@@ -1427,6 +1501,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
                       <span className="text-[9px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
                     </div>
+
+                    {Number(fretePrancha) > 0 && (
+                      <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
+                        <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Frete Prancha</span>
+                        <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(Number(fretePrancha))}</span>
+                        <span className="text-[9px] text-emerald-700 font-semibold block mt-0.5">+ Adicionado ao Total</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1493,6 +1575,69 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                 </div>
                               );
                             })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CUSTOS OPERACIONAIS: COMBUSTÍVEL E ALIMENTAÇÃO */}
+                      {((totalCombustivelGeral || 0) > 0 || (totalAlimentacaoGeral || 0) > 0) && (
+                        <div className="space-y-1 pt-1 border-t border-orange-200/60">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <p className="font-bold text-orange-950 flex items-center gap-1 uppercase">
+                              <Fuel className="w-3.5 h-3.5 text-amber-600" />
+                              Custos Operacionais (Combustível & Alimentação):
+                            </p>
+                            <span className="font-bold text-orange-800 text-[9.5px] font-mono">
+                              Subtotal Operacional: R$ {formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            {/* Combustível */}
+                            {fuelEntries && fuelEntries.some(f => (f.subtotal || 0) > 0) ? (
+                              <div className="bg-white p-1.5 rounded border border-orange-200 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-bold text-slate-700 flex items-center gap-1">
+                                    <Fuel className="w-3 h-3 text-amber-500" />
+                                    Diesel Consumido
+                                  </span>
+                                  <span className="font-mono font-bold text-amber-800 text-[9px]">
+                                    R$ {formatCurrencyBRL(totalCombustivelGeral || 0)}
+                                  </span>
+                                </div>
+                                <div className="space-y-0.5 text-[8.5px]">
+                                  {fuelEntries.filter(f => (f.subtotal || 0) > 0).map(f => (
+                                    <div key={`a4-fuel-${f.vehicleId}`} className="flex justify-between text-slate-700">
+                                      <span className="truncate max-w-[150px]">{f.vehicleName} ({f.liters} L x R$ {formatCurrencyBRL(f.pricePerLiter || 0)})</span>
+                                      <span className="font-bold font-mono">R$ {formatCurrencyBRL(f.subtotal || 0)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {/* Alimentação */}
+                            {mealExpenses && mealExpenses.some(m => Number(m.amount) > 0) ? (
+                              <div className="bg-white p-1.5 rounded border border-orange-200 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-bold text-slate-700 flex items-center gap-1">
+                                    <UtensilsCrossed className="w-3 h-3 text-orange-500" />
+                                    Alimentação & Diárias
+                                  </span>
+                                  <span className="font-mono font-bold text-orange-800 text-[9px]">
+                                    R$ {formatCurrencyBRL(totalAlimentacaoGeral || 0)}
+                                  </span>
+                                </div>
+                                <div className="space-y-0.5 text-[8.5px]">
+                                  {mealExpenses.filter(m => Number(m.amount) > 0).map(m => (
+                                    <div key={`a4-meal-${m.id}`} className="flex justify-between text-slate-700">
+                                      <span className="truncate max-w-[150px]">{m.description} {m.date ? `(${formatDateBR(m.date)})` : ''}</span>
+                                      <span className="font-bold font-mono">R$ {formatCurrencyBRL(Number(m.amount) || 0)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )}

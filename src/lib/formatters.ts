@@ -119,20 +119,101 @@ export function formatCurrencyInputDisplay(value: number | string | undefined | 
 }
 
 /**
- * Parses user input like "R$ 1.500,50" or "1500,50" or "1500.50" into a numeric float
+ * Parses user input like "R$ 3.400,00", "R$ 1.200,00", "3400", "1200", "3.400,50" into a clean numeric float.
+ * Removes "R$", whitespace, thousands separators, and converts decimal commas to dots.
  */
-export function parseCurrencyInput(value: string | number | undefined | null): number {
+export function parseCurrencyToFloat(value: string | number | undefined | null): number {
   if (value === undefined || value === null || value === '') return 0;
   if (typeof value === 'number') return isNaN(value) ? 0 : value;
 
-  // Remove "R$", spaces, and dots used as thousands separators
-  const clean = value
-    .replace(/[R$\s]/g, '')
-    .replace(/\.(?=\d{3}(,|$))/g, '') // remove thousands dot
-    .replace(',', '.'); // convert decimal comma to dot
+  let str = String(value).trim();
+  if (!str) return 0;
 
-  const parsed = parseFloat(clean);
+  // Remove "R$" and spaces
+  str = str.replace(/[R$\s]/g, '');
+
+  // If format contains both '.' and ',', standard Brazilian format: "3.400,50" -> "3400.50"
+  if (str.includes('.') && str.includes(',')) {
+    str = str.replace(/\./g, '').replace(',', '.');
+  } else if (str.includes(',')) {
+    // e.g. "3400,50" -> "3400.50"
+    str = str.replace(',', '.');
+  } else if (str.includes('.')) {
+    // If only dot: check if it's thousands separator like "3.400"
+    const parts = str.split('.');
+    if (parts.length === 2 && parts[1].length === 3) {
+      str = parts[0] + parts[1];
+    }
+  }
+
+  const parsed = parseFloat(str);
   return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Backward compatibility alias for parseCurrencyToFloat
+ */
+export const parseCurrencyInput = parseCurrencyToFloat;
+
+/**
+ * Real-time currency input mask for Brazilian standard (BRL - R$).
+ * Formats values dynamically while typing, supporting both raw numbers (3400 -> "R$ 3.400,00")
+ * and progressive keystrokes (e.g., typing digits and commas).
+ */
+export function maskCurrencyBRLInput(value: string | number | undefined | null): string {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value === 'number') {
+    if (isNaN(value)) return '';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  }
+
+  const str = String(value).trim();
+  if (!str) return '';
+
+  // Clean out R$ and whitespace
+  const clean = str.replace(/[R$\s]/g, '');
+  if (!clean) return '';
+
+  const hasComma = clean.includes(',');
+  const hasDotAsDecimal = !hasComma && clean.includes('.') && clean.indexOf('.') === clean.lastIndexOf('.') && (clean.length - clean.indexOf('.') <= 3);
+
+  if (hasComma || hasDotAsDecimal) {
+    const separator = hasComma ? ',' : '.';
+    const parts = clean.split(separator);
+    const intDigits = parts[0].replace(/\D/g, '');
+    const decDigits = parts[1] ? parts[1].replace(/\D/g, '').slice(0, 2) : '';
+
+    const intVal = intDigits ? parseInt(intDigits, 10) : 0;
+    const formattedInt = new Intl.NumberFormat('pt-BR').format(intVal);
+
+    if (clean.endsWith(',') || clean.endsWith('.')) {
+      return `R$ ${formattedInt},`;
+    }
+    return `R$ ${formattedInt},${decDigits}`;
+  }
+
+  // Pure integer digits
+  const digits = clean.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10);
+  const formatted = new Intl.NumberFormat('pt-BR').format(num);
+  return `R$ ${formatted}`;
+}
+
+/**
+ * Ensures a valid two-decimal BRL string on input blur (e.g. "R$ 3.400" -> "R$ 3.400,00")
+ */
+export function formatCurrencyBRLOnBlur(value: string | number | undefined | null): string {
+  if (value === undefined || value === null || value === '') return '';
+  const num = parseCurrencyToFloat(value);
+  if (num === 0 && (String(value).trim() === '' || String(value).trim() === '0')) return '';
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(num);
 }
 
 /**

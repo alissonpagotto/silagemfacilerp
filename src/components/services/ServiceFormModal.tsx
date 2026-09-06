@@ -26,10 +26,22 @@ import {
   AlertCircle,
   Printer,
   PrinterCheck,
-  Lock
+  Lock,
+  LogOut,
+  CheckCircle2
 } from 'lucide-react';
-import { ServiceOrder, Machinery, Employee, Client, ServiceTruckItem, CompanyProfile } from '../../types';
+import { 
+  ServiceOrder, 
+  Machinery, 
+  Employee, 
+  Client, 
+  ServiceTruckItem, 
+  CompanyProfile,
+  ServiceFuelEntry,
+  ServiceMealExpense
+} from '../../types';
 import { formatCurrencyBRL } from '../../lib/storage';
+import { parseCurrencyToFloat, maskCurrencyBRLInput, formatCurrencyBRLOnBlur } from '../../lib/formatters';
 import { QuickClientModal } from './QuickClientModal';
 import { TractorBlock } from './TractorBlock';
 import { TruckFleetSection } from './TruckFleetSection';
@@ -89,8 +101,8 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   // 2. Área e Unidades (Corte e Colheita)
   const [unidadeArea, setUnidadeArea] = useState<'hectares' | 'alqueires' | 'hora'>('hectares');
   const [quantidadeArea, setQuantidadeArea] = useState<number | ''>('');
-  const [valorPorHectare, setValorPorHectare] = useState<number | ''>('');
-  const [estimativaToneladas, setEstimativaToneladas] = useState<number | ''>('');
+  const [valorPorHectare, setValorPorHectare] = useState<string | number>('');
+  const [pesoPorM3, setPesoPorM3] = useState<number | ''>(650);
 
   // 3. Bloco Forrageira / Ensiladeira (Borda Amarela)
   const [forrageiraId, setForrageiraId] = useState('');
@@ -127,13 +139,24 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   const [truckFleetPercentage, setTruckFleetPercentage] = useState<number | ''>(10);
   const [trucks, setTrucks] = useState<ServiceTruckItem[]>([]);
 
-  // 6. Observações
+  // 6. Frete Prancha (Soma ao Faturamento Total do Pedido)
+  const [fretePrancha, setFretePrancha] = useState<string | number>('');
+
+  // 7. Custos Operacionais: Combustível e Alimentação (DRE)
+  const [fuelEntries, setFuelEntries] = useState<ServiceFuelEntry[]>([]);
+  const [mealExpenses, setMealExpenses] = useState<ServiceMealExpense[]>([]);
+
+  // 8. Observações
   const [observacoes, setObservacoes] = useState('');
 
-  // 7. Estados para o Modal / Tela de Prévia e Impressão
+  // 9. Estados para o Modal / Tela de Prévia e Impressão
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [printPreviewContentType, setPrintPreviewContentType] = useState<PrintContentType>('client');
   const [printPreviewPaperFormat, setPrintPreviewPaperFormat] = useState<PrintPaperFormat>('thermal_80mm');
+
+  // 10. Controle de Salvamento e Persistência na Tela (UX)
+  const [savedOrder, setSavedOrder] = useState<ServiceOrder | null>(null);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
   // Conjunto de IDs de Maquinários já Selecionados (REGRA DE EXCLUSÃO)
   const selectedMachineryIds = useMemo(() => {
@@ -168,8 +191,14 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
 
       setUnidadeArea(editRecord.areaUnit || 'hectares');
       setQuantidadeArea(editRecord.areaQuantity ?? editRecord.areaHectares ?? '');
-      setValorPorHectare(editRecord.ratePerAreaUnit ?? editRecord.ratePerUnit ?? '');
-      setEstimativaToneladas(editRecord.tonsEstimated ?? '');
+      setValorPorHectare(
+        editRecord.ratePerAreaUnit !== undefined 
+          ? maskCurrencyBRLInput(editRecord.ratePerAreaUnit) 
+          : editRecord.ratePerUnit !== undefined 
+          ? maskCurrencyBRLInput(editRecord.ratePerUnit) 
+          : ''
+      );
+      setPesoPorM3(editRecord.densityKg ?? editRecord.weightPerM3Kg ?? 650);
 
       // Forrageira
       setForrageiraId(editRecord.forageHarvesterId ?? '');
@@ -222,7 +251,21 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       // Frotas
       setTruckFleetPercentage(editRecord.truckFleetPercentage ?? 10);
       setTrucks(editRecord.trucks || []);
+
+      // Frete Prancha & Custos Operacionais
+      setFretePrancha(
+        editRecord.fretePrancha !== undefined 
+          ? maskCurrencyBRLInput(editRecord.fretePrancha) 
+          : editRecord.flatbedFreight !== undefined 
+          ? maskCurrencyBRLInput(editRecord.flatbedFreight) 
+          : ''
+      );
+      setFuelEntries(editRecord.fuelEntries || []);
+      setMealExpenses(editRecord.mealExpenses || []);
+
       setObservacoes(editRecord.notes || '');
+      setSavedOrder(editRecord || null);
+      setSaveSuccessMessage(null);
     } else {
       // Novo registro padrão
       setNumero(nextNumber || `#${Date.now().toString().slice(-4)}`);
@@ -235,7 +278,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       setUnidadeArea('hectares');
       setQuantidadeArea('');
       setValorPorHectare('');
-      setEstimativaToneladas('');
+      setPesoPorM3(650);
 
       // Forrageira
       setForrageiraId('');
@@ -268,7 +311,15 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       // Frotas
       setTruckFleetPercentage(10);
       setTrucks([]);
+
+      // Frete Prancha & Custos Operacionais
+      setFretePrancha('');
+      setFuelEntries([]);
+      setMealExpenses([]);
+
       setObservacoes('');
+      setSavedOrder(null);
+      setSaveSuccessMessage(null);
     }
   }, [isOpen, editRecord, nextNumber]);
 
@@ -457,7 +508,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   // 1. Valor Base do Serviço (Área)
   const valorBaseArea = useMemo(() => {
     const qtd = typeof quantidadeArea === 'number' ? quantidadeArea : 0;
-    const taxa = typeof valorPorHectare === 'number' ? valorPorHectare : 0;
+    const taxa = parseCurrencyToFloat(valorPorHectare);
     return qtd * taxa;
   }, [quantidadeArea, valorPorHectare]);
 
@@ -483,10 +534,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     return trucks.reduce((sum, t) => sum + (t.totalAdditionalKm || 0), 0);
   }, [trucks, unidadeArea]);
 
-  // 5. TOTAL DO PEDIDO (Cobrado do Cliente)
+  // 5. TOTAL DO PEDIDO (Cobrado do Cliente - com Frete Prancha)
   const totalPedido = useMemo(() => {
-    return valorBaseArea + subtotalTrator + subtotalForrageira + totalAdicionalKm;
-  }, [valorBaseArea, subtotalTrator, subtotalForrageira, totalAdicionalKm]);
+    const valorFretePrancha = parseCurrencyToFloat(fretePrancha);
+    return valorBaseArea + subtotalTrator + subtotalForrageira + totalAdicionalKm + valorFretePrancha;
+  }, [valorBaseArea, subtotalTrator, subtotalForrageira, totalAdicionalKm, fretePrancha]);
 
   // =========================================================================
   // REGRA 3: CORREÇÃO MATEMÁTICA NA DISTRIBUIÇÃO GLOBAL DE FROTAS
@@ -507,6 +559,16 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   const totalVolumeGeralM3 = useMemo(() => {
     return trucks.reduce((sum, t) => sum + ((t.capacityM3 || 0) * (t.tripLoads || 0)), 0);
   }, [trucks]);
+
+  // =========================================================================
+  // CÁLCULO AUTOMATIZADO DE ESTIMATIVA DE TONELADAS
+  // Fórmula: Toneladas = (Total Transportado em m³ * Peso por m³ (Kg)) / 1000
+  // =========================================================================
+  const estimativaToneladas = useMemo(() => {
+    const densidade = typeof pesoPorM3 === 'number' ? pesoPorM3 : 0;
+    if (totalVolumeGeralM3 <= 0 || densidade <= 0) return 0;
+    return Number(((totalVolumeGeralM3 * densidade) / 1000).toFixed(2));
+  }, [totalVolumeGeralM3, pesoPorM3]);
 
   // =========================================================================
   // COMISSÕES DOS OPERADORES (INFORMATIVAS - DRE)
@@ -651,11 +713,116 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     });
   }, [trucks, totalVolumeGeralM3, valorDistribuicaoFrotas]);
 
-  // TOTAL GERAL DESPESAS (Soma exata de todas as comissões e frotas discriminadas com Rateio + Adicional KM)
+  // =========================================================================
+  // GESTÃO OPERACIONAL DE COMBUSTÍVEL E ALIMENTAÇÃO (DRE)
+  // =========================================================================
+
+  // Veículos ativos na operação (Forrageira, Trator e Caminhões)
+  const activeVehicles = useMemo(() => {
+    const list: { vehicleId: string; vehicleType: 'forrageira' | 'trator' | 'caminhao' | 'outro'; vehicleName: string }[] = [];
+
+    if (forrageiraId || forrageiraNome.trim()) {
+      list.push({
+        vehicleId: forrageiraId || 'veh_forrageira',
+        vehicleType: 'forrageira',
+        vehicleName: forrageiraNome.trim() ? `Ensiladeira / Forrageira (${forrageiraNome.trim()})` : 'Ensiladeira / Forrageira',
+      });
+    }
+
+    if (tratorId || tratorNome.trim()) {
+      list.push({
+        vehicleId: tratorId || 'veh_trator',
+        vehicleType: 'trator',
+        vehicleName: tratorNome.trim() ? `Trator Compactador (${tratorNome.trim()})` : 'Trator Compactador',
+      });
+    }
+
+    trucks.forEach((t, idx) => {
+      const plateStr = t.plate ? t.plate.toUpperCase() : '';
+      const nameStr = t.truckName ? t.truckName : `Caminhão #${idx + 1}`;
+      const desc = plateStr ? `${nameStr} [${plateStr}]` : nameStr;
+      list.push({
+        vehicleId: t.id || `veh_truck_${idx}`,
+        vehicleType: 'caminhao',
+        vehicleName: desc,
+      });
+    });
+
+    return list;
+  }, [forrageiraId, forrageiraNome, tratorId, tratorNome, trucks]);
+
+  // Sincroniza a lista fixa de combustível por veículo ativo
+  useEffect(() => {
+    setFuelEntries((prevEntries) => {
+      return activeVehicles.map((veh) => {
+        const existing = prevEntries.find(
+          (e) => e.vehicleId === veh.vehicleId || (e.vehicleType === veh.vehicleType && veh.vehicleType !== 'caminhao')
+        );
+        const liters = existing ? existing.liters : '';
+        const pricePerLiter = existing ? existing.pricePerLiter : '';
+        const subtotal = (Number(liters) || 0) * (Number(pricePerLiter) || 0);
+        return {
+          vehicleId: veh.vehicleId,
+          vehicleType: veh.vehicleType,
+          vehicleName: veh.vehicleName,
+          liters,
+          pricePerLiter,
+          subtotal,
+        };
+      });
+    });
+  }, [activeVehicles]);
+
+  const handleFuelEntryChange = (vehicleId: string, field: 'liters' | 'pricePerLiter', val: number | '') => {
+    setFuelEntries((prev) =>
+      prev.map((item) => {
+        if (item.vehicleId !== vehicleId) return item;
+        const updated = { ...item, [field]: val };
+        updated.subtotal = (Number(updated.liters) || 0) * (Number(updated.pricePerLiter) || 0);
+        return updated;
+      })
+    );
+  };
+
+  const totalCombustivelGeral = useMemo(() => {
+    return fuelEntries.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+  }, [fuelEntries]);
+
+  // Gestão de Alimentação e Diárias
+  const handleAddMealExpense = () => {
+    setMealExpenses((prev) => [
+      ...prev,
+      {
+        id: `meal_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        description: 'Almoço',
+        date: serviceDate || new Date().toISOString().split('T')[0],
+        amount: '',
+      },
+    ]);
+  };
+
+  const handleRemoveMealExpense = (id: string) => {
+    setMealExpenses((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleMealExpenseChange = (id: string, field: 'description' | 'date' | 'amount', val: any) => {
+    setMealExpenses((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return { ...item, [field]: val };
+      })
+    );
+  };
+
+  const totalAlimentacaoGeral = useMemo(() => {
+    return mealExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  }, [mealExpenses]);
+
+  // TOTAL GERAL DESPESAS (Soma exata de todas as comissões, frotas, combustível e alimentação)
   const totalGeralDespesas = useMemo(() => {
     const totalTrucksExpense = trucksExpenseDetails.reduce((sum, item) => sum + item.totalCost, 0);
-    return comissaoForrageiraP1 + comissaoForrageiraP2 + comissaoTratorP1 + comissaoTratorP2 + totalTrucksExpense;
-  }, [comissaoForrageiraP1, comissaoForrageiraP2, comissaoTratorP1, comissaoTratorP2, trucksExpenseDetails]);
+    return comissaoForrageiraP1 + comissaoForrageiraP2 + comissaoTratorP1 + comissaoTratorP2 + totalTrucksExpense + totalCombustivelGeral + totalAlimentacaoGeral;
+  }, [comissaoForrageiraP1, comissaoForrageiraP2, comissaoTratorP1, comissaoTratorP2, trucksExpenseDetails, totalCombustivelGeral, totalAlimentacaoGeral]);
 
   // RESULTADO FINAL (LUCRO ESTIMADO)
   const lucroEstimado = useMemo(() => {
@@ -699,10 +866,16 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       // Área
       areaUnit: unidadeArea,
       areaQuantity: typeof quantidadeArea === 'number' ? quantidadeArea : undefined,
-      ratePerAreaUnit: typeof valorPorHectare === 'number' ? valorPorHectare : undefined,
-      ratePerUnit: typeof valorPorHectare === 'number' ? valorPorHectare : 0,
-      tonsEstimated: typeof estimativaToneladas === 'number' ? estimativaToneladas : undefined,
+      ratePerAreaUnit: parseCurrencyToFloat(valorPorHectare),
+      ratePerUnit: parseCurrencyToFloat(valorPorHectare),
+      tonsEstimated: estimativaToneladas > 0 ? estimativaToneladas : undefined,
+      densityKg: typeof pesoPorM3 === 'number' ? pesoPorM3 : undefined,
+      weightPerM3Kg: typeof pesoPorM3 === 'number' ? pesoPorM3 : undefined,
       subtotalArea: valorBaseArea,
+
+      // Frete Prancha
+      fretePrancha: parseCurrencyToFloat(fretePrancha),
+      flatbedFreight: parseCurrencyToFloat(fretePrancha),
 
       // Trator
       tractorId: tratorId,
@@ -741,6 +914,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       truckFleetTotalDistributed: valorDistribuicaoFrotas,
       trucksTotalKmAdditional: totalAdicionalKm,
 
+      // Combustível e Alimentação
+      fuelEntries,
+      totalFuelCost: totalCombustivelGeral,
+      mealExpenses,
+      totalMealCost: totalAlimentacaoGeral,
+
       // Fechamento e DRE
       totalAmount: totalPedido,
       totalExpenses: totalGeralDespesas,
@@ -749,7 +928,8 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     };
 
     onSave(newService);
-    onClose();
+    setSavedOrder(newService);
+    setSaveSuccessMessage(`Pedido ${newService.orderNumber} salvo com sucesso! Os dados foram gravados no sistema. Você pode continuar na tela para analisar o DRE ou imprimir.`);
   };
 
   // Configuração Dinâmica dos Estilos de Impressão Nativa (@media print)
@@ -1397,92 +1577,112 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           {/* CORPO DO FORMULÁRIO COM ROLAGEM (COMPACTO) */}
           <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 modal-body-scroll">
             
-            {/* 1. DADOS DE IDENTIFICAÇÃO E CLIENTE */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-2.5">
-              
-              {/* Número do Serviço */}
-              <div className="sm:col-span-3">
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Número
-                </label>
-                <input
-                  type="text"
-                  value={numero}
-                  onChange={(e) => setNumero(e.target.value)}
-                  className="w-full px-3 py-1.5 sm:py-2 bg-gray-50 dark:bg-slate-800/60 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-mono font-bold"
-                />
-              </div>
-
-              {/* Cliente / Produtor com Botão + Novo */}
-              <div className="sm:col-span-5">
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>Cliente / Produtor *</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsQuickClientOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>+ Novo Cliente</span>
-                  </button>
-                </label>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      placeholder="Selecione ou digite o Produtor..."
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-                    />
-                    {clients.length > 0 && (
-                      <select
-                        value={clientId}
-                        onChange={(e) => handleSelectClient(e.target.value)}
-                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                        title="Selecionar cliente da lista"
-                      >
-                        <option value="">-- Escolher Cliente Cadastrado --</option>
-                        {clients.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} {c.farmName ? `(${c.farmName})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsQuickClientOpen(true)}
-                    className="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 transition cursor-pointer shrink-0"
-                    title="Cadastrar Novo Cliente Rápido"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                  </button>
+            {/* ALERTA DE CONFIRMAÇÃO / PERSISTÊNCIA AO SALVAR */}
+            {saveSuccessMessage && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-400 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs animate-fade-in print:hidden">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[2.5]" />
+                  <span>{saveSuccessMessage}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setSaveSuccessMessage(null)}
+                  className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 font-bold p-1 rounded-lg cursor-pointer"
+                  title="Fechar aviso"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
+            )}
 
-              {/* Fazenda / Local */}
-              <div className="sm:col-span-4">
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Fazenda / Propriedade
-                </label>
-                <input
-                  type="text"
-                  value={farmName}
-                  onChange={(e) => setFarmName(e.target.value)}
-                  placeholder="Ex: Fazenda Boa Esperança"
-                  className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-                />
+            {/* 1. DADOS DE IDENTIFICAÇÃO E CLIENTE */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-2.5">
+                
+                {/* Número do Serviço */}
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Número
+                  </label>
+                  <input
+                    type="text"
+                    value={numero}
+                    onChange={(e) => setNumero(e.target.value)}
+                    className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-mono font-bold"
+                  />
+                </div>
+
+                {/* Cliente / Produtor com Botão + Novo */}
+                <div className="sm:col-span-5">
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Cliente / Produtor *</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickClientOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>+ Novo Cliente</span>
+                    </button>
+                  </label>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="Selecione ou digite o Produtor..."
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                      />
+                      {clients.length > 0 && (
+                        <select
+                          value={clientId}
+                          onChange={(e) => handleSelectClient(e.target.value)}
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                          title="Selecionar cliente da lista"
+                        >
+                          <option value="">-- Escolher Cliente Cadastrado --</option>
+                          {clients.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} {c.farmName ? `(${c.farmName})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickClientOpen(true)}
+                      className="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 transition cursor-pointer shrink-0"
+                      title="Cadastrar Novo Cliente Rápido"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fazenda / Local */}
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Fazenda / Propriedade
+                  </label>
+                  <input
+                    type="text"
+                    value={farmName}
+                    onChange={(e) => setFarmName(e.target.value)}
+                    placeholder="Ex: Fazenda Boa Esperança"
+                    className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 2. ÁREA E UNIDADES (CORTE E COLHEITA) - SEM ESTIMATIVA TONELADAS */}
+            {/* 2. ÁREA E UNIDADES (CORTE E COLHEITA) */}
             {(activeTab === 'corte' || activeTab === 'colheita') && (
-              <div className="bg-emerald-50/40 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-slate-700 pb-2">
-                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
+              <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                     Área & Produção (Valor Base)
                   </span>
 
@@ -1524,6 +1724,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                   </div>
                 </div>
 
+                {/* Linha 1: Quantidade, Valor Unitário com Máscara BRL e Subtotal da Área */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
@@ -1536,7 +1737,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => setQuantidadeArea(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="Ex: 15.5"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
 
@@ -1545,13 +1746,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       R$ / {unidadeArea === 'hectares' ? 'Hectare' : unidadeArea === 'alqueires' ? 'Alqueire' : 'Hora'}
                     </label>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
                       value={valorPorHectare}
-                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      onChange={(e) => setValorPorHectare(e.target.value === '' ? '' : Number(e.target.value))}
-                      placeholder="Ex: 450.00"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onChange={(e) => setValorPorHectare(maskCurrencyBRLInput(e.target.value))}
+                      onBlur={() => setValorPorHectare(formatCurrencyBRLOnBlur(valorPorHectare))}
+                      placeholder="R$ 0,00"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
                     />
                   </div>
 
@@ -1559,9 +1759,60 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                       Subtotal Área (Base)
                     </label>
-                    <div className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/60 rounded-lg text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-300 flex items-center justify-between">
+                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center justify-between shadow-2xs">
                       <span>{formatCurrencyBRL(valorBaseArea)}</span>
-                      <span className="text-[10px] text-gray-400 font-normal">Base Frota</span>
+                      <span className="text-[10px] text-gray-500 dark:text-slate-400 font-normal">Base Frota</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Linha 2: Frete Prancha (R$) com Máscara BRL, Peso por m³ (Kg) e Estimativa de Produção Automatizada */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Truck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        Frete Prancha (R$)
+                      </span>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">(Soma ao Total)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={fretePrancha}
+                      onChange={(e) => setFretePrancha(maskCurrencyBRLInput(e.target.value))}
+                      onBlur={() => setFretePrancha(formatCurrencyBRLOnBlur(fretePrancha))}
+                      placeholder="R$ 0,00"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span>Peso por m³ (Kg)</span>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">Densidade</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="10"
+                      min="0"
+                      value={pesoPorM3}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      onChange={(e) => setPesoPorM3(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="Ex: 650"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span>Estimativa de Produção</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Bloqueado (Auto)</span>
+                    </label>
+                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-between shadow-2xs cursor-not-allowed" title={`Fórmula: (${totalVolumeGeralM3.toFixed(1)} m³ × ${pesoPorM3 || 0} kg) / 1000`}>
+                      <span>{estimativaToneladas > 0 ? `${estimativaToneladas.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} ton` : '0,0 ton'}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-normal">
+                        {totalVolumeGeralM3 > 0 ? `${totalVolumeGeralM3.toFixed(1)} m³` : '0 m³'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1987,7 +2238,16 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
               modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'h' : modoCobrancaTrator === 'area_alq' ? 'alq' : 'ha'}
               subtotalForrageira={subtotalForrageira}
               totalAdicionalKm={totalAdicionalKm}
+              fretePrancha={fretePrancha}
               totalPedido={totalPedido}
+              fuelEntries={fuelEntries}
+              onFuelEntryChange={handleFuelEntryChange}
+              totalCombustivelGeral={totalCombustivelGeral}
+              mealExpenses={mealExpenses}
+              onAddMealExpense={handleAddMealExpense}
+              onRemoveMealExpense={handleRemoveMealExpense}
+              onMealExpenseChange={handleMealExpenseChange}
+              totalAlimentacaoGeral={totalAlimentacaoGeral}
               operadorForrageiraNome={operadorForrageiraNome}
               comissaoForrageiraP1={comissaoForrageiraP1}
               segundoOperadorForrageiraNome={segundoOperadorForrageiraNome}
@@ -2094,6 +2354,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           onClose={() => setShowPrintPreview(false)}
           orderNumber={numero}
           serviceTypeTitle={getTabConfig().title}
+          serviceTab={activeTab}
           clientName={clientName}
           clientPhone={clients.find((c) => c.id === clientId)?.phone || ''}
           farmName={farmName}
@@ -2116,7 +2377,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'Horas (h)' : modoCobrancaTrator === 'area_alq' ? 'Alqueires (alq)' : 'Hectares (ha)'}
           trucks={trucks}
           totalAdicionalKm={totalAdicionalKm}
+          fretePrancha={fretePrancha}
           totalPedido={totalPedido}
+          fuelEntries={fuelEntries}
+          totalCombustivelGeral={totalCombustivelGeral}
+          mealExpenses={mealExpenses}
+          totalAlimentacaoGeral={totalAlimentacaoGeral}
           operadorForrageiraNome={operadorForrageiraNome}
           comissaoForrageiraP1={comissaoForrageiraP1}
           segundoOperadorForrageiraNome={segundoOperadorForrageiraNome}
