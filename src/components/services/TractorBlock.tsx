@@ -146,10 +146,10 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
   };
 
   return (
-    <div className={`border rounded-xl p-4 space-y-4 border-l-4 transition-colors ${
+    <div className={`border rounded-xl p-4 space-y-4 border-l-4 transition-colors shadow-sm ${
       isTractorActive 
         ? 'border-blue-300 dark:border-blue-700/60 bg-blue-50/40 dark:bg-blue-950/20 border-l-blue-600' 
-        : 'border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-900/40 border-l-gray-400'
+        : 'border-slate-300 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-900/40 border-l-gray-400'
     }`}>
       
       {/* Cabeçalho do Bloco */}
@@ -160,7 +160,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
             {blockTitle}
           </span>
           {!isTractorActive && (
-            <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-200 dark:bg-slate-800 px-2 py-0.5 rounded">
+            <span className="text-[10px] uppercase font-bold text-gray-500 bg-gray-200 dark:bg-slate-800 px-2 py-0.5 rounded">
               Desativado / Nenhum
             </span>
           )}
@@ -202,7 +202,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
               value={tratorNome}
               onChange={(e) => onTratorNomeChange(e.target.value)}
               placeholder="-- Não Utilizar Trator / Nenhum (Clique para escolher) --"
-              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-semibold"
+              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 font-semibold shadow-2xs transition-colors"
             />
             <select
               value={tratorId}
@@ -245,7 +245,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                     value={operadorTratorNome}
                     onChange={(e) => onOperadorChange('', e.target.value)}
                     placeholder="Ex: Tratorista Roberto"
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors"
                   />
                   {employees.length > 0 && (
                     <select
@@ -279,7 +279,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                     value={segundoOperadorTratorNome}
                     onChange={(e) => onSegundoOperadorChange('', e.target.value)}
                     placeholder="Ex: Auxiliar de Silo / Suplente"
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors"
                   />
                   {employees.length > 0 && (
                     <select
@@ -304,7 +304,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
             </div>
 
             {/* SEÇÃO 1 DA INDEPENDÊNCIA: COBRANÇA DO TRATOR (CLIENTE) */}
-            <div className="bg-white/80 dark:bg-slate-900/80 border border-blue-200 dark:border-slate-700 rounded-lg p-3.5 space-y-3">
+            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 space-y-3 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
                   <Tractor className="w-3.5 h-3.5 text-blue-600" />
@@ -362,11 +362,16 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                   <input
                     type="number"
                     step="0.1"
+                    readOnly={modoCobrancaTrator !== 'horas'}
                     value={qtdCobrancaTrator}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => onQtdCobrancaChange(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder={modoCobrancaTrator === 'horas' ? 'Ex: 10.0 (Input livre)' : 'Puxado da Área Global'}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className={`w-full px-3 py-2 rounded-lg text-xs font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      modoCobrancaTrator === 'horas'
+                        ? 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors'
+                        : 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 cursor-not-allowed'
+                    }`}
                   />
                 </div>
 
@@ -381,7 +386,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => onValorUnitarioChange(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="Ex: 220.00"
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -389,9 +394,9 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                   <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                     Subtotal do Trator (Cobrado)
                   </label>
-                  <div className="w-full px-3 py-2 bg-blue-100/80 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-800 rounded-lg text-xs font-bold text-blue-950 dark:text-blue-200 flex items-center justify-between">
+                  <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between shadow-2xs">
                     <span>{formatCurrencyBRL(subtotalTrator)}</span>
-                    <span className="text-[10px] font-normal text-blue-700 dark:text-blue-300">
+                    <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
                       {qtdCobrancaTrator || 0} {modoCobrancaTrator === 'horas' ? 'h' : modoCobrancaTrator === 'area_alq' ? 'alq' : 'ha'}
                     </span>
                   </div>
@@ -456,11 +461,12 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                   <input
                     type="number"
                     step="0.1"
+                    readOnly
                     value={qtdBaseComissao}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => onQtdBaseComissaoChange(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder={modoComissaoOperador === 'horas' ? 'Puxado das Horas do Trator' : 'Puxado da Área Global'}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -475,7 +481,7 @@ export const TractorBlock: React.FC<TractorBlockProps> = ({
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => onTaxaComissaoChange(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="Ex: 15.00"
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>

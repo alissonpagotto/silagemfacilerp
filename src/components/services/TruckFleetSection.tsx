@@ -252,7 +252,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
             return (
               <div
                 key={truck.id}
-                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-2xs space-y-3"
+                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm space-y-3"
               >
                 {/* Cabeçalho do Card: Exibe primordialmente a PLACA do veículo no título + Botão Excluir */}
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-2.5">
@@ -307,7 +307,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         value={truck.truckName ? (truck.plate ? `${truck.plate} — ${truck.truckName}` : truck.truckName) : ''}
                         onChange={(e) => onUpdateTruck(truck.id, { truckName: e.target.value })}
                         placeholder="-- Escolher Caminhão Cadastrado --"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                       />
                       {caminhoesParaEsteCard.length > 0 && (
                         <select
@@ -339,7 +339,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         value={truck.primaryDriverName || ''}
                         onChange={(e) => onUpdateTruck(truck.id, { primaryDriverName: e.target.value, primaryDriverId: '' })}
                         placeholder="Ex: Motorista Carlos"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                       />
                       {employees.length > 0 && (
                         <select
@@ -350,7 +350,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                             const currentTruck = trucks.find(t => t.id === truck.id);
                             const mode = currentTruck?.driverCommissionMode || 'horas';
                             const base = mode === 'cargas' 
-                              ? (currentTruck?.tripLoads || 0) 
+                               ? (currentTruck?.tripLoads || 0) 
                               : (typeof currentTruck?.driverHours === 'number' ? currentTruck.driverHours : 0);
                             const rateToUse = (typeof currentTruck?.driverCommissionRate === 'number' && currentTruck.driverCommissionRate > 0)
                               ? currentTruck.driverCommissionRate
@@ -389,7 +389,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         value={truck.secondaryDriverName || ''}
                         onChange={(e) => onUpdateTruck(truck.id, { secondaryDriverName: e.target.value, secondaryDriverId: '' })}
                         placeholder="Ex: Ajudante / Carona"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                       />
                       {employees.length > 0 && (
                         <select
@@ -435,7 +435,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         });
                       }}
                       placeholder="20"
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                     />
                   </div>
 
@@ -461,7 +461,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         });
                       }}
                       placeholder="0"
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                     />
                   </div>
 
@@ -469,7 +469,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                       Total m³ (Calculado)
                     </label>
-                    <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                    <div className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between shadow-2xs">
                       <span className="font-mono">{truckTotalM3.toFixed(1)} m³</span>
                       <span className="text-[10px] text-slate-500 font-semibold">Cap × Cargas</span>
                     </div>
@@ -531,8 +531,8 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         placeholder="0.0"
                         className={`w-full px-3 py-2 rounded-lg text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                           truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor'
-                            ? 'bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-pink-900/60 font-bold text-slate-900 dark:text-white cursor-not-allowed'
-                            : 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600'
+                            ? 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 font-bold text-slate-900 dark:text-white cursor-not-allowed'
+                            : 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors'
                         }`}
                       />
                       {(truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor') && (
@@ -546,7 +546,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                 </div>
 
                 {/* 3. BLOCO ESTRUTURADO DE COMISSÃO INDIVIDUAL DO MOTORISTA */}
-                <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-400 dark:border-slate-700 rounded-lg p-3 space-y-2.5 mt-2 shadow-2xs print-client-hide">
+                <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-lg p-3 space-y-2.5 mt-2 shadow-xs print-client-hide">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-emerald-100 dark:border-slate-800 pb-1.5">
                     <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                       <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -616,7 +616,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         }
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
                         placeholder={truck.driverCommissionMode === 'cargas' ? 'Puxado das Cargas' : 'Puxado das Horas'}
-                        className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
 
@@ -642,7 +642,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                           });
                         }}
                         placeholder="Ex: 15.00"
-                        className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                        className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                       />
                     </div>
 
@@ -651,7 +651,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                       <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                         Subtotal Comissão
                       </label>
-                      <div className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                      <div className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between shadow-2xs">
                         <span className="font-mono text-emerald-700 dark:text-emerald-400 font-extrabold">
                           {formatCurrencyBRL(
                             truck.driverCommission ?? (
@@ -669,7 +669,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
 
                 {/* Bloco de Adicional KM (Exclusivo quando Alqueires) */}
                 {unidadeArea === 'alqueires' && (
-                  <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 rounded-lg p-3 space-y-2 mt-2">
+                  <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-lg p-3 space-y-2 mt-2 shadow-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-amber-600" />
@@ -698,7 +698,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                             });
                           }}
                           placeholder="Ex: 40"
-                          className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                          className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                         />
                       </div>
 
@@ -719,7 +719,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                             });
                           }}
                           placeholder="Ex: 5.50"
-                          className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                          className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-semibold text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                         />
                       </div>
 
@@ -727,9 +727,9 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                           Total Adicional KM
                         </label>
-                        <div className="w-full px-3 py-1.5 bg-amber-100/90 dark:bg-amber-900/40 border border-amber-400 dark:border-amber-700 rounded-lg text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center justify-between">
+                        <div className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between shadow-2xs">
                           <span className="font-mono">{formatCurrencyBRL(truck.totalAdditionalKm || 0)}</span>
-                          <span className="text-[10px] font-semibold text-amber-900 dark:text-amber-300">
+                          <span className="text-[10px] font-semibold text-slate-500">
                             {truck.additionalKm || 0} km
                           </span>
                         </div>

@@ -1638,7 +1638,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     type="text"
                     value={numero}
                     onChange={(e) => setNumero(e.target.value)}
-                    className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-mono font-bold"
+                    className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono font-bold cursor-default select-all focus:outline-none"
                   />
                 </div>
 
@@ -1662,7 +1662,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                         value={clientName}
                         onChange={(e) => setClientName(e.target.value)}
                         placeholder="Selecione ou digite o Produtor..."
-                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors"
                       />
                       {clients.length > 0 && (
                         <select
@@ -1702,7 +1702,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     value={farmName}
                     onChange={(e) => setFarmName(e.target.value)}
                     placeholder="Ex: Fazenda Boa Esperança"
-                    className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                    className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors"
                   />
                 </div>
               </div>
@@ -1711,7 +1711,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             {/* 2. ÁREA E UNIDADES (CORTE E COLHEITA) */}
             {(activeTab === 'corte' || activeTab === 'colheita') && (
               <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-300 dark:border-slate-700 pb-2">
                   <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                     Área & Produção (Valor Base)
                   </span>
@@ -1767,7 +1767,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => setQuantidadeArea(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="Ex: 15.5"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
 
@@ -1781,7 +1781,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       onChange={(e) => setValorPorHectare(maskCurrencyBRLInput(e.target.value))}
                       onBlur={() => setValorPorHectare(formatCurrencyBRLOnBlur(valorPorHectare))}
                       placeholder="R$ 0,00"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors"
                     />
                   </div>
 
@@ -1789,15 +1789,15 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                       Subtotal Área (Base)
                     </label>
-                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center justify-between shadow-2xs">
+                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-between shadow-2xs cursor-not-allowed">
                       <span>{formatCurrencyBRL(valorBaseArea)}</span>
-                      <span className="text-[10px] text-gray-500 dark:text-slate-400 font-normal">Base Frota</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">Base Frota</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Linha 2: Frete Prancha (R$) com Máscara BRL, Peso por m³ (Kg) e Estimativa de Produção Automatizada */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2 border-t border-slate-300 dark:border-slate-700">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
@@ -1812,7 +1812,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       onChange={(e) => setFretePrancha(maskCurrencyBRLInput(e.target.value))}
                       onBlur={() => setFretePrancha(formatCurrencyBRLOnBlur(fretePrancha))}
                       placeholder="R$ 0,00"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors"
                     />
                   </div>
 
@@ -1829,7 +1829,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => setPesoPorM3(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="Ex: 650"
-                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
 
@@ -1838,7 +1838,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       <span>Estimativa de Produção</span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Bloqueado (Auto)</span>
                     </label>
-                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-between shadow-2xs cursor-not-allowed" title={`Fórmula: (${totalVolumeGeralM3.toFixed(1)} m³ × ${pesoPorM3 || 0} kg) / 1000`}>
+                    <div className="w-full px-3 py-1.5 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-between shadow-2xs cursor-not-allowed" title={`Fórmula: (${totalVolumeGeralM3.toFixed(1)} m³ × ${pesoPorM3 || 0} kg) / 1000`}>
                       <span>{estimativaToneladas > 0 ? `${estimativaToneladas.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} ton` : '0,0 ton'}</span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-normal">
                         {totalVolumeGeralM3 > 0 ? `${totalVolumeGeralM3.toFixed(1)} m³` : '0 m³'}
@@ -1903,7 +1903,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                         value={forrageiraNome}
                         onChange={(e) => setForrageiraNome(e.target.value)}
                         placeholder="-- Não Utilizar Forrageira / Nenhuma (Clique para escolher) --"
-                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 font-semibold focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors"
                       />
                       <select
                         value={forrageiraId}
@@ -1948,7 +1948,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 setOperadorForrageiraId('');
                               }}
                               placeholder="Ex: Operador Roberto"
-                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors"
                             />
                             {employees.length > 0 && (
                               <select
@@ -1995,7 +1995,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 setSegundoOperadorForrageiraId('');
                               }}
                               placeholder="Ex: Auxiliar / Suplente"
-                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors"
                             />
                             {employees.length > 0 && (
                               <select
@@ -2033,7 +2033,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                             onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             onChange={(e) => setHorasTambor(e.target.value === '' ? '' : Number(e.target.value))}
                             placeholder="Ex: 8.5"
-                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
 
@@ -2048,7 +2048,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                             onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             onChange={(e) => setHorasMotor(e.target.value === '' ? '' : Number(e.target.value))}
                             placeholder="Ex: 10.2"
-                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                       </div>
@@ -2126,7 +2126,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                   ? 'Puxado de Hora do Motor (H)'
                                   : 'Puxado da Área Global'
                               }
-                              className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 font-bold cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-800 dark:text-slate-200 font-bold cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
 
@@ -2141,7 +2141,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                               onWheel={(e) => (e.target as HTMLInputElement).blur()}
                               onChange={(e) => setTaxaComissaoForrageira(e.target.value === '' ? '' : Number(e.target.value))}
                               placeholder="Ex: 25.00"
-                              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
                         </div>
@@ -2244,8 +2244,8 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             )}
 
             {/* 6. OBSERVAÇÕES GERAIS */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm space-y-1.5">
+              <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">
                 Observações do Pedido / Serviço
               </label>
               <textarea
@@ -2253,7 +2253,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
                 placeholder="Detalhes adicionais, condições do terreno, tipo de silagem ou observações financeiras..."
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 resize-none"
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 resize-none shadow-2xs transition-colors"
               />
             </div>
 
