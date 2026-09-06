@@ -20,6 +20,7 @@ import {
   UtensilsCrossed
 } from 'lucide-react';
 import { formatCurrencyBRL, formatDateBR, getStoredCompanyProfile } from '../../lib/storage';
+import { parseCurrencyToFloat } from '../../lib/formatters';
 import { ServiceTruckItem, CompanyProfile, ServiceFuelEntry, ServiceMealExpense } from '../../types';
 import { TruckExpenseDetail } from './DRESummaryBlock';
 
@@ -66,7 +67,7 @@ export interface ServiceDocumentPreviewProps {
   totalAdicionalKm: number;
 
   // Resumo Financeiro Pedido
-  fretePrancha?: number | '';
+  fretePrancha?: number | string | '';
   totalPedido: number;
 
   // Custos Operacionais (Combustível & Alimentação)
@@ -223,6 +224,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
     return trucksExpenseDetails.reduce((sum, t) => sum + (t.driverCommissionCost || 0), 0);
   }, [trucksExpenseDetails]);
 
+  // 3. Valor numérico padronizado do Frete Prancha para exibição em A4 e Cupom 80mm
+  const numFretePrancha = useMemo(() => {
+    if (typeof fretePrancha === 'number') return isNaN(fretePrancha) ? 0 : fretePrancha;
+    if (typeof fretePrancha === 'string') return parseCurrencyToFloat(fretePrancha);
+    return 0;
+  }, [fretePrancha]);
+
   // Disparo da impressão isolada em nova janela (Blob URL / window.open) para contornar sandboxing do iframe
   const handlePrint = () => {
     const printableElement = document.getElementById('printable-document-content');
@@ -242,7 +250,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
     const styles = `
       @page {
         size: ${isThermal ? '80mm auto' : 'A4 portrait'};
-        margin: ${isThermal ? '0' : '4mm 6mm'};
+        margin: ${isThermal ? '0' : '3mm 5mm'};
       }
 
       /* RESET E PRESERVAÇÃO RIGOROSA DE CORES E BACKGROUNDS (REQUISITO 2) */
@@ -259,8 +267,8 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
         background-color: #ffffff !important;
         color: #0f172a !important;
         font-family: ${isThermal ? "'Courier New', Courier, monospace, monospace" : "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"} !important;
-        font-size: ${isThermal ? '10px' : '10.5px'} !important;
-        line-height: ${isThermal ? '1.25' : '1.25'} !important;
+        font-size: ${isThermal ? '10px' : '9.5px'} !important;
+        line-height: ${isThermal ? '1.25' : '1.18'} !important;
         -webkit-font-smoothing: antialiased;
       }
 
@@ -596,8 +604,9 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
       @media print {
         html, body {
-          height: 100% !important;
-          overflow: hidden !important;
+          height: auto !important;
+          min-height: 100% !important;
+          overflow: visible !important;
         }
         .no-print {
           display: none !important;
@@ -625,8 +634,8 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           min-width: 100% !important;
           padding: 0 !important;
           margin: 0 !important;
-          height: 100% !important;
-          max-height: 287mm !important;
+          height: auto !important;
+          min-height: 280mm !important;
           display: flex !important;
           flex-direction: column !important;
           justify-content: space-between !important;
@@ -635,6 +644,19 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           page-break-after: avoid !important;
           break-after: avoid !important;
         }
+        .print-signatures-area {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          margin-top: 2rem !important;
+          padding-top: 1rem !important;
+        }
+        .footer-sistema {
+          display: block !important;
+        }
+      }
+
+      .footer-sistema {
+        display: block !important;
       }
 
       .break-avoid {
@@ -1075,38 +1097,38 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
               {/* RESUMO DO PEDIDO / FATURAMENTO COBRADO DO CLIENTE */}
               <div className="py-2 border-b-2 border-dashed border-gray-800 space-y-1 text-[10px]">
                 <p className="font-black uppercase tracking-wide text-center bg-gray-100 py-0.5 border border-gray-300">
-                  RESUMO DO PEDIDO
+                  1. RESUMO DO PEDIDO
                 </p>
 
                 <div className="flex justify-between">
                   <span>Serviço Base ({unidadeAreaLabel}):</span>
-                  <span>R$ {formatCurrencyBRL(valorBaseArea)}</span>
+                  <span className="font-mono font-bold">{formatCurrencyBRL(valorBaseArea)}</span>
                 </div>
 
                 {subtotalTrator > 0 && (
                   <div className="flex justify-between">
                     <span>Compactação Trator:</span>
-                    <span>R$ {formatCurrencyBRL(subtotalTrator)}</span>
+                    <span className="font-mono font-bold">{formatCurrencyBRL(subtotalTrator)}</span>
                   </div>
                 )}
 
                 {totalAdicionalKm > 0 && (
                   <div className="flex justify-between">
                     <span>Frete / KM Adicional:</span>
-                    <span>R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
+                    <span className="font-mono font-bold">{formatCurrencyBRL(totalAdicionalKm)}</span>
                   </div>
                 )}
 
-                {Number(fretePrancha) > 0 && (
+                {numFretePrancha > 0 && (
                   <div className="flex justify-between">
-                    <span>Frete Prancha:</span>
-                    <span>R$ {formatCurrencyBRL(Number(fretePrancha))}</span>
+                    <span className="font-semibold text-gray-900">Frete Prancha:</span>
+                    <span className="font-mono font-bold">{formatCurrencyBRL(numFretePrancha)}</span>
                   </div>
                 )}
 
                 <div className="border-t-2 border-black pt-1 mt-1 flex justify-between items-baseline font-black text-[11px]">
                   <span>TOTAL A PAGAR:</span>
-                  <span className="text-xs font-black">R$ {formatCurrencyBRL(totalPedido)}</span>
+                  <span className="text-xs font-black font-mono">{formatCurrencyBRL(totalPedido)}</span>
                 </div>
               </div>
 
@@ -1122,13 +1144,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
                       <div className="flex justify-between font-bold text-gray-700">
                         <span>Combustível & Refeições:</span>
-                        <span>R$ {formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}</span>
+                        <span className="font-mono">{formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}</span>
                       </div>
                       {fuelEntries && fuelEntries.some(f => (f.subtotal || 0) > 0) && (
                         fuelEntries.filter(f => (f.subtotal || 0) > 0).map(f => (
                           <div key={`80mm-fuel-${f.vehicleId}`} className="flex justify-between pl-1 text-[9px]">
                             <span className="truncate max-w-[135px]">• Diesel {f.vehicleName}: {f.liters}L</span>
-                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(f.subtotal || 0)}</span>
+                            <span className="font-bold font-mono whitespace-nowrap">{formatCurrencyBRL(f.subtotal || 0)}</span>
                           </div>
                         ))
                       )}
@@ -1136,7 +1158,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                         mealExpenses.filter(m => Number(m.amount) > 0).map(m => (
                           <div key={`80mm-meal-${m.id}`} className="flex justify-between pl-1 text-[9px]">
                             <span className="truncate max-w-[135px]">• {m.description || 'Alimentação'}</span>
-                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(Number(m.amount) || 0)}</span>
+                            <span className="font-bold font-mono whitespace-nowrap">{formatCurrencyBRL(Number(m.amount) || 0)}</span>
                           </div>
                         ))
                       )}
@@ -1148,7 +1170,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
                       <div className="flex justify-between font-bold text-gray-700">
                         <span>Custos Transporte Frotas:</span>
-                        <span>R$ {formatCurrencyBRL(subtotalTransporteFrotas)}</span>
+                        <span className="font-mono">{formatCurrencyBRL(subtotalTransporteFrotas)}</span>
                       </div>
                       {trucksExpenseDetails.map((truckItem) => {
                         const transpVal = truckItem.rateioCost + truckItem.additionalKmCost;
@@ -1157,7 +1179,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                             <span className="truncate max-w-[135px]">
                               • Transp. {truckItem.plate} ({truckItem.driverName || 'Motorista'}) [{truckItem.loads}vg, {truckItem.distributionPercent.toFixed(0)}%]
                             </span>
-                            <span className="font-bold whitespace-nowrap">R$ {formatCurrencyBRL(transpVal)}</span>
+                            <span className="font-bold font-mono whitespace-nowrap">{formatCurrencyBRL(transpVal)}</span>
                           </div>
                         );
                       })}
@@ -1171,13 +1193,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       {comissaoForrageiraP1 > 0 && (
                         <div className="flex justify-between pl-1">
                           <span>{operadorForrageiraNome || 'Operador Principal'}:</span>
-                          <span className="font-bold">R$ {formatCurrencyBRL(comissaoForrageiraP1)}</span>
+                          <span className="font-bold font-mono">{formatCurrencyBRL(comissaoForrageiraP1)}</span>
                         </div>
                       )}
                       {comissaoForrageiraP2 > 0 && (
                         <div className="flex justify-between pl-1">
                           <span>2º {segundoOperadorForrageiraNome}:</span>
-                          <span className="font-bold">R$ {formatCurrencyBRL(comissaoForrageiraP2)}</span>
+                          <span className="font-bold font-mono">{formatCurrencyBRL(comissaoForrageiraP2)}</span>
                         </div>
                       )}
                     </div>
@@ -1190,13 +1212,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       {comissaoTratorP1 > 0 && (
                         <div className="flex justify-between pl-1">
                           <span>{operadorTratorNome || 'Operador Principal'}:</span>
-                          <span className="font-bold">R$ {formatCurrencyBRL(comissaoTratorP1)}</span>
+                          <span className="font-bold font-mono">{formatCurrencyBRL(comissaoTratorP1)}</span>
                         </div>
                       )}
                       {comissaoTratorP2 > 0 && (
                         <div className="flex justify-between pl-1">
                           <span>2º {segundoOperadorTratorNome}:</span>
-                          <span className="font-bold">R$ {formatCurrencyBRL(comissaoTratorP2)}</span>
+                          <span className="font-bold font-mono">{formatCurrencyBRL(comissaoTratorP2)}</span>
                         </div>
                       )}
                     </div>
@@ -1207,14 +1229,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                     <div className="space-y-0.5 border-b border-dotted border-gray-300 pb-1">
                       <div className="flex justify-between font-bold text-gray-700">
                         <span>Comissão Motoristas:</span>
-                        <span>R$ {formatCurrencyBRL(subtotalComissoesMotoristas)}</span>
+                        <span className="font-mono">{formatCurrencyBRL(subtotalComissoesMotoristas)}</span>
                       </div>
                       {trucksExpenseDetails
                         .filter(t => (t.driverCommissionCost || 0) > 0)
                         .map(truckItem => (
                           <div key={truckItem.truckId} className="flex justify-between pl-1 text-[9.5px]">
                             <span className="truncate max-w-[130px]">• {truckItem.driverName || 'Motorista'} ({truckItem.plate})</span>
-                            <span className="font-bold">R$ {formatCurrencyBRL(truckItem.driverCommissionCost || 0)}</span>
+                            <span className="font-bold font-mono">{formatCurrencyBRL(truckItem.driverCommissionCost || 0)}</span>
                           </div>
                         ))}
                     </div>
@@ -1223,13 +1245,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   {/* Total Geral de Despesas */}
                   <div className="flex justify-between font-bold pt-0.5 text-orange-950">
                     <span>Total Geral Despesas:</span>
-                    <span>R$ {formatCurrencyBRL(totalGeralDespesas)}</span>
+                    <span className="font-mono">{formatCurrencyBRL(totalGeralDespesas)}</span>
                   </div>
 
                   {/* Lucro Estimado */}
                   <div className="border-t border-gray-400 pt-1 flex justify-between items-baseline font-black bg-emerald-100 p-1 rounded text-emerald-950">
                     <span>LUCRO OPERACIONAL:</span>
-                    <span>R$ {formatCurrencyBRL(lucroEstimado)} ({margemLucroPercent.toFixed(1)}%)</span>
+                    <span className="font-mono">{formatCurrencyBRL(lucroEstimado)} ({margemLucroPercent.toFixed(1)}%)</span>
                   </div>
                 </div>
               )}
@@ -1242,17 +1264,21 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 </div>
               )}
 
-              {/* LINHAS DE ASSINATURAS (CUPOM TÉRMICO) */}
-              <div className="pt-4 pb-2 text-center space-y-3">
-                <div className="space-y-0.5">
-                  <div className="border-b border-black w-4/5 mx-auto mb-1"></div>
+              {/* LINHAS DE ASSINATURAS (CUPOM TÉRMICO) COM ESPAÇO CONFORTÁVEL */}
+              <div className="pt-6 pb-2 text-center space-y-4">
+                <div className="space-y-1">
+                  <div className="h-8 w-4/5 mx-auto flex items-end justify-center mb-1">
+                    <div className="border-b border-black w-full"></div>
+                  </div>
                   <p className="font-bold text-[10px] uppercase">{clientName || 'Assinatura do Produtor'}</p>
                   <p className="text-[8px] text-gray-500">Declaro conferência dos serviços executados</p>
                 </div>
 
                 {contentType === 'full' && (
-                  <div className="space-y-0.5 pt-1">
-                    <div className="border-b border-black w-4/5 mx-auto mb-1"></div>
+                  <div className="space-y-1 pt-1">
+                    <div className="h-8 w-4/5 mx-auto flex items-end justify-center mb-1">
+                      <div className="border-b border-black w-full"></div>
+                    </div>
                     <p className="font-bold text-[10px] uppercase">{operatorName || 'Encarregado Operacional'}</p>
                     <p className="text-[8px] text-gray-500">{company.tradeName || 'Silagem Fácil'} - Fechamento de Campo</p>
                   </div>
@@ -1274,16 +1300,16 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           {/* ========================================================================= */}
           {paperFormat === 'a4' && (
             <div 
-              className="a4-sheet w-[210mm] max-w-[210mm] min-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-5 sm:p-6 font-sans text-[11px] leading-tight shadow-2xl border border-gray-300 rounded-none my-2 selection:bg-blue-100 flex flex-col justify-between"
+              className="a4-sheet w-[210mm] max-w-[210mm] min-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-3.5 sm:p-4 font-sans text-[10px] leading-tight shadow-2xl border border-gray-300 rounded-none my-2 selection:bg-blue-100 flex flex-col justify-between"
               style={{ boxSizing: 'border-box' }}
             >
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {/* CABEÇALHO EXECUTIVO INSTITUCIONAL A4 */}
-                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-2 break-avoid gap-3">
+                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-1.5 mb-1.5 break-avoid gap-3">
                   {/* LADO ESQUERDO: LOGOTIPO + IDENTIFICAÇÃO INSTITUCIONAL & CADASTRO */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {/* 1. Logotipo da Empresa */}
-                    <div className="w-14 h-14 min-w-[56px] max-w-[56px] rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden p-1 shrink-0">
+                    <div className="w-12 h-12 min-w-[48px] max-w-[48px] rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden p-1 shrink-0">
                       {company.logoUrl ? (
                         <img
                           src={company.logoUrl}
@@ -1315,13 +1341,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
                       {/* Razão Social */}
                       {company.corporateName && company.corporateName !== company.tradeName && (
-                        <p className="text-[10px] text-slate-700 font-semibold truncate">
+                        <p className="text-[9.5px] text-slate-700 font-semibold truncate">
                           Razão Social: <span className="text-slate-900 font-bold">{company.corporateName}</span>
                         </p>
                       )}
 
                       {/* Bloco de Dados Cadastrais: CNPJ/CPF, Inscrição Estadual, Contato (Tel/Email) e Endereço */}
-                      <div className="text-[9.5px] text-slate-600 leading-tight space-y-0.5">
+                      <div className="text-[9px] text-slate-600 leading-tight space-y-0.5">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                           {company.cnpjCpf && (
                             <span><strong className="text-slate-800">CNPJ/CPF:</strong> {company.cnpjCpf}</span>
@@ -1337,7 +1363,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                           )}
                         </div>
                         {fullCompanyAddress && (
-                          <div className="truncate text-[9px] text-slate-500">
+                          <div className="truncate text-[8.5px] text-slate-500">
                             <strong className="text-slate-700">Endereço:</strong> {fullCompanyAddress}
                           </div>
                         )}
@@ -1360,50 +1386,50 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 </div>
 
                 {/* SEÇÃO 1: DADOS CADASTRAIS DO CLIENTE E LOCAL */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] break-avoid">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-1.5 mb-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] break-avoid">
                   <div className="flex flex-col justify-start">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Produtor / Cliente</span>
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block mb-0.5">Produtor / Cliente</span>
                     <span className="font-bold text-slate-900 truncate block">{clientName || 'Não Informado'}</span>
                   </div>
                   <div className="flex flex-col justify-start">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Fazenda / Propriedade</span>
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block mb-0.5">Fazenda / Propriedade</span>
                     <span className="font-bold text-slate-900 truncate block">{farmName || 'Não Informada'}</span>
                   </div>
                   <div className="flex flex-col justify-start">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Localidade</span>
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block mb-0.5">Localidade</span>
                     <span className="text-slate-800 truncate block">{location || 'Não Informada'}</span>
                   </div>
                   <div className="flex flex-col justify-start">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Telefone de Contato</span>
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block mb-0.5">Telefone de Contato</span>
                     <span className="text-slate-800 truncate block">{clientPhone || 'Não Informado'}</span>
                   </div>
                 </div>
 
                 {/* SEÇÃO 2: ESPECIFICAÇÕES OPERACIONAIS (FORRAGEIRA, TRATOR, FROTAS) */}
-                <div className="border border-slate-200 rounded-lg p-2 mb-2 space-y-1.5 break-avoid">
-                  <h3 className="text-[11px] font-bold uppercase text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-1">
+                <div className="border border-slate-200 rounded-lg p-1.5 mb-1.5 space-y-1 break-avoid">
+                  <h3 className="text-[10.5px] font-bold uppercase text-slate-800 flex items-center gap-1.5 border-b border-slate-200 pb-0.5">
                     <Scissors className="w-3.5 h-3.5 text-emerald-700" />
                     {operationalSpecsTitle}
                   </h3>
 
-                  <div className="grid grid-cols-3 gap-2 text-[10.5px]">
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Área da Colheita</span>
-                      <span className="font-black text-slate-900 text-xs block">{quantidadeArea || 0} {unidadeAreaLabel}</span>
+                  <div className="grid grid-cols-3 gap-2 text-[10px]">
+                    <div className="bg-slate-50 p-1 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold uppercase block mb-0.5">Área da Colheita</span>
+                      <span className="font-black text-slate-900 text-[11px] block">{quantidadeArea || 0} {unidadeAreaLabel}</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Ensiladeira / Forrageira</span>
+                    <div className="bg-slate-50 p-1 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold uppercase block mb-0.5">Ensiladeira / Forrageira</span>
                       <span className="font-bold text-slate-800 truncate block">{forageHarvesterName || 'Não vinculada'}</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">
+                      <span className="text-[8.5px] text-slate-500 block mt-0.5">
                         Tambor: {horasTambor || 0}h | Motor: {horasMotor || 0}h
                       </span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Trator Compactador</span>
+                    <div className="bg-slate-50 p-1 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold uppercase block mb-0.5">Trator Compactador</span>
                       <span className="font-bold text-slate-800 truncate block">{tractorName || 'Não vinculado'}</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">
+                      <span className="text-[8.5px] text-slate-500 block mt-0.5">
                         Horímetro: {tractorHours || 0}h ({modoCobrancaTratorLabel})
                       </span>
                     </div>
@@ -1440,7 +1466,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               <td className="py-0.5 px-2 text-center font-bold text-slate-900">{t.tripLoads || 0}</td>
                               <td className="py-0.5 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1).replace('.', ',')} m³</td>
                               <td className="py-0.5 px-2 text-right">
-                                {(t.additionalKm || 0) > 0 ? `${t.additionalKm} km (R$ ${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'}
+                                {(t.additionalKm || 0) > 0 ? `${t.additionalKm} km (${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'}
                               </td>
                             </tr>
                           ))}
@@ -1459,9 +1485,9 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                             </td>
                             <td className="py-1 px-2 text-right font-black text-slate-950">
                               {totalKmAdicionalSoma > 0 
-                                ? `${totalKmAdicionalSoma} km${(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (R$ ${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}` 
+                                ? `${totalKmAdicionalSoma} km${(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}` 
                                 : totalAdicionalKm > 0 
-                                  ? `R$ ${formatCurrencyBRL(totalAdicionalKm)}` 
+                                  ? `${formatCurrencyBRL(totalAdicionalKm)}` 
                                   : '-'}
                             </td>
                           </tr>
@@ -1471,42 +1497,42 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   )}
                 </div>
 
-                {/* SEÇÃO 3: RESUMO DO PEDIDO / FATURAMENTO BRUTO COBRADO DO CLIENTE */}
-                <div className="border border-emerald-300 bg-emerald-50/40 rounded-lg p-2 mb-2 space-y-1 border-l-4 border-l-emerald-600 break-avoid">
-                  <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
-                    <span className="font-bold text-[11px] uppercase text-emerald-900 flex items-center gap-1.5">
+                {/* SEÇÃO 1: RESUMO DO PEDIDO / FATURAMENTO BRUTO COBRADO DO CLIENTE */}
+                <div className="border border-emerald-300 bg-emerald-50/40 rounded-lg p-1.5 mb-1.5 space-y-0.5 border-l-4 border-l-emerald-600 break-avoid">
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-0.5">
+                    <span className="font-bold text-[10.5px] uppercase text-emerald-900 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       1. Resumo do Pedido (Faturamento Cobrado do Produtor)
                     </span>
-                    <span className="font-black text-xs text-emerald-900 font-mono">
-                      Total a Pagar: R$ {formatCurrencyBRL(totalPedido)}
+                    <span className="font-black text-[11px] text-emerald-900 font-mono">
+                      Total a Pagar: {formatCurrencyBRL(totalPedido)}
                     </span>
                   </div>
 
-                  <div className={`grid gap-2 text-[10.5px] pt-0.5 ${Number(fretePrancha) > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
-                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Serviço Base ({unidadeAreaLabel})</span>
-                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(valorBaseArea)}</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">{quantidadeArea || 0} {unidadeAreaLabel} x R$ {valorHectare || 0}</span>
+                  <div className={`grid gap-1.5 text-[10px] pt-0.5 ${numFretePrancha > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                    <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Serviço Base ({unidadeAreaLabel})</span>
+                      <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(valorBaseArea)}</span>
+                      <span className="text-[8.5px] text-slate-500 block mt-0.5">{quantidadeArea || 0} {unidadeAreaLabel} x {formatCurrencyBRL(typeof valorHectare === 'number' ? valorHectare : parseCurrencyToFloat(valorHectare || 0))}</span>
                     </div>
 
-                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Compactação Trator</span>
-                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(subtotalTrator)}</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
+                    <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Compactação Trator</span>
+                      <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(subtotalTrator)}</span>
+                      <span className="text-[8.5px] text-slate-500 block mt-0.5">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
                     </div>
 
-                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
-                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Frete / KM Adicional Frotas</span>
-                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
-                      <span className="text-[9px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
+                    <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Frete / KM Adicional Frotas</span>
+                      <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(totalAdicionalKm)}</span>
+                      <span className="text-[8.5px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
                     </div>
 
-                    {Number(fretePrancha) > 0 && (
-                      <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
-                        <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Frete Prancha</span>
-                        <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(Number(fretePrancha))}</span>
-                        <span className="text-[9px] text-emerald-700 font-semibold block mt-0.5">+ Adicionado ao Total</span>
+                    {numFretePrancha > 0 && (
+                      <div className="bg-white p-1 rounded border border-emerald-200 flex flex-col justify-start">
+                        <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Frete Prancha</span>
+                        <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(numFretePrancha)}</span>
+                        <span className="text-[8.5px] text-emerald-700 font-semibold block mt-0.5">Transporte de maquinário</span>
                       </div>
                     )}
                   </div>
@@ -1516,14 +1542,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 {contentType === 'full' && (
                   <>
                     {/* BLOCO 2: DRE GERENCIAL (CUSTOS OPERACIONAIS E TRANSPORTE COMPLETO) */}
-                    <div className="border border-orange-300 bg-orange-50/40 rounded-lg p-2 mb-2 space-y-1.5 border-l-4 border-l-orange-600 break-avoid">
-                      <div className="flex items-center justify-between border-b border-orange-200 pb-1">
-                        <span className="font-bold text-[11px] uppercase text-orange-900 flex items-center gap-1.5">
+                    <div className="border border-orange-300 bg-orange-50/40 rounded-lg p-1.5 mb-1.5 space-y-1 border-l-4 border-l-orange-600 break-avoid">
+                      <div className="flex items-center justify-between border-b border-orange-200 pb-0.5">
+                        <span className="font-bold text-[10.5px] uppercase text-orange-900 flex items-center gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5 text-orange-600" />
                           2. Custos e Proventos Adicionais (DRE Gerencial da Operação)
                         </span>
-                        <span className="font-black text-xs text-orange-900 font-mono">
-                          Total Geral Despesas: R$ {formatCurrencyBRL(totalGeralDespesas)}
+                        <span className="font-black text-[11px] text-orange-900 font-mono">
+                          Total Geral Despesas: {formatCurrencyBRL(totalGeralDespesas)}
                         </span>
                       </div>
 
@@ -1536,7 +1562,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               Custos de Transporte das Frotas (Rateio Global & Adicional KM):
                             </p>
                             <span className="font-bold text-orange-800 text-[9.5px] font-mono">
-                              Subtotal Transporte: R$ {formatCurrencyBRL(subtotalTransporteFrotas)}
+                              Subtotal Transporte: {formatCurrencyBRL(subtotalTransporteFrotas)}
                             </span>
                           </div>
 
@@ -1570,7 +1596,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                     )}
                                   </div>
                                   <div className="text-right font-mono font-black text-orange-900 text-[10px] shrink-0">
-                                    R$ {formatCurrencyBRL(transportTotal)}
+                                    {formatCurrencyBRL(transportTotal)}
                                   </div>
                                 </div>
                               );
@@ -1588,7 +1614,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               Custos Operacionais (Combustível & Alimentação):
                             </p>
                             <span className="font-bold text-orange-800 text-[9.5px] font-mono">
-                              Subtotal Operacional: R$ {formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}
+                              Subtotal Operacional: {formatCurrencyBRL((totalCombustivelGeral || 0) + (totalAlimentacaoGeral || 0))}
                             </span>
                           </div>
 
@@ -1602,14 +1628,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                     Diesel Consumido
                                   </span>
                                   <span className="font-mono font-bold text-amber-800 text-[9px]">
-                                    R$ {formatCurrencyBRL(totalCombustivelGeral || 0)}
+                                    {formatCurrencyBRL(totalCombustivelGeral || 0)}
                                   </span>
                                 </div>
                                 <div className="space-y-0.5 text-[8.5px]">
                                   {fuelEntries.filter(f => (f.subtotal || 0) > 0).map(f => (
                                     <div key={`a4-fuel-${f.vehicleId}`} className="flex justify-between text-slate-700">
-                                      <span className="truncate max-w-[150px]">{f.vehicleName} ({f.liters} L x R$ {formatCurrencyBRL(f.pricePerLiter || 0)})</span>
-                                      <span className="font-bold font-mono">R$ {formatCurrencyBRL(f.subtotal || 0)}</span>
+                                      <span className="truncate max-w-[150px]">{f.vehicleName} ({f.liters} L x {formatCurrencyBRL(f.pricePerLiter || 0)})</span>
+                                      <span className="font-bold font-mono">{formatCurrencyBRL(f.subtotal || 0)}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -1625,14 +1651,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                     Alimentação & Diárias
                                   </span>
                                   <span className="font-mono font-bold text-orange-800 text-[9px]">
-                                    R$ {formatCurrencyBRL(totalAlimentacaoGeral || 0)}
+                                    {formatCurrencyBRL(totalAlimentacaoGeral || 0)}
                                   </span>
                                 </div>
                                 <div className="space-y-0.5 text-[8.5px]">
                                   {mealExpenses.filter(m => Number(m.amount) > 0).map(m => (
                                     <div key={`a4-meal-${m.id}`} className="flex justify-between text-slate-700">
                                       <span className="truncate max-w-[150px]">{m.description} {m.date ? `(${formatDateBR(m.date)})` : ''}</span>
-                                      <span className="font-bold font-mono">R$ {formatCurrencyBRL(Number(m.amount) || 0)}</span>
+                                      <span className="font-bold font-mono">{formatCurrencyBRL(Number(m.amount) || 0)}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -1651,7 +1677,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               Comissões Individuais dos Motoristas:
                             </p>
                             <span className="font-bold text-orange-800 text-[9.5px] font-mono">
-                              Subtotal Motoristas: R$ {formatCurrencyBRL(subtotalComissoesMotoristas)}
+                              Subtotal Motoristas: {formatCurrencyBRL(subtotalComissoesMotoristas)}
                             </span>
                           </div>
 
@@ -1665,7 +1691,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                     <span className="text-slate-500 text-[8.5px] block font-mono">{truck.plate} • {truck.loads} vg</span>
                                   </div>
                                   <span className="font-bold font-mono text-orange-700 text-[9.5px] whitespace-nowrap">
-                                    R$ {formatCurrencyBRL(truck.driverCommissionCost || 0)}
+                                    {formatCurrencyBRL(truck.driverCommissionCost || 0)}
                                   </span>
                                 </div>
                               ))}
@@ -1685,7 +1711,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               )}
                             </div>
                             <span className="font-bold font-mono text-orange-700 text-[10px] whitespace-nowrap">
-                              R$ {formatCurrencyBRL(comissaoForrageiraP1 + comissaoForrageiraP2)}
+                              {formatCurrencyBRL(comissaoForrageiraP1 + comissaoForrageiraP2)}
                             </span>
                           </div>
 
@@ -1698,73 +1724,101 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               )}
                             </div>
                             <span className="font-bold font-mono text-orange-700 text-[10px] whitespace-nowrap">
-                              R$ {formatCurrencyBRL(comissaoTratorP1 + comissaoTratorP2)}
+                              {formatCurrencyBRL(comissaoTratorP1 + comissaoTratorP2)}
                             </span>
                           </div>
                         </div>
                       )}
                     </div>
+                  </>
+                )}
 
-                    {/* BLOCO 3: RESULTADO FINAL (LUCRO ESTIMADO - DESTAQUE VERDE ESCURO) */}
-                    <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-lg p-2 mb-2 shadow-sm space-y-1.5 break-avoid">
-                      <div className="flex items-center justify-between border-b border-emerald-700/60 pb-1">
-                        <div className="flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
-                          <span className="font-bold text-[11px] uppercase tracking-wide">
-                            3. Resultado Final da Operação (Lucro Líquido Estimado)
-                          </span>
-                        </div>
-                        <span className="text-[10px] bg-emerald-700/50 px-2 py-0.5 rounded font-mono font-bold">
-                          Margem: {margemLucroPercent.toFixed(1)}%
+              </div>
+
+              {/* CONTÊINER AGRUPADO: SEÇÃO 3 (RESULTADO FINAL) + OBSERVAÇÕES + ASSINATURAS + RODAPÉ (EVITA CORTE NA IMPRESSÃO A4) */}
+              <div 
+                className="break-avoid space-y-2 mt-auto pt-2 w-full"
+                style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+              >
+                {/* BLOCO 3: RESULTADO FINAL (LUCRO ESTIMADO - DESTAQUE VERDE ESCURO) */}
+                {contentType === 'full' && (
+                  <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-lg p-2 shadow-xs space-y-1.5 break-avoid">
+                    <div className="flex items-center justify-between border-b border-emerald-700/60 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
+                        <span className="font-bold text-[10.5px] uppercase tracking-wide">
+                          3. Resultado Final da Operação (Lucro Líquido Estimado)
                         </span>
                       </div>
+                      <span className="text-[9.5px] bg-emerald-700/50 px-2 py-0.5 rounded font-mono font-bold">
+                        Margem: {margemLucroPercent.toFixed(1)}%
+                      </span>
+                    </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
-                        <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
-                          <span className="text-[9px] text-emerald-200 block uppercase font-medium mb-0.5">Receita Bruta</span>
-                          <strong className="text-xs text-white font-mono block">R$ {formatCurrencyBRL(totalPedido)}</strong>
-                        </div>
-                        <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
-                          <span className="text-[9px] text-emerald-200 block uppercase font-medium mb-0.5">(-) Custos Operacionais</span>
-                          <strong className="text-xs text-amber-300 font-mono block">R$ {formatCurrencyBRL(totalGeralDespesas)}</strong>
-                        </div>
-                        <div className="bg-emerald-700/60 p-1.5 rounded border border-emerald-500/40 flex flex-col items-center justify-center">
-                          <span className="text-[9px] text-emerald-100 block uppercase font-bold mb-0.5">(=) Lucro Líquido Estimado</span>
-                          <strong className="text-xs text-emerald-100 font-black font-mono block">R$ {formatCurrencyBRL(lucroEstimado)}</strong>
-                        </div>
+                    <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
+                      <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
+                        <span className="text-[8.5px] text-emerald-200 block uppercase font-medium mb-0.5">Receita Bruta</span>
+                        <strong className="text-[11.5px] text-white font-mono block">{formatCurrencyBRL(totalPedido)}</strong>
+                      </div>
+                      <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
+                        <span className="text-[8.5px] text-emerald-200 block uppercase font-medium mb-0.5">(-) Custos Operacionais</span>
+                        <strong className="text-[11.5px] text-amber-300 font-mono block">{formatCurrencyBRL(totalGeralDespesas)}</strong>
+                      </div>
+                      <div className="bg-emerald-700/60 p-1.5 rounded border border-emerald-500/40 flex flex-col items-center justify-center">
+                        <span className="text-[8.5px] text-emerald-100 block uppercase font-bold mb-0.5">(=) Lucro Líquido Estimado</span>
+                        <strong className="text-[11.5px] text-emerald-100 font-black font-mono block">{formatCurrencyBRL(lucroEstimado)}</strong>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {/* OBSERVAÇÕES GERAIS */}
                 {observacoes && (
-                  <div className="border border-slate-200 bg-slate-50 rounded p-1.5 mb-2 text-[10px] break-avoid">
-                    <span className="font-bold text-slate-700 uppercase block text-[9px] mb-0.5">Observações Gerais da OS:</span>
-                    <p className="text-slate-800 italic">{observacoes}</p>
+                  <div className="border border-slate-200 bg-slate-50 rounded p-1.5 text-[9.5px] break-avoid">
+                    <span className="font-bold text-slate-700 uppercase block text-[8.5px] mb-0.5">Observações Gerais da OS:</span>
+                    <p className="text-slate-800 italic text-[9px]">{observacoes}</p>
                   </div>
                 )}
-              </div>
 
-              {/* SEÇÃO 6: ASSINATURAS GERENCIAIS (FIM DA FOLHA A4) */}
-              <div className="pt-3 mt-auto border-t border-slate-300 grid grid-cols-2 gap-6 text-center text-[10.5px] text-slate-700 break-avoid">
-                <div className="space-y-0.5 flex flex-col items-center justify-start">
-                  <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
-                  <p className="font-bold text-slate-900 block">
-                    {clientName || 'Assinatura do Produtor Rural'}
-                  </p>
-                  <p className="text-[9px] text-slate-500 block">
-                    Declaro haver conferido a medição e execução dos serviços
-                  </p>
+                {/* SEÇÃO 6: ASSINATURAS GERENCIAIS (FIM DA FOLHA A4) COM RESPIRO VISUAL GENEROSO */}
+                <div 
+                  className="mt-8 sm:mt-10 pt-4 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-[10px] text-slate-700 break-avoid print-signatures-area"
+                  style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+                >
+                  <div className="flex flex-col items-center justify-end">
+                    <div className="h-10 sm:h-12 w-full flex items-end justify-center mb-1.5">
+                      <div className="border-b border-slate-400 w-4/5 mx-auto signature-line"></div>
+                    </div>
+                    <p className="font-bold text-slate-900 block text-[10.5px]">
+                      {clientName || 'Assinatura do Produtor Rural'}
+                    </p>
+                    <p className="text-[8.5px] text-slate-500 block mt-0.5">
+                      Declaro haver conferido a medição e execução dos serviços
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-end">
+                    <div className="h-10 sm:h-12 w-full flex items-end justify-center mb-1.5">
+                      <div className="border-b border-slate-400 w-4/5 mx-auto signature-line"></div>
+                    </div>
+                    <p className="font-bold text-slate-900 block text-[10.5px]">
+                      {operatorName || `${company.tradeName || 'Silagem Fácil'} - Responsável Técnico`}
+                    </p>
+                    <p className="text-[8.5px] text-slate-500 block mt-0.5">
+                      {contentType === 'client' ? 'Conferência e encerramento operacional' : 'Validação de DRE e encerramento financeiro'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-0.5 flex flex-col items-center justify-start">
-                  <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
-                  <p className="font-bold text-slate-900 block">
-                    {operatorName || `${company.tradeName || 'Silagem Fácil'} - Responsável Técnico`}
+                {/* RODAPÉ INSTITUCIONAL DO SISTEMA PARA IMPRESSÃO A4 */}
+                <div className="footer-sistema border-t border-slate-300 pt-1 text-center text-[8.5px] text-slate-500 leading-tight break-avoid">
+                  <p className="font-bold text-slate-700">
+                    {company.tradeName || 'Silagem Fácil'} — Sistema de Gestão e Operações Agrícolas
                   </p>
-                  <p className="text-[9px] text-slate-500 block">
-                    {contentType === 'client' ? 'Conferência e encerramento operacional' : 'Validação de DRE e encerramento financeiro'}
+                  <p>
+                    {company.cnpjCpf ? `CNPJ/CPF: ${company.cnpjCpf}` : 'CNPJ: 00.000.000/0001-00'}
+                    {company.phone ? ` • Contato: ${company.phone}` : ' • Contato: (00) 00000-0000'}
+                    {company.email ? ` • E-mail: ${company.email}` : ' • suporte@silagemfacil.com.br'}
                   </p>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { DollarSign, AlertCircle, TrendingUp, Truck, Tractor, Scissors, Fuel, UtensilsCrossed, Plus, Trash2 } from 'lucide-react';
 import { formatCurrencyBRL } from '../../lib/storage';
+import { parseCurrencyToFloat } from '../../lib/formatters';
 import { ServiceTruckItem, ServiceFuelEntry, ServiceMealExpense } from '../../types';
 
 export interface TruckExpenseDetail {
@@ -27,7 +28,7 @@ interface DRESummaryBlockProps {
   modoCobrancaTratorLabel: string;
   subtotalForrageira: number;
   totalAdicionalKm: number;
-  fretePrancha?: number | '';
+  fretePrancha?: number | string;
   totalPedido: number;
   volumeTotalFrotaM3?: number;
 
@@ -101,6 +102,8 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
   margemLucroPercent,
   printMode,
 }) => {
+  const numFretePrancha = typeof fretePrancha === 'number' ? fretePrancha : parseCurrencyToFloat(fretePrancha || 0);
+
   return (
     <div className="space-y-3">
       
@@ -143,6 +146,18 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
             </div>
           )}
 
+          {numFretePrancha > 0 && (
+            <div className="flex items-center justify-between text-gray-700 dark:text-slate-300 py-0.5">
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                Frete Prancha:
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-white font-mono">
+                {formatCurrencyBRL(numFretePrancha)}
+              </span>
+            </div>
+          )}
+
           {subtotalForrageira > 0 && (
             <div className="flex items-center justify-between text-gray-700 dark:text-slate-300 py-0.5">
               <span className="flex items-center gap-1.5">
@@ -163,18 +178,6 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
               </span>
               <span className="font-semibold text-gray-900 dark:text-white font-mono">
                 {formatCurrencyBRL(totalAdicionalKm)}
-              </span>
-            </div>
-          )}
-
-          {typeof fretePrancha === 'number' && fretePrancha > 0 && (
-            <div className="flex items-center justify-between text-gray-700 dark:text-slate-300 py-0.5">
-              <span className="flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                Frete Prancha:
-              </span>
-              <span className="font-semibold text-gray-900 dark:text-white font-mono">
-                {formatCurrencyBRL(fretePrancha)}
               </span>
             </div>
           )}
@@ -543,7 +546,10 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
       </div>
 
       {/* 3. CARD DE DESTAQUE VERDE: RESULTADO FINAL (LUCRO ESTIMADO) */}
-      <div className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-xl p-3.5 shadow-sm space-y-2 print-client-hide print-hide-on-client">
+      <div 
+        className="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-xl p-3.5 shadow-sm space-y-2 print-client-hide print-hide-on-client break-inside-avoid"
+        style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}
+      >
         <div className="flex items-center justify-between border-b border-emerald-700/60 pb-1.5">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-300 shrink-0" />

@@ -157,6 +157,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   // 10. Controle de Salvamento e Persistência na Tela (UX)
   const [savedOrder, setSavedOrder] = useState<ServiceOrder | null>(null);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [isSaveSuccessToast, setIsSaveSuccessToast] = useState(false);
 
   // Conjunto de IDs de Maquinários já Selecionados (REGRA DE EXCLUSÃO)
   const selectedMachineryIds = useMemo(() => {
@@ -930,7 +931,14 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     onSave(newService);
     setSavedOrder(newService);
     setSaveSuccessMessage(`Pedido ${newService.orderNumber} salvo com sucesso! Os dados foram gravados no sistema. Você pode continuar na tela para analisar o DRE ou imprimir.`);
+    setIsSaveSuccessToast(true);
+    setTimeout(() => {
+      setIsSaveSuccessToast(false);
+    }, 4000);
   };
+
+  // Alias semântico para o salvamento conforme solicitado
+  const handleSubmit = handleSave;
 
   // Configuração Dinâmica dos Estilos de Impressão Nativa (@media print)
   // Via Cliente: Formato Cupom Térmico 80mm (@page { size: 80mm auto; margin: 0; })
@@ -1119,8 +1127,17 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             grid-template-columns: 1fr 1fr !important;
             gap: 16px !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             margin-top: 6px !important;
             padding-top: 4px !important;
+          }
+          .break-inside-avoid,
+          .page-break-inside-avoid {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .footer-sistema {
+            display: block !important;
           }
         }
       `;
@@ -1302,6 +1319,16 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             gap: 16px !important;
             margin-top: 8px !important;
             padding-top: 6px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .break-inside-avoid,
+          .page-break-inside-avoid {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .footer-sistema {
+            display: block !important;
           }
           .print-client-hide,
           .print-hide-on-client,
@@ -1324,6 +1351,9 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             padding: 0 !important;
             margin: 0 !important;
             background: transparent !important;
+            display: block !important;
+          }
+          .footer-sistema {
             display: block !important;
           }
           #printable-service-order-modal {
@@ -1873,7 +1903,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                         value={forrageiraNome}
                         onChange={(e) => setForrageiraNome(e.target.value)}
                         placeholder="-- Não Utilizar Forrageira / Nenhuma (Clique para escolher) --"
-                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 font-medium"
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 font-semibold focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
                       />
                       <select
                         value={forrageiraId}
@@ -1892,11 +1922,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                   </div>
 
                   {!(forrageiraId || forrageiraNome.trim()) ? (
-                    <div className="p-3.5 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/30 text-center text-xs text-gray-500 dark:text-slate-400">
-                      <p className="font-semibold text-gray-600 dark:text-slate-300">
+                    <div className="p-3.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-center text-xs text-slate-600 dark:text-slate-400">
+                      <p className="font-bold text-slate-700 dark:text-slate-300">
                         Nenhuma forrageira selecionada para este serviço.
                       </p>
-                      <p className="text-[11px] mt-0.5">
+                      <p className="text-[11px] mt-0.5 text-slate-500">
                         Os custos de cobrança e comissão da forrageira estão zerados e não afetarão o DRE final. Para selecionar uma máquina, clique no seletor acima.
                       </p>
                     </div>
@@ -1918,7 +1948,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 setOperadorForrageiraId('');
                               }}
                               placeholder="Ex: Operador Roberto"
-                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
                             />
                             {employees.length > 0 && (
                               <select
@@ -1965,7 +1995,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 setSegundoOperadorForrageiraId('');
                               }}
                               placeholder="Ex: Auxiliar / Suplente"
-                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                              className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600"
                             />
                             {employees.length > 0 && (
                               <select
@@ -2003,7 +2033,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                             onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             onChange={(e) => setHorasTambor(e.target.value === '' ? '' : Number(e.target.value))}
                             placeholder="Ex: 8.5"
-                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
 
@@ -2018,13 +2048,13 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                             onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             onChange={(e) => setHorasMotor(e.target.value === '' ? '' : Number(e.target.value))}
                             placeholder="Ex: 10.2"
-                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                       </div>
 
                       {/* SUB-BLOCO COMISSÃO DO OPERADOR DA FORRAGEIRA (COM TOGGLES DE ALTERNÂNCIA) */}
-                      <div className="bg-white/80 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-700 rounded-lg p-3.5 space-y-3 print-client-hide">
+                      <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-3.5 space-y-3 print-client-hide shadow-xs">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
                             <Calculator className="w-3.5 h-3.5 text-amber-600" />
@@ -2096,7 +2126,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                   ? 'Puxado de Hora do Motor (H)'
                                   : 'Puxado da Área Global'
                               }
-                              className="w-full px-3 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-white font-bold cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 font-bold cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
 
@@ -2111,7 +2141,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                               onWheel={(e) => (e.target as HTMLInputElement).blur()}
                               onChange={(e) => setTaxaComissaoForrageira(e.target.value === '' ? '' : Number(e.target.value))}
                               placeholder="Ex: 25.00"
-                              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </div>
                         </div>
@@ -2223,7 +2253,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
                 placeholder="Detalhes adicionais, condições do terreno, tipo de silagem ou observações financeiras..."
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 resize-none"
               />
             </div>
 
@@ -2262,24 +2292,41 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
               margemLucroPercent={margemLucroPercent}
             />
 
-            {/* BLOCO DE ASSINATURAS (EXCLUSIVO PARA IMPRESSÃO) */}
-            <div className="hidden print:grid print-signatures-area grid-cols-2 gap-8 pt-6 mt-4 border-t border-gray-300 text-center text-xs text-gray-700">
-              <div className="space-y-1">
-                <div className="border-b border-gray-400 w-4/5 mx-auto mb-2 signature-line"></div>
-                <p className="font-bold text-gray-900">
-                  {clientName || 'Produtor Rural (Cliente)'}
-                </p>
-                <p className="text-[10px] text-gray-500">
-                  Declaro conferência dos serviços e área discriminada
-                </p>
+            {/* BLOCO DE ASSINATURAS E RODAPÉ INSTITUCIONAL (EXCLUSIVO PARA IMPRESSÃO A4) */}
+            <div 
+              className="hidden print:block page-break-inside-avoid break-inside-avoid w-full" 
+              style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
+            >
+              <div className="print-signatures-area grid grid-cols-2 gap-8 pt-4 mt-3 border-t border-gray-300 text-center text-xs text-gray-700">
+                <div className="space-y-1">
+                  <div className="border-b border-gray-400 w-4/5 mx-auto mb-1.5 signature-line"></div>
+                  <p className="font-bold text-gray-900">
+                    {clientName || 'Produtor Rural (Cliente)'}
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    Declaro conferência dos serviços e área discriminada
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="border-b border-gray-400 w-4/5 mx-auto mb-1.5 signature-line"></div>
+                  <p className="font-bold text-gray-900">
+                    {companyProfile?.tradeName || 'Silagem Fácil'} - Prestador de Serviços
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    Conferência operacional, horímetros e frotas
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <div className="border-b border-gray-400 w-4/5 mx-auto mb-2 signature-line"></div>
-                <p className="font-bold text-gray-900">
-                  Silagem Fácil - Prestador de Serviços
+
+              {/* RODAPÉ INSTITUCIONAL DO SISTEMA PARA IMPRESSÃO A4 */}
+              <div className="footer-sistema border-t border-slate-300 pt-2 mt-3 text-center text-[9px] text-slate-500 leading-tight">
+                <p className="font-bold text-slate-700">
+                  {companyProfile?.tradeName || 'Silagem Fácil'} — Sistema de Gestão e Operações Agrícolas
                 </p>
-                <p className="text-[10px] text-gray-500">
-                  Conferência operacional, horímetros e frotas
+                <p>
+                  {companyProfile?.cnpjCpf ? `CNPJ/CPF: ${companyProfile.cnpjCpf}` : 'CNPJ: 00.000.000/0001-00'}
+                  {companyProfile?.phone ? ` • Contato: ${companyProfile.phone}` : ' • Contato: (00) 00000-0000'}
+                  {companyProfile?.email ? ` • E-mail: ${companyProfile.email}` : ' • suporte@silagemfacil.com.br'}
                 </p>
               </div>
             </div>
@@ -2318,20 +2365,31 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
               <span>Imprimir Via Completa</span>
             </button>
 
+            {/* BOTÃO SAIR (Substituindo Cancelar conforme solicitado) */}
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg transition cursor-pointer"
+              title="Fechar o formulário e voltar à tela anterior"
             >
-              Cancelar
+              <LogOut className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <span>Sair</span>
             </button>
+
+            {isSaveSuccessToast && (
+              <span className="text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 animate-fade-in shadow-2xs">
+                <Check className="w-4 h-4 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                Alterações salvas!
+              </span>
+            )}
             <button
               type="button"
-              onClick={handleSave}
+              onClick={handleSubmit}
               className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-1.5 sm:py-2 bg-emerald-800 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition cursor-pointer"
+              title="Salvar alterações no pedido sem fechar a janela"
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
-              <span>Salvar Pedido</span>
+              <span>{savedOrder || editRecord ? '✓ Salvar Alterações' : '✓ Salvar Pedido'}</span>
             </button>
           </div>
 

@@ -119,8 +119,9 @@ export function formatCurrencyInputDisplay(value: number | string | undefined | 
 }
 
 /**
- * Parses user input like "R$ 3.400,00", "R$ 1.200,00", "3400", "1200", "3.400,50" into a clean numeric float.
+ * Parses user input like "R$ 3.400,00", "R$ 1.200,00", "3400", "1200", "3.400,50", "3400,00" into a clean numeric float.
  * Removes "R$", whitespace, thousands separators, and converts decimal commas to dots.
+ * Guaranteed never to return NaN.
  */
 export function parseCurrencyToFloat(value: string | number | undefined | null): number {
   if (value === undefined || value === null || value === '') return 0;
@@ -131,6 +132,7 @@ export function parseCurrencyToFloat(value: string | number | undefined | null):
 
   // Remove "R$" and spaces
   str = str.replace(/[R$\s]/g, '');
+  if (!str) return 0;
 
   // If format contains both '.' and ',', standard Brazilian format: "3.400,50" -> "3400.50"
   if (str.includes('.') && str.includes(',')) {
@@ -139,10 +141,15 @@ export function parseCurrencyToFloat(value: string | number | undefined | null):
     // e.g. "3400,50" -> "3400.50"
     str = str.replace(',', '.');
   } else if (str.includes('.')) {
-    // If only dot: check if it's thousands separator like "3.400"
-    const parts = str.split('.');
-    if (parts.length === 2 && parts[1].length === 3) {
-      str = parts[0] + parts[1];
+    // Check if dot is thousands separator or decimal point
+    const dotCount = (str.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      str = str.replace(/\./g, '');
+    } else {
+      const parts = str.split('.');
+      if (parts.length === 2 && parts[1].length === 3) {
+        str = parts[0] + parts[1];
+      }
     }
   }
 

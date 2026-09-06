@@ -178,8 +178,9 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
       onSaveServices([savedService, ...services]);
     }
 
-    setIsModalOpen(false);
-    setEditRecord(null);
+    // REGRA DE FLUXO: Mantém o modal aberto para conferência do DRE e emissão de comprovantes
+    // Apenas o botão "Sair" fecha o modal voluntariamente
+    setEditRecord(savedService);
   };
 
   // Excluir Serviço
