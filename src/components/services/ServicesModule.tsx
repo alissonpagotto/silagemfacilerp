@@ -17,7 +17,7 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { ServiceOrder, Machinery, Employee, Client } from '../../types';
+import { ServiceOrder, Machinery, Employee, Client, CompanyProfile } from '../../types';
 import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
 import { useConfirm } from '../../context/ConfirmContext';
 import { ServiceFormModal, ServiceTabType } from './ServiceFormModal';
@@ -29,6 +29,7 @@ interface ServicesModuleProps {
   machineries?: Machinery[];
   employees?: Employee[];
   clients?: Client[];
+  companyProfile?: CompanyProfile;
   onSaveServices?: (services: ServiceOrder[]) => void;
   onSaveClients?: (clients: Client[]) => void;
 }
@@ -38,6 +39,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
   machineries = [],
   employees = [],
   clients = [],
+  companyProfile,
   onSaveServices,
   onSaveClients,
 }) => {
@@ -491,6 +493,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
         clients={clients}
         machineries={machineries}
         employees={employees}
+        companyProfile={companyProfile}
         nextNumber={`#${String(services.length + 1).padStart(3, '0')}`}
         editRecord={editRecord}
         onSaveClient={(newClient) => {

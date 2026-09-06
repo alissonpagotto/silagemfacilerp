@@ -17,8 +17,8 @@ import {
   Lock,
   Users
 } from 'lucide-react';
-import { formatCurrencyBRL } from '../../lib/storage';
-import { ServiceTruckItem } from '../../types';
+import { formatCurrencyBRL, getStoredCompanyProfile } from '../../lib/storage';
+import { ServiceTruckItem, CompanyProfile } from '../../types';
 import { TruckExpenseDetail } from './DRESummaryBlock';
 
 export type PrintContentType = 'client' | 'full';
@@ -27,6 +27,7 @@ export type PrintPaperFormat = 'thermal_80mm' | 'a4';
 export interface ServiceDocumentPreviewProps {
   initialContentType?: PrintContentType;
   initialPaperFormat?: PrintPaperFormat;
+  companyProfile?: CompanyProfile;
   onClose: () => void;
 
   // Identificação Geral
@@ -87,6 +88,7 @@ export interface ServiceDocumentPreviewProps {
 export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
   initialContentType = 'client',
   initialPaperFormat = 'thermal_80mm',
+  companyProfile,
   onClose,
   orderNumber,
   serviceTypeTitle,
@@ -129,6 +131,20 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 }) => {
   const [contentType, setContentType] = useState<PrintContentType>(initialContentType);
   const [paperFormat, setPaperFormat] = useState<PrintPaperFormat>(initialPaperFormat);
+
+  // Perfil da empresa prestadora (via props ou armazenamento local sincronizado)
+  const company = useMemo(() => companyProfile || getStoredCompanyProfile(), [companyProfile]);
+
+  // Formatação completa do endereço da empresa
+  const fullCompanyAddress = useMemo(() => {
+    const parts = [
+      company.address ? `${company.address}${company.number ? `, nº ${company.number}` : ''}` : '',
+      company.neighborhood ? `Bairro ${company.neighborhood}` : '',
+      company.city ? `${company.city}${company.state ? `/${company.state}` : ''}` : (company.state || ''),
+      company.zipCode ? `CEP: ${company.zipCode}` : '',
+    ].filter(Boolean);
+    return parts.join(' - ');
+  }, [company.address, company.number, company.neighborhood, company.city, company.state, company.zipCode]);
 
   const displayOrderNumber = orderNumber || `#${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
 
@@ -177,43 +193,366 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
     const isThermal = paperFormat === 'thermal_80mm';
     const isClient = contentType === 'client';
 
+    // Extrai estilos injetados pelo Vite/Tailwind da página atual
+    const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map((el) => el.outerHTML)
+      .join('\n');
+
     const styles = `
       @page {
         size: ${isThermal ? '80mm auto' : 'A4 portrait'};
-        margin: ${isThermal ? '0' : '5mm 6mm'};
+        margin: ${isThermal ? '0' : '4mm 6mm'};
       }
-      * {
-        box-sizing: border-box;
+
+      /* RESET E PRESERVAÇÃO RIGOROSA DE CORES E BACKGROUNDS (REQUISITO 2) */
+      *, *::before, *::after {
+        box-sizing: border-box !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        color-adjust: exact !important;
       }
-      body {
-        margin: 0;
-        padding: ${isThermal ? '2mm 1mm' : '0'};
-        background-color: #ffffff;
-        color: #0f172a;
-        font-family: ${isThermal ? 'monospace, -apple-system, sans-serif' : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
-        font-size: ${isThermal ? '10px' : '10.5px'};
-        line-height: ${isThermal ? '1.2' : '1.25'};
-        width: ${isThermal ? '80mm' : '100%'};
-        max-width: ${isThermal ? '80mm' : '100%'};
+
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        font-family: ${isThermal ? "'Courier New', Courier, monospace, monospace" : "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"} !important;
+        font-size: ${isThermal ? '10px' : '10.5px'} !important;
+        line-height: ${isThermal ? '1.25' : '1.25'} !important;
+        -webkit-font-smoothing: antialiased;
       }
+
+      /* REGRAS BÁSICAS DE DISPLAY E LAYOUT */
+      .block { display: block !important; }
+      .inline-block { display: inline-block !important; }
+      .inline { display: inline !important; }
+      .flex { display: flex !important; }
+      .inline-flex { display: inline-flex !important; }
+      .flex-col { flex-direction: column !important; }
+      .flex-row { flex-direction: row !important; }
+      .flex-wrap { flex-wrap: wrap !important; }
+      .items-center { align-items: center !important; }
+      .items-start { align-items: flex-start !important; }
+      .items-baseline { align-items: baseline !important; }
+      .justify-between { justify-content: space-between !important; }
+      .justify-center { justify-content: center !important; }
+      .justify-start { justify-content: flex-start !important; }
+      .justify-end { justify-content: flex-end !important; }
+      .shrink-0 { flex-shrink: 0 !important; }
+
+      /* GRID SYSTEM ROBUSTO (REQUISITO 1 & REQUISITO 3) */
+      .grid { display: grid !important; }
+      .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+      .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+      .gap-1 { gap: 4px !important; }
+      .gap-1\\.5 { gap: 6px !important; }
+      .gap-2 { gap: 8px !important; }
+      .gap-3 { gap: 12px !important; }
+      .gap-4 { gap: 16px !important; }
+      .gap-6 { gap: 24px !important; }
+      .gap-x-2 { column-gap: 8px !important; }
+      .gap-y-0\\.5 { row-gap: 2px !important; }
+
+      /* LOGO & DIMENSÕES DO CABEÇALHO */
+      .w-14 { width: 56px !important; }
+      .h-14 { height: 56px !important; }
+      .min-w-\\[56px\\] { min-width: 56px !important; }
+      .max-w-\\[56px\\] { max-width: 56px !important; }
+      .w-12 { width: 48px !important; }
+      .h-12 { height: 48px !important; }
+      .min-w-\\[170px\\] { min-width: 170px !important; }
+      .object-contain { object-fit: contain !important; }
+      .max-w-full { max-width: 100% !important; }
+      .max-h-full { max-height: 100% !important; }
+
+      /* ESPAÇAMENTO VERTICAL SPACE-Y */
+      .space-y-0\\.5 > * + * { margin-top: 2px !important; }
+      .space-y-1 > * + * { margin-top: 4px !important; }
+      .space-y-1\\.5 > * + * { margin-top: 6px !important; }
+      .space-y-2 > * + * { margin-top: 8px !important; }
+      .space-y-2\\.5 > * + * { margin-top: 10px !important; }
+      .space-y-3 > * + * { margin-top: 12px !important; }
+
+      /* PREVENÇÃO DEFINITIVA DE AGLOMERAÇÃO DE TEXTO (REQUISITO 1) */
+      .grid > div {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        min-width: 0 !important;
+      }
+      .grid > div > span:first-child,
+      .text-slate-500.uppercase.block,
+      span.uppercase.block {
+        display: block !important;
+        margin-bottom: 2px !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+      }
+      .grid > div > span:last-child,
+      .grid > div > strong:last-child {
+        display: block !important;
+        line-height: 1.25 !important;
+      }
+      .truncate {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+
+      /* BOXES DA SEÇÃO 3: RESULTADO FINAL DA OPERAÇÃO */
+      .bg-emerald-950\\/40,
+      .bg-emerald-700\\/60 {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 6px 4px !important;
+        text-align: center !important;
+      }
+      .bg-emerald-950\\/40 span,
+      .bg-emerald-700\\/60 span {
+        display: block !important;
+        margin-bottom: 2px !important;
+      }
+      .bg-emerald-950\\/40 strong,
+      .bg-emerald-700\\/60 strong {
+        display: block !important;
+      }
+
+      /* PRESERVAÇÃO DE CORES VIBRANTES E BACKGROUNDS (REQUISITO 2) */
+      /* Seção 3 - Resultado Final (Verde Esmeralda Vibrante) */
+      .bg-gradient-to-br,
+      .from-emerald-800,
+      .to-emerald-900 {
+        background-color: #064e3b !important;
+        background-image: linear-gradient(135deg, #065f46 0%, #064e3b 100%) !important;
+        color: #ffffff !important;
+      }
+      .bg-emerald-950\\/40 {
+        background-color: #022c22 !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        color: #ffffff !important;
+      }
+      .bg-emerald-700\\/60 {
+        background-color: #047857 !important;
+        border: 1px solid #10b981 !important;
+        color: #ffffff !important;
+      }
+      .bg-emerald-700\\/50 {
+        background-color: #047857 !important;
+        color: #ffffff !important;
+      }
+      .bg-emerald-50, .bg-emerald-50\\/40 {
+        background-color: #f0fdf4 !important;
+      }
+      .bg-emerald-100 {
+        background-color: #dcfce7 !important;
+      }
+      .text-emerald-100 { color: #d1fae5 !important; }
+      .text-emerald-200 { color: #a7f3d0 !important; }
+      .text-emerald-300 { color: #6ee7b7 !important; }
+      .text-emerald-600 { color: #059669 !important; }
+      .text-emerald-700 { color: #047857 !important; }
+      .text-emerald-800 { color: #065f46 !important; }
+      .text-emerald-900 { color: #064e3b !important; }
+      .text-emerald-950 { color: #022c22 !important; }
+      .border-emerald-100 { border-color: #d1fae5 !important; }
+      .border-emerald-200 { border-color: #a7f3d0 !important; }
+      .border-emerald-300 { border-color: #86efac !important; }
+      .border-emerald-500\\/40 { border-color: rgba(16, 185, 129, 0.4) !important; }
+      .border-l-emerald-600 {
+        border-left-width: 4px !important;
+        border-left-style: solid !important;
+        border-left-color: #059669 !important;
+      }
+
+      /* Seção 2 - DRE Gerencial & Custos (Laranja) e Barras de Progresso */
+      .bg-orange-50, .bg-orange-50\\/40 {
+        background-color: #fff7ed !important;
+      }
+      .bg-orange-100 {
+        background-color: #ffedd5 !important;
+      }
+      .bg-orange-500 {
+        background-color: #ea580c !important;
+      }
+      .bg-orange-600 {
+        background-color: #c2410c !important;
+      }
+      .border-orange-200 { border-color: #fed7aa !important; }
+      .border-orange-300 { border-color: #fdba74 !important; }
+      .border-l-orange-600 {
+        border-left-width: 4px !important;
+        border-left-style: solid !important;
+        border-left-color: #ea580c !important;
+      }
+      .text-orange-600 { color: #ea580c !important; }
+      .text-orange-700 { color: #c2410c !important; }
+      .text-orange-800 { color: #9a3412 !important; }
+      .text-orange-900 { color: #7c2d12 !important; }
+      .text-orange-950 { color: #431407 !important; }
+
+      /* Barras de progresso e badges adicionais */
+      .bg-amber-50 { background-color: #fffbeb !important; }
+      .border-amber-200 { border-color: #fde68a !important; }
+      .text-amber-300 { color: #fcd34d !important; }
+      .text-amber-800 { color: #92400e !important; }
+      .bg-indigo-100 { background-color: #e0e7ff !important; }
+      .text-indigo-900 { color: #312e81 !important; }
+      .border-indigo-300 { border-color: #a5b4fc !important; }
+
+      /* Tons Neutros e Textos */
+      .bg-slate-50 { background-color: #f8fafc !important; }
+      .bg-slate-100 { background-color: #f1f5f9 !important; }
+      .bg-white { background-color: #ffffff !important; }
+      .text-white { color: #ffffff !important; }
+      .text-slate-400 { color: #94a3b8 !important; }
+      .text-slate-500 { color: #64748b !important; }
+      .text-slate-600 { color: #475569 !important; }
+      .text-slate-700 { color: #334155 !important; }
+      .text-slate-800 { color: #1e293b !important; }
+      .text-slate-900 { color: #0f172a !important; }
+      .border-slate-100 { border-color: #f1f5f9 !important; }
+      .border-slate-200 { border-color: #e2e8f0 !important; }
+      .border-slate-300 { border-color: #cbd5e1 !important; }
+      .border-slate-400 { border-color: #94a3b8 !important; }
+      .border-slate-900 { border-color: #0f172a !important; }
+      .border { border-width: 1px !important; border-style: solid !important; }
+      .border-t { border-top-width: 1px !important; border-top-style: solid !important; }
+      .border-b { border-bottom-width: 1px !important; border-bottom-style: solid !important; }
+      .border-b-2 { border-bottom-width: 2px !important; border-bottom-style: solid !important; }
+      .border-t-2 { border-top-width: 2px !important; border-top-style: solid !important; }
+      .rounded { border-radius: 4px !important; }
+      .rounded-lg { border-radius: 8px !important; }
+      .rounded-full { border-radius: 9999px !important; }
+      .h-1\\.5 { height: 6px !important; }
+      .w-10 { width: 40px !important; }
+      .w-full { width: 100% !important; }
+      .overflow-hidden { overflow: hidden !important; }
+
+      /* ALINHAMENTO LADO A LADO DAS ASSINATURAS E TABELAS (REQUISITO 3) */
+      .a4-sheet .grid.grid-cols-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 24px !important;
+        width: 100% !important;
+      }
+      .a4-sheet .grid.grid-cols-2 > div {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        width: 100% !important;
+      }
+      .a4-sheet .grid.grid-cols-2 > div .border-b {
+        width: 75% !important;
+        margin: 0 auto 6px auto !important;
+        border-bottom: 1px solid #475569 !important;
+      }
+
+      /* Tabelas alinhadas com cabeçalho e rodapé destacados */
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: auto !important;
+      }
+      th, td {
+        padding: 3px 6px !important;
+        vertical-align: middle !important;
+      }
+      table thead tr {
+        background-color: #f1f5f9 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+      }
+      table tbody tr {
+        border-bottom: 1px solid #f1f5f9 !important;
+      }
+      table tfoot tr {
+        background-color: #f1f5f9 !important;
+        border-top: 2px solid #94a3b8 !important;
+      }
+      .text-left { text-align: left !important; }
+      .text-center { text-align: center !important; }
+      .text-right { text-align: right !important; }
+      .font-semibold { font-weight: 600 !important; }
+      .font-bold { font-weight: 700 !important; }
+      .font-extrabold { font-weight: 800 !important; }
+      .font-black { font-weight: 900 !important; }
+      .uppercase { text-transform: uppercase !important; }
+      .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; }
+
+      /* DIVISORES E NEGRITOS NO FORMATO 80MM (REQUISITO 4) */
+      .border-dashed { border-style: dashed !important; }
+      .border-dotted { border-style: dotted !important; }
+      .border-gray-300 { border-color: #d1d5db !important; }
+      .border-gray-400 { border-color: #9ca3af !important; }
+      .border-gray-600 { border-color: #4b5563 !important; }
+      .border-gray-700 { border-color: #374151 !important; }
+      .border-gray-800 { border-color: #1f2937 !important; }
+      .border-black { border-color: #000000 !important; }
+
+      .border-b-2.border-dashed { border-bottom: 2px dashed #000000 !important; }
+      .border-b.border-dashed { border-bottom: 1px dashed #1f2937 !important; }
+      .border-t.border-dotted { border-top: 1px dotted #374151 !important; }
+      .border-b.border-dotted { border-bottom: 1px dotted #374151 !important; }
+      .border-b.border-black { border-bottom: 1px solid #000000 !important; }
+
+      ${isThermal ? `
+        body, .page-container, #printable-document-content {
+          width: 80mm !important;
+          max-width: 80mm !important;
+          min-width: 80mm !important;
+          font-family: 'Courier New', Courier, monospace, monospace !important;
+          font-size: 10px !important;
+          line-height: 1.25 !important;
+          margin: 0 auto !important;
+          padding: 0 !important;
+        }
+        b, strong, .font-bold, .font-black, .font-extrabold {
+          font-weight: 800 !important;
+          color: #000000 !important;
+          -webkit-text-stroke: 0.25px #000000;
+        }
+        .text-gray-600, .text-gray-700 {
+          color: #1f2937 !important;
+        }
+      ` : `
+        /* Folha A4 */
+        .a4-sheet {
+          width: 210mm !important;
+          max-width: 210mm !important;
+          min-width: 210mm !important;
+          height: 100% !important;
+          max-height: 297mm !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+          box-sizing: border-box !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      `}
+
       @media screen {
         body {
-          background-color: #0f172a;
-          padding: 16px 8px 32px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
+          background-color: #0f172a !important;
+          padding: 16px 8px 32px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
         }
         .page-container {
-          background-color: #ffffff;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-          width: ${isThermal ? '80mm' : '210mm'};
-          min-height: ${isThermal ? 'auto' : '297mm'};
-          padding: ${isThermal ? '3mm' : '5mm 7mm'};
+          background-color: #ffffff !important;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+          width: ${isThermal ? '80mm' : '210mm'} !important;
+          min-height: ${isThermal ? 'auto' : '297mm'} !important;
+          padding: ${isThermal ? '3mm' : '5mm 7mm'} !important;
         }
       }
+
       @media print {
         html, body {
           height: 100% !important;
@@ -256,11 +595,13 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           break-after: avoid !important;
         }
       }
+
       .break-avoid {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         -webkit-column-break-inside: avoid !important;
       }
+
       .toolbar {
         position: sticky;
         top: 0;
@@ -307,29 +648,6 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
       .btn-secondary:hover {
         background-color: #475569;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      th, td {
-        padding: ${isThermal ? '1.5px 2px' : '3px 5px'};
-        text-align: left;
-      }
-      .border-t-dashed {
-        border-top: 1px dashed #94a3b8;
-      }
-      .border-b-dashed {
-        border-bottom: 1px dashed #94a3b8;
-      }
-      .border-b-double {
-        border-bottom: 2px solid #0f172a;
-      }
-      .text-right { text-align: right; }
-      .text-center { text-align: center; }
-      .font-bold { font-weight: 700; }
-      .font-black { font-weight: 900; }
-      .uppercase { text-transform: uppercase; }
-      .text-muted { color: #64748b; }
     `;
 
     const htmlContent = `
@@ -338,13 +656,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ordem de Serviço ${displayOrderNumber} - ${isClient ? 'Via Cliente' : 'Via Completa'}</title>
+        <title>Ordem de Serviço ${displayOrderNumber} - ${company.tradeName || 'Silagem Fácil'}</title>
+        ${headStyles}
         <style>${styles}</style>
       </head>
       <body>
         <div class="toolbar no-print">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 13px; font-weight: 700;">SILAGEM FÁCIL</span>
+            <span style="font-size: 13px; font-weight: 700;">${(company.tradeName || company.corporateName || 'SILAGEM FÁCIL').toUpperCase()}</span>
             <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: ${isClient ? '#d97706' : '#2563eb'}; color: white; font-weight: 700;">
               ${isClient ? 'Via Cliente' : 'Via Completa'}
             </span>
@@ -425,6 +744,8 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
             <span>Prévia:</span>
             <span className="font-bold text-slate-200">{displayOrderNumber}</span>
+            <span>•</span>
+            <span className="text-slate-300 font-semibold">{company.tradeName || company.corporateName || 'Silagem Fácil'}</span>
           </div>
         </div>
 
@@ -559,10 +880,30 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
               style={{ boxSizing: 'border-box' }}
             >
               {/* TOPO SERRILHADO BOBINA TÉRMICA */}
-              <div className="border-b-2 border-dashed border-gray-800 pb-2 mb-2 text-center">
-                <h2 className="font-black text-sm tracking-wider uppercase">SILAGEM FÁCIL</h2>
-                <p className="text-[10px] uppercase font-bold text-gray-700">Prestação de Serviços Agrícolas</p>
-                <p className="text-[9px] text-gray-600">Tecnologia, Colheita e Transporte</p>
+              <div className="border-b-2 border-dashed border-gray-800 pb-2 mb-2 text-center space-y-0.5">
+                {company.logoUrl && (
+                  <div className="w-12 h-12 mx-auto mb-1 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={company.logoUrl}
+                      alt={company.tradeName || 'Logo'}
+                      className="max-w-full max-h-full object-contain grayscale"
+                    />
+                  </div>
+                )}
+                <h2 className="font-black text-sm tracking-wider uppercase">
+                  {company.tradeName || company.corporateName || 'SILAGEM FÁCIL'}
+                </h2>
+                {company.corporateName && company.corporateName !== company.tradeName && (
+                  <p className="text-[9px] text-gray-700 font-semibold">{company.corporateName}</p>
+                )}
+                {company.cnpjCpf && (
+                  <p className="text-[9px] text-gray-700 font-bold">CNPJ/CPF: {company.cnpjCpf}</p>
+                )}
+                {(company.phone || company.city) && (
+                  <p className="text-[8.5px] text-gray-600">
+                    {[company.phone ? `Tel: ${company.phone}` : '', company.city ? `${company.city}/${company.state || ''}` : ''].filter(Boolean).join(' • ')}
+                  </p>
+                )}
                 <div className="mt-1 pt-1 border-t border-dotted border-gray-400">
                   <span className={`font-bold text-[10px] uppercase px-2 py-0.5 inline-block ${
                     contentType === 'client' ? 'bg-black text-white' : 'bg-gray-800 text-white'
@@ -670,13 +1011,22 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       ))}
                     </div>
 
-                    {/* Somatórios da frota na Via Completa */}
-                    {contentType === 'full' && (
-                      <div className="flex justify-between font-bold border-t border-dotted border-gray-400 pt-0.5 mt-1 text-[9.5px]">
-                        <span>Total Cargas / Volume:</span>
-                        <span className="font-mono">{totalCargasViagens} vg • {totalVolumeTransportadoM3.toFixed(1)} m³</span>
+                    {/* Somatórios da frota (Via Cliente e Via Completa) */}
+                    <div className="border-t border-dotted border-gray-400 pt-0.5 mt-1 text-[9.5px] space-y-0.5">
+                      <div className="flex justify-between font-bold">
+                        <span>Total Viagens / Volume:</span>
+                        <span className="font-mono">{totalCargasViagens} vg • {totalVolumeTransportadoM3.toFixed(1).replace('.', ',')} m³</span>
                       </div>
-                    )}
+                      {totalKmAdicionalSoma > 0 && (
+                        <div className="flex justify-between text-gray-700">
+                          <span>Total KM Adicional:</span>
+                          <span className="font-mono font-bold">
+                            {totalKmAdicionalSoma} km
+                            {(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (R$ ${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -830,14 +1180,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   <div className="space-y-0.5 pt-1">
                     <div className="border-b border-black w-4/5 mx-auto mb-1"></div>
                     <p className="font-bold text-[10px] uppercase">{operatorName || 'Encarregado Operacional'}</p>
-                    <p className="text-[8px] text-gray-500">Silagem Fácil - Fechamento de Campo</p>
+                    <p className="text-[8px] text-gray-500">{company.tradeName || 'Silagem Fácil'} - Fechamento de Campo</p>
                   </div>
                 )}
               </div>
 
               {/* RODAPÉ DO CUPOM */}
               <div className="text-center pt-2 border-t border-dotted border-gray-400 text-[9px] text-gray-600 space-y-0.5">
-                <p className="font-bold tracking-wider">SILAGEM FÁCIL - TECNOLOGIA AGRÍCOLA</p>
+                <p className="font-bold tracking-wider">{(company.tradeName || 'SILAGEM FÁCIL').toUpperCase()} - GESTÃO AGRÍCOLA</p>
                 <p className="text-[8px] text-gray-400">
                   {contentType === 'client' ? 'Via do Produtor Rural' : 'Via Gerencial Interna'}
                 </p>
@@ -854,28 +1204,76 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
               style={{ boxSizing: 'border-box' }}
             >
               <div className="space-y-2">
-                {/* CABEÇALHO EXECUTIVO A4 */}
-                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-2 break-avoid">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-black tracking-tight text-slate-900 uppercase">
-                        SILAGEM FÁCIL
-                      </span>
-                      <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded border ${
-                        contentType === 'client'
-                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                          : 'bg-indigo-100 text-indigo-900 border-indigo-300'
-                      }`}>
-                        {contentType === 'client' ? 'Comprovante do Cliente (Via Produtor)' : 'Via Completa / DRE Gerencial'}
-                      </span>
+                {/* CABEÇALHO EXECUTIVO INSTITUCIONAL A4 */}
+                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-2 break-avoid gap-3">
+                  {/* LADO ESQUERDO: LOGOTIPO + IDENTIFICAÇÃO INSTITUCIONAL & CADASTRO */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* 1. Logotipo da Empresa */}
+                    <div className="w-14 h-14 min-w-[56px] max-w-[56px] rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden p-1 shrink-0">
+                      {company.logoUrl ? (
+                        <img
+                          src={company.logoUrl}
+                          alt={company.tradeName || 'Logotipo da Empresa'}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-black text-lg rounded">
+                          {(company.tradeName || company.corporateName || 'SF').substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[10px] text-slate-600 font-medium">
-                      Gestão Agrícola Integrada, Colheita e Fechamento Operacional
-                    </p>
+
+                    {/* 2 & 3: Nome Fantasia, Razão Social e Bloco Cadastral */}
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      {/* Nome Fantasia + Badge da Via */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase truncate">
+                          {company.tradeName || company.corporateName || 'SILAGEM FÁCIL'}
+                        </span>
+                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border shrink-0 ${
+                          contentType === 'client'
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            : 'bg-indigo-100 text-indigo-900 border-indigo-300'
+                        }`}>
+                          {contentType === 'client' ? 'Comprovante do Cliente (Via Produtor)' : 'Via Completa / DRE Gerencial'}
+                        </span>
+                      </div>
+
+                      {/* Razão Social */}
+                      {company.corporateName && company.corporateName !== company.tradeName && (
+                        <p className="text-[10px] text-slate-700 font-semibold truncate">
+                          Razão Social: <span className="text-slate-900 font-bold">{company.corporateName}</span>
+                        </p>
+                      )}
+
+                      {/* Bloco de Dados Cadastrais: CNPJ/CPF, Inscrição Estadual, Contato (Tel/Email) e Endereço */}
+                      <div className="text-[9.5px] text-slate-600 leading-tight space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          {company.cnpjCpf && (
+                            <span><strong className="text-slate-800">CNPJ/CPF:</strong> {company.cnpjCpf}</span>
+                          )}
+                          {company.stateRegistration && (
+                            <span>• <strong className="text-slate-800">IE:</strong> {company.stateRegistration}</span>
+                          )}
+                          {company.phone && (
+                            <span>• <strong className="text-slate-800">Contato:</strong> {company.phone}</span>
+                          )}
+                          {company.email && (
+                            <span>• <strong className="text-slate-800">E-mail:</strong> {company.email}</span>
+                          )}
+                        </div>
+                        {fullCompanyAddress && (
+                          <div className="truncate text-[9px] text-slate-500">
+                            <strong className="text-slate-700">Endereço:</strong> {fullCompanyAddress}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="text-right space-y-0.5">
-                    <p className="text-xs font-bold text-slate-900">
+                  {/* 4. LADO DIREITO: DADOS ESPECÍFICOS DO RELATÓRIO (MANTIDO) */}
+                  <div className="text-right space-y-0.5 shrink-0 min-w-[170px]">
+                    <p className="text-xs font-black text-slate-900 tracking-tight">
                       ORDEM DE SERVIÇO Nº {displayOrderNumber}
                     </p>
                     <p className="text-[10px] text-slate-600">
@@ -889,20 +1287,20 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
                 {/* SEÇÃO 1: DADOS CADASTRAIS DO CLIENTE E LOCAL */}
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px] break-avoid">
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Produtor / Cliente</span>
+                  <div className="flex flex-col justify-start">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Produtor / Cliente</span>
                     <span className="font-bold text-slate-900 truncate block">{clientName || 'Não Informado'}</span>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Fazenda / Propriedade</span>
+                  <div className="flex flex-col justify-start">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Fazenda / Propriedade</span>
                     <span className="font-bold text-slate-900 truncate block">{farmName || 'Não Informada'}</span>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Localidade</span>
+                  <div className="flex flex-col justify-start">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Localidade</span>
                     <span className="text-slate-800 truncate block">{location || 'Não Informada'}</span>
                   </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Telefone de Contato</span>
+                  <div className="flex flex-col justify-start">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Telefone de Contato</span>
                     <span className="text-slate-800 truncate block">{clientPhone || 'Não Informado'}</span>
                   </div>
                 </div>
@@ -915,40 +1313,38 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   </h3>
 
                   <div className="grid grid-cols-3 gap-2 text-[10.5px]">
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Área da Colheita</span>
-                      <span className="font-black text-slate-900 text-xs">{quantidadeArea || 0} {unidadeAreaLabel}</span>
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Área da Colheita</span>
+                      <span className="font-black text-slate-900 text-xs block">{quantidadeArea || 0} {unidadeAreaLabel}</span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Ensiladeira / Forrageira</span>
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Ensiladeira / Forrageira</span>
                       <span className="font-bold text-slate-800 truncate block">{forageHarvesterName || 'Não vinculada'}</span>
-                      <span className="text-[9px] text-slate-500 block">
+                      <span className="text-[9px] text-slate-500 block mt-0.5">
                         Tambor: {horasTambor || 0}h | Motor: {horasMotor || 0}h
                       </span>
                     </div>
 
-                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100">
-                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Trator Compactador</span>
+                    <div className="bg-slate-50 p-1.5 rounded border border-slate-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block mb-0.5">Trator Compactador</span>
                       <span className="font-bold text-slate-800 truncate block">{tractorName || 'Não vinculado'}</span>
-                      <span className="text-[9px] text-slate-500 block">
+                      <span className="text-[9px] text-slate-500 block mt-0.5">
                         Horímetro: {tractorHours || 0}h ({modoCobrancaTratorLabel})
                       </span>
                     </div>
                   </div>
 
-                  {/* TABELA DE CAMINHÕES COM LINHA DE TOTAIS (VIA COMPLETA) */}
+                  {/* TABELA DE CAMINHÕES COM LINHA DE TOTAIS (VIA COMPLETA E VIA CLIENTE) */}
                   {trucks.length > 0 && (
                     <div className="pt-0.5">
                       <div className="flex items-center justify-between mb-0.5">
                         <span className="text-[10px] font-bold text-slate-700 uppercase">
                           Frota de Caminhões ({trucks.length} veículos):
                         </span>
-                        {contentType === 'full' && (
-                          <span className="text-[9.5px] font-mono text-slate-500">
-                            Total acumulado: {totalCargasViagens} viagens • {totalVolumeTransportadoM3.toFixed(1)} m³
-                          </span>
-                        )}
+                        <span className="text-[9.5px] font-mono text-slate-500">
+                          Total acumulado: {totalCargasViagens} viagens • {totalVolumeTransportadoM3.toFixed(1).replace('.', ',')} m³
+                        </span>
                       </div>
                       <table className="w-full text-left border-collapse text-[10px]">
                         <thead>
@@ -968,36 +1364,34 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               <td className="py-0.5 px-2 text-slate-700">{t.primaryDriverName || 'Não Informado'}</td>
                               <td className="py-0.5 px-2 text-center">{t.capacityM3 || 0} m³</td>
                               <td className="py-0.5 px-2 text-center font-bold text-slate-900">{t.tripLoads || 0}</td>
-                              <td className="py-0.5 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1)} m³</td>
+                              <td className="py-0.5 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1).replace('.', ',')} m³</td>
                               <td className="py-0.5 px-2 text-right">
                                 {(t.additionalKm || 0) > 0 ? `${t.additionalKm} km (R$ ${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'}
                               </td>
                             </tr>
                           ))}
                         </tbody>
-                        {/* LINHA DE TOTAIS NO RODAPÉ (TFOOT) - REQUISITO DA VIA COMPLETA */}
-                        {contentType === 'full' && (
-                          <tfoot>
-                            <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
-                              <td colSpan={3} className="py-1 px-2 uppercase text-[9.5px] tracking-wide text-slate-700">
-                                Totais Acumulados da Frota:
-                              </td>
-                              <td className="py-1 px-2 text-center font-black text-slate-950">
-                                {totalCargasViagens}
-                              </td>
-                              <td className="py-1 px-2 text-center font-black text-slate-950">
-                                {totalVolumeTransportadoM3.toFixed(1)} m³
-                              </td>
-                              <td className="py-1 px-2 text-right font-black text-slate-950">
-                                {totalKmAdicionalSoma > 0 
-                                  ? `${totalKmAdicionalSoma} km (R$ ${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` 
-                                  : totalAdicionalKm > 0 
-                                    ? `R$ ${formatCurrencyBRL(totalAdicionalKm)}` 
-                                    : '-'}
-                              </td>
-                            </tr>
-                          </tfoot>
-                        )}
+                        {/* LINHA DE TOTAIS NO RODAPÉ (TFOOT) - REQUISITO DA VIA COMPLETA E VIA CLIENTE */}
+                        <tfoot>
+                          <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900">
+                            <td colSpan={3} className="py-1 px-2 uppercase text-[9.5px] tracking-wide text-slate-700">
+                              Totais Acumulados da Frota:
+                            </td>
+                            <td className="py-1 px-2 text-center font-black text-slate-950">
+                              {totalCargasViagens}
+                            </td>
+                            <td className="py-1 px-2 text-center font-black text-slate-950">
+                              {totalVolumeTransportadoM3.toFixed(1).replace('.', ',')} m³
+                            </td>
+                            <td className="py-1 px-2 text-right font-black text-slate-950">
+                              {totalKmAdicionalSoma > 0 
+                                ? `${totalKmAdicionalSoma} km${(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (R$ ${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}` 
+                                : totalAdicionalKm > 0 
+                                  ? `R$ ${formatCurrencyBRL(totalAdicionalKm)}` 
+                                  : '-'}
+                            </td>
+                          </tr>
+                        </tfoot>
                       </table>
                     </div>
                   )}
@@ -1016,22 +1410,22 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-[10.5px] pt-0.5">
-                    <div className="bg-white p-1.5 rounded border border-emerald-100">
-                      <span className="text-[9px] text-slate-500 font-bold block">Serviço Base ({unidadeAreaLabel})</span>
-                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(valorBaseArea)}</span>
-                      <span className="text-[9px] text-slate-500 block">{quantidadeArea || 0} {unidadeAreaLabel} x R$ {valorHectare || 0}</span>
+                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Serviço Base ({unidadeAreaLabel})</span>
+                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(valorBaseArea)}</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">{quantidadeArea || 0} {unidadeAreaLabel} x R$ {valorHectare || 0}</span>
                     </div>
 
-                    <div className="bg-white p-1.5 rounded border border-emerald-100">
-                      <span className="text-[9px] text-slate-500 font-bold block">Compactação Trator</span>
-                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(subtotalTrator)}</span>
-                      <span className="text-[9px] text-slate-500 block">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
+                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Compactação Trator</span>
+                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(subtotalTrator)}</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
                     </div>
 
-                    <div className="bg-white p-1.5 rounded border border-emerald-100">
-                      <span className="text-[9px] text-slate-500 font-bold block">Frete / KM Adicional Frotas</span>
-                      <span className="font-bold text-slate-900 text-xs">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
-                      <span className="text-[9px] text-slate-500 block">Cobrança de deslocamento</span>
+                    <div className="bg-white p-1.5 rounded border border-emerald-100 flex flex-col justify-start">
+                      <span className="text-[9px] text-slate-500 font-bold block mb-0.5">Frete / KM Adicional Frotas</span>
+                      <span className="font-bold text-slate-900 text-xs block">R$ {formatCurrencyBRL(totalAdicionalKm)}</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
                     </div>
                   </div>
                 </div>
@@ -1181,17 +1575,17 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       </div>
 
                       <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
-                        <div className="bg-emerald-950/40 p-1.5 rounded">
-                          <span className="text-[9px] text-emerald-200 block uppercase font-medium">Receita Bruta</span>
-                          <strong className="text-xs text-white font-mono">R$ {formatCurrencyBRL(totalPedido)}</strong>
+                        <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
+                          <span className="text-[9px] text-emerald-200 block uppercase font-medium mb-0.5">Receita Bruta</span>
+                          <strong className="text-xs text-white font-mono block">R$ {formatCurrencyBRL(totalPedido)}</strong>
                         </div>
-                        <div className="bg-emerald-950/40 p-1.5 rounded">
-                          <span className="text-[9px] text-emerald-200 block uppercase font-medium">(-) Custos Operacionais</span>
-                          <strong className="text-xs text-amber-300 font-mono">R$ {formatCurrencyBRL(totalGeralDespesas)}</strong>
+                        <div className="bg-emerald-950/40 p-1.5 rounded flex flex-col items-center justify-center">
+                          <span className="text-[9px] text-emerald-200 block uppercase font-medium mb-0.5">(-) Custos Operacionais</span>
+                          <strong className="text-xs text-amber-300 font-mono block">R$ {formatCurrencyBRL(totalGeralDespesas)}</strong>
                         </div>
-                        <div className="bg-emerald-700/60 p-1.5 rounded border border-emerald-500/40">
-                          <span className="text-[9px] text-emerald-100 block uppercase font-bold">(=) Lucro Líquido Estimado</span>
-                          <strong className="text-xs text-emerald-100 font-black font-mono">R$ {formatCurrencyBRL(lucroEstimado)}</strong>
+                        <div className="bg-emerald-700/60 p-1.5 rounded border border-emerald-500/40 flex flex-col items-center justify-center">
+                          <span className="text-[9px] text-emerald-100 block uppercase font-bold mb-0.5">(=) Lucro Líquido Estimado</span>
+                          <strong className="text-xs text-emerald-100 font-black font-mono block">R$ {formatCurrencyBRL(lucroEstimado)}</strong>
                         </div>
                       </div>
                     </div>
@@ -1201,7 +1595,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 {/* OBSERVAÇÕES GERAIS */}
                 {observacoes && (
                   <div className="border border-slate-200 bg-slate-50 rounded p-1.5 mb-2 text-[10px] break-avoid">
-                    <span className="font-bold text-slate-700 uppercase block text-[9px]">Observações Gerais da OS:</span>
+                    <span className="font-bold text-slate-700 uppercase block text-[9px] mb-0.5">Observações Gerais da OS:</span>
                     <p className="text-slate-800 italic">{observacoes}</p>
                   </div>
                 )}
@@ -1209,22 +1603,22 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
               {/* SEÇÃO 6: ASSINATURAS GERENCIAIS (FIM DA FOLHA A4) */}
               <div className="pt-3 mt-auto border-t border-slate-300 grid grid-cols-2 gap-6 text-center text-[10.5px] text-slate-700 break-avoid">
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 flex flex-col items-center justify-start">
                   <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
-                  <p className="font-bold text-slate-900">
+                  <p className="font-bold text-slate-900 block">
                     {clientName || 'Assinatura do Produtor Rural'}
                   </p>
-                  <p className="text-[9px] text-slate-500">
+                  <p className="text-[9px] text-slate-500 block">
                     Declaro haver conferido a medição e execução dos serviços
                   </p>
                 </div>
 
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 flex flex-col items-center justify-start">
                   <div className="border-b border-slate-400 w-3/4 mx-auto mb-1.5"></div>
-                  <p className="font-bold text-slate-900">
-                    {operatorName || 'Silagem Fácil - Responsável Técnico'}
+                  <p className="font-bold text-slate-900 block">
+                    {operatorName || `${company.tradeName || 'Silagem Fácil'} - Responsável Técnico`}
                   </p>
-                  <p className="text-[9px] text-slate-500">
+                  <p className="text-[9px] text-slate-500 block">
                     {contentType === 'client' ? 'Conferência e encerramento operacional' : 'Validação de DRE e encerramento financeiro'}
                   </p>
                 </div>

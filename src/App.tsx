@@ -513,6 +513,7 @@ export default function App() {
               machineries={machineries}
               employees={employees}
               clients={clients}
+              companyProfile={companyProfile}
               onSaveServices={setServices}
               onSaveClients={setClients}
             />

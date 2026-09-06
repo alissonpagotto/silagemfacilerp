@@ -28,7 +28,7 @@ import {
   PrinterCheck,
   Lock
 } from 'lucide-react';
-import { ServiceOrder, Machinery, Employee, Client, ServiceTruckItem } from '../../types';
+import { ServiceOrder, Machinery, Employee, Client, ServiceTruckItem, CompanyProfile } from '../../types';
 import { formatCurrencyBRL } from '../../lib/storage';
 import { QuickClientModal } from './QuickClientModal';
 import { TractorBlock } from './TractorBlock';
@@ -56,6 +56,7 @@ interface ServiceFormModalProps {
   clients?: Client[];
   machineries?: Machinery[];
   employees?: Employee[];
+  companyProfile?: CompanyProfile;
   nextNumber?: string;
   editRecord?: ServiceOrder | null;
   onSaveClient?: (newClient: Client) => void;
@@ -69,6 +70,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   clients = [],
   machineries = [],
   employees = [],
+  companyProfile,
   nextNumber,
   editRecord,
   onSaveClient,
@@ -2088,6 +2090,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
         <ServiceDocumentPreview
           initialContentType={printPreviewContentType}
           initialPaperFormat={printPreviewPaperFormat}
+          companyProfile={companyProfile}
           onClose={() => setShowPrintPreview(false)}
           orderNumber={numero}
           serviceTypeTitle={getTabConfig().title}

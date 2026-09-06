@@ -132,6 +132,76 @@
   *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Isolamento e espaçamento de rótulos e dados dinâmicos */
+  #printable-document-content .grid > div {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    min-width: 0 !important;
+  }
+  #printable-document-content .grid > div > span:first-child,
+  #printable-document-content span.uppercase.block {
+    display: block !important;
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
+  }
+  #printable-document-content .truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Preservação de cores vibrantes e degradês */
+  .bg-gradient-to-br.from-emerald-800.to-emerald-900 {
+    background-color: #064e3b !important;
+    background-image: linear-gradient(135deg, #065f46 0%, #064e3b 100%) !important;
+    color: #ffffff !important;
+  }
+  .bg-emerald-950\/40 {
+    background-color: #022c22 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    color: #ffffff !important;
+  }
+  .bg-emerald-700\/60 {
+    background-color: #047857 !important;
+    border: 1px solid #10b981 !important;
+    color: #ffffff !important;
+  }
+  .bg-orange-50\/40 {
+    background-color: #fff7ed !important;
+  }
+
+  /* Alinhamento de assinaturas lado a lado */
+  .a4-sheet .grid.grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    width: 100% !important;
+  }
+  .a4-sheet .grid.grid-cols-2 > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  /* Cupom 80mm divisores e negritos */
+  .border-dashed { border-style: dashed !important; }
+  .border-dotted { border-style: dotted !important; }
+  .border-b-2.border-dashed { border-bottom: 2px dashed #000000 !important; }
+  .border-b.border-dashed { border-bottom: 1px dashed #1f2937 !important; }
+  .border-t.border-dotted { border-top: 1px dotted #374151 !important; }
+  .border-b.border-dotted { border-bottom: 1px dotted #374151 !important; }
+
+  /* Preservação visual e de cores do logotipo e imagens */
+  .a4-sheet img,
+  #printable-document-content img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    object-fit: contain !important;
   }
 }
 
