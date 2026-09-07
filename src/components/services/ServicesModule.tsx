@@ -199,7 +199,10 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 text-gray-800 antialiased p-4 sm:p-6 lg:p-8 space-y-6">
+    <div 
+      className="w-full min-h-screen bg-[#2e65aa] text-black antialiased p-4 sm:p-6 lg:p-8 space-y-6 rounded-2xl shadow-md"
+      style={{ backgroundColor: '#2e65aa' }}
+    >
       
       {/* ========================================================
           2. CABEÇALHO (HEADER)
@@ -207,20 +210,20 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
           ======================================================== */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Serviços
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-blue-100 font-medium mt-1">
             Gestão de cortes, colheitas, serviços e vendas agrícolas.
           </p>
         </div>
 
-        {/* Botão de Ação Principal em Verde-esmeralda escuro */}
+        {/* Botão de Ação Principal em Verde-esmeralda escuro mantendo o realce colorido */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleOpenNew}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-900 hover:bg-emerald-800 active:bg-emerald-950 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white text-sm font-bold rounded-lg shadow-md transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>+ Novo</span>
@@ -231,10 +234,11 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
       {/* ========================================================
           3. MENU DE ABAS (TABS) DE NAVEGAÇÃO
           Corte | Colheita | Serviço de Trator | Serviço de Máquina | Orçamento | Venda
+          Mantém realces coloridos ativos para itens selecionados
           ======================================================== */}
       <nav 
         aria-label="Abas de Serviços" 
-        className="flex items-center gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto scrollbar-none pb-px"
+        className="flex items-center gap-1 sm:gap-2 border-b border-white/25 overflow-x-auto scrollbar-none pb-px"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -245,17 +249,17 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`group inline-flex items-center gap-2 px-3.5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-all duration-150 cursor-pointer focus:outline-none ${
+              className={`group inline-flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap transition-all duration-150 cursor-pointer focus:outline-none rounded-t-lg ${
                 isActive
-                  ? 'border-emerald-700 text-emerald-800 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'
+                  ? 'border-emerald-400 bg-emerald-700/90 text-white shadow-xs'
+                  : 'border-transparent text-blue-100 hover:text-white hover:bg-white/10'
               }`}
             >
               <Icon 
                 className={`w-4 h-4 transition-colors ${
                   isActive 
-                    ? 'text-emerald-700' 
-                    : 'text-gray-400 group-hover:text-gray-600'
+                    ? 'text-emerald-300' 
+                    : 'text-blue-200 group-hover:text-white'
                 }`} 
               />
               <span>{tab.label}</span>
@@ -266,15 +270,15 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
 
       {/* ========================================================
           4. BARRA DE FILTROS (SEARCH & DROPDOWN)
-          Busca ampla com ícone de lupa + seletor de status
+          Busca com fundo branco e texto preto puro
           ======================================================== */}
       <section 
         aria-label="Filtros de Serviços"
         className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full"
       >
-        {/* Campo de Busca Amplo */}
+        {/* Campo de Busca Amplo com Fundo Branco Total e Texto Preto */}
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -282,95 +286,95 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar cliente ou nº..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 transition-colors shadow-2xs"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-black font-semibold placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-xs"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-black cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Dropdown de Status (Padrão: Todos) */}
+        {/* Dropdown de Status com Fundo Branco Total e Texto Preto */}
         <div className="relative sm:w-44">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-emerald-800 transition-colors shadow-2xs cursor-pointer"
+            className="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-xs cursor-pointer"
           >
-            <option value="todos">Todos</option>
-            <option value="agendado">Agendado</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="concluido">Concluído</option>
-            <option value="cancelado">Cancelado</option>
+            <option value="todos" className="text-black font-semibold">Todos</option>
+            <option value="agendado" className="text-black font-semibold">Agendado</option>
+            <option value="em_andamento" className="text-black font-semibold">Em Andamento</option>
+            <option value="concluido" className="text-black font-semibold">Concluído</option>
+            <option value="cancelado" className="text-black font-semibold">Cancelado</option>
           </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-500">
             <ChevronDown className="w-4 h-4" />
           </div>
         </div>
       </section>
 
       {/* ========================================================
-          5. TABELA / ESTADO VAZIO (EMPTY STATE)
-          Colunas: Nº | CLIENTE | DATA DO CORTE | HECTARES | STATUS | TOTAL
+          5. TABELA / CARDS DAS ORDENS DE SERVIÇO
+          Fundo BRANCO TOTAL (bg-white) e Fontes PRETO PURO (text-black)
           ======================================================== */}
       <section 
         aria-label="Lista de Serviços"
-        className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden"
+        className="bg-white border border-gray-300 rounded-xl shadow-lg overflow-hidden"
       >
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            {/* Cabeçalho da Tabela */}
+            {/* Cabeçalho da Tabela - Fundo Branco com Texto Preto Puro */}
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/75">
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider w-20">
+              <tr className="border-b-2 border-gray-300 bg-white">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider w-20">
                   Nº
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider">
                   CLIENTE
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider">
                   {tabConfig.dateColumn}
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-center">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-center">
                   {tabConfig.quantityColumn}
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-center">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-center">
                   STATUS
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-right">
                   TOTAL
                 </th>
-                <th scope="col" className="px-4 py-3.5 text-xs font-bold text-gray-700 uppercase tracking-wider text-right w-24">
+                <th scope="col" className="px-4 py-3.5 text-xs font-black text-black uppercase tracking-wider text-right w-24">
                   <span className="sr-only">Ações</span>
                 </th>
               </tr>
             </thead>
 
-            {/* Corpo da Tabela */}
-            <tbody className="divide-y divide-gray-100">
+            {/* Corpo da Tabela - Linhas / Cards com Fundo Branco Total e Textos Preto Puro */}
+            <tbody className="divide-y divide-gray-200 bg-white">
               {filteredServices.length === 0 ? (
                 /* Bloco de Estado Vazio Centralizado */
-                <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center">
-                    <p className="text-sm font-normal text-gray-400">
+                <tr className="bg-white">
+                  <td colSpan={7} className="px-6 py-20 text-center bg-white">
+                    <p className="text-sm font-bold text-black">
                       Nenhum registro encontrado
                     </p>
                   </td>
                 </tr>
               ) : (
-                /* Linhas Preenchidas */
+                /* Linhas Preenchidas com Fundo Branco Total e Textos em Preto Puro */
                 filteredServices.map((service, index) => {
                   const itemNumber = (index + 1).toString().padStart(3, '0');
                   const statusColors: Record<string, string> = {
-                    agendado: 'bg-amber-50 text-amber-700 border-amber-200',
-                    em_andamento: 'bg-blue-50 text-blue-700 border-blue-200',
-                    concluido: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                    cancelado: 'bg-rose-50 text-rose-700 border-rose-200',
+                    agendado: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
+                    em_andamento: 'bg-blue-100 text-blue-900 border-blue-300 font-bold',
+                    concluido: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+                    cancelado: 'bg-rose-100 text-rose-900 border-rose-300 font-bold',
                   };
 
                   const statusLabels: Record<string, string> = {
@@ -397,65 +401,78 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
                   return (
                     <tr 
                       key={service.id} 
-                      className="hover:bg-gray-50/80 transition-colors duration-150 group"
+                      className="bg-white hover:bg-slate-50 transition-colors duration-150 group border-b border-gray-200"
                     >
-                      <td className="px-5 py-4 text-xs font-mono text-gray-500 font-medium">
+                      {/* Nº em Preto Puro */}
+                      <td className="px-5 py-4 text-xs font-mono text-black font-bold">
                         #{itemNumber}
                       </td>
+
+                      {/* Cliente e Descrições Secundárias em Preto Puro */}
                       <td className="px-5 py-4">
-                        <div className="font-semibold text-gray-900 text-sm">
+                        <div className="font-bold text-black text-sm">
                           {service.clientName}
                         </div>
                         {service.farmName && (
-                          <div className="text-xs text-gray-500 font-normal">
+                          <div className="text-xs text-black font-semibold">
                             {service.farmName}
                           </div>
                         )}
                         {(service.machineryAssigned || service.operatorAssigned || service.tractorName || service.forageHarvesterName) && (
-                          <div className="text-xs text-gray-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                          <div className="text-xs text-black font-medium mt-0.5 flex flex-wrap items-center gap-1.5">
                             {service.forageHarvesterName && (
-                              <span className="text-amber-800 dark:text-amber-400 font-medium">
+                              <span className="text-black font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
                                 Forr: {service.forageHarvesterName}
                               </span>
                             )}
                             {service.tractorName && (
-                              <span className="text-blue-800 dark:text-blue-400 font-medium">
+                              <span className="text-black font-bold bg-blue-100 px-1.5 py-0.5 rounded border border-blue-300">
                                 Trator: {service.tractorName}
                               </span>
                             )}
                             {!service.forageHarvesterName && !service.tractorName && service.machineryAssigned && (
-                              <span>{service.machineryAssigned}</span>
+                              <span className="text-black font-semibold">{service.machineryAssigned}</span>
                             )}
                             {(service.operatorAssigned || service.tractorOperatorName || service.forageOperatorName) && (
-                              <span>• Op: {service.operatorAssigned || service.tractorOperatorName || service.forageOperatorName}</span>
+                              <span className="text-black font-semibold">• Op: {service.operatorAssigned || service.tractorOperatorName || service.forageOperatorName}</span>
                             )}
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-600">
+
+                      {/* Data em Preto Puro */}
+                      <td className="px-5 py-4 text-sm text-black font-semibold">
                         {service.startDate ? formatDateBR(service.startDate) : '--'}
                       </td>
-                      <td className="px-5 py-4 text-sm text-center text-gray-700 font-medium">
+
+                      {/* Quantidade / Área em Preto Puro */}
+                      <td className="px-5 py-4 text-sm text-center text-black font-black">
                         {quantityDisplay}
                       </td>
+
+                      {/* Status com Realce Colorido e Texto de Alto Contraste */}
                       <td className="px-5 py-4 text-center">
                         <span 
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                            statusColors[currentStatus] || 'bg-gray-100 text-gray-600 border-gray-200'
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            statusColors[currentStatus] || 'bg-gray-100 text-black border-gray-300'
                           }`}
                         >
                           {statusLabels[currentStatus] || currentStatus}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right font-semibold text-gray-900 text-sm">
+
+                      {/* Total em Preto Puro */}
+                      <td className="px-5 py-4 text-right font-black text-black text-sm">
                         {formatCurrencyBRL(service.totalAmount || 0)}
                       </td>
+
+                      {/* Ações */}
                       <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(service)}
-                            className="p-1.5 text-gray-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-black hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                             title="Editar serviço"
                           >
                             <Pencil className="w-4 h-4" />
@@ -463,7 +480,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteService(service.id, service.clientName)}
-                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-black hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             title="Excluir serviço"
                           >
                             <Trash2 className="w-4 h-4" />

@@ -108,7 +108,10 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Horizontal Carousel & Controls Bar */}
-      <div className="px-3 sm:px-4 py-1.5 flex items-center justify-between gap-1.5">
+      <div 
+        className="px-3 sm:px-4 py-1.5 flex items-center justify-between gap-1.5"
+        style={{ backgroundColor: '#2e65aa' }}
+      >
         
         {/* Mobile menu trigger */}
         <button

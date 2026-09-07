@@ -77,7 +77,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         `}
       >
         {/* Top Section: Logo & Brand */}
-        <div className="flex flex-col flex-1 overflow-y-auto">
+        <div 
+          className="flex flex-col flex-1 overflow-y-auto"
+          style={{ backgroundColor: '#2e65aa' }}
+        >
           
           {/* Brand Header */}
           <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800 flex items-center space-x-3 cursor-pointer" onClick={() => handleSelect('dashboard')}>
@@ -96,26 +99,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="text-base font-extrabold text-stone-900 dark:text-stone-100 truncate tracking-tight font-['Outfit']">
+              <h2 className="text-base font-extrabold text-black truncate tracking-tight font-['Outfit']">
                 {companyProfile?.tradeName || 'Silagem Teste 02'}
               </h2>
-              <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 tracking-wider uppercase">
+              <p className="text-[10px] font-black text-black/85 tracking-wider uppercase">
                 GESTÃO AGRÍCOLA
               </p>
             </div>
           </div>
 
           {/* Navigation Section Header with Organize Button */}
-          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
+          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-black text-black uppercase tracking-wider">
             <span>MENU PRINCIPAL</span>
             <button
               type="button"
               id="btn-sidebar-organize-menu"
               onClick={() => setIsReorderModalOpen(true)}
-              className="inline-flex items-center space-x-1 text-[10px] font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/40 px-1.5 py-0.5 rounded-md transition cursor-pointer"
+              className="inline-flex items-center space-x-1 text-[10px] font-bold text-black hover:text-black hover:bg-black/10 px-1.5 py-0.5 rounded-md transition cursor-pointer"
               title="Personalizar ordem do menu"
             >
-              <ArrowUpDown className="w-3 h-3" />
+              <ArrowUpDown className="w-3 h-3 text-black" />
               <span>Organizar</span>
             </button>
           </div>
@@ -132,16 +135,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   id={`sidebar-nav-${item.id}`}
                   onClick={() => handleSelect(item.id)}
                   className={`
-                    w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer group
+                    w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer group
                     ${
                       isActive
                         ? 'bg-sky-600 text-white font-semibold shadow-xs shadow-sky-600/25'
-                        : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white'
+                        : 'text-black hover:bg-white/15 hover:text-black'
                     }
                   `}
                 >
                   <div className="flex items-center space-x-3 truncate">
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-stone-500 group-hover:text-stone-800 dark:text-stone-400 dark:group-hover:text-white'}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-black'}`} />
                     <span className="truncate">{item.label}</span>
                   </div>
 
@@ -150,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
 
                   {!isActive && item.hasSubmenu && (
-                    <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-black shrink-0" />
                   )}
                 </button>
               );
@@ -160,13 +163,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom Section: Organize Shortcut & Logout */}
-        <div className="p-3 border-t border-stone-100 dark:border-stone-800 space-y-1">
+        <div 
+          className="p-3 border-t border-white/20 space-y-1"
+          style={{ backgroundColor: '#2e65aa' }}
+        >
           <button
             type="button"
             onClick={() => setIsReorderModalOpen(true)}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-200 transition cursor-pointer"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold text-black hover:bg-white/15 hover:text-black transition cursor-pointer"
           >
-            <SlidersHorizontal className="w-4 h-4 text-stone-400" />
+            <SlidersHorizontal className="w-4 h-4 text-black" />
             <span>Organizar Ordem do Menu</span>
           </button>
 
@@ -175,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => {
               setActiveTab('dashboard');
             }}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-rose-500 hover:bg-rose-50/20 transition cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-rose-500" />
             <span>Sair</span>

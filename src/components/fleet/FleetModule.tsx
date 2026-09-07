@@ -417,17 +417,17 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
   return (
     <div id="fleet-management-module" className="space-y-5 sm:space-y-6">
       
-      {/* 1. Modern Horizontal Sub-Tabs Bar (Floating White Card with 8px border-radius) */}
-      <div className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200/90 dark:border-stone-800 p-1.5 shadow-sm dark:shadow-stone-950/40 flex items-center overflow-x-auto gap-1.5 scrollbar-none">
+      {/* 1. Modern Horizontal Sub-Tabs Bar (Floating White Card with rounded-xl border-slate-200) */}
+      <div className="bg-white rounded-xl border border-slate-200 p-1.5 shadow-xs flex items-center overflow-x-auto gap-1.5 scrollbar-none text-black">
         
         {/* Tab 1: PAINEL */}
         <button
           type="button"
           onClick={() => setActiveSubTab('painel')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'painel'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <Gauge className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -438,10 +438,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveSubTab('veiculos')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'veiculos'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <Car className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -449,7 +449,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold transition ${
             activeSubTab === 'veiculos'
               ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700/60'
+              : 'bg-slate-100 text-black border border-slate-200'
           }`}>
             {machineries.length}
           </span>
@@ -459,10 +459,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveSubTab('motoristas')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'motoristas'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <UserCheck className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -473,10 +473,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveSubTab('equipe')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'equipe'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <Users className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -484,7 +484,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold transition ${
             activeSubTab === 'equipe'
               ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700/60'
+              : 'bg-slate-100 text-black border border-slate-200'
           }`}>
             {employees.length}
           </span>
@@ -494,10 +494,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveSubTab('combustivel')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'combustivel'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <Fuel className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -505,7 +505,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold transition ${
             activeSubTab === 'combustivel'
               ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700/60'
+              : 'bg-slate-100 text-black border border-slate-200'
           }`}>
             {fuelLogs.length}
           </span>
@@ -515,10 +515,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveSubTab('manutencoes')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'manutencoes'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <Wrench className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -526,7 +526,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold transition ${
             activeSubTab === 'manutencoes'
               ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700/60'
+              : 'bg-slate-100 text-black border border-slate-200'
           }`}>
             {maintenanceLogs.length}
           </span>
@@ -537,10 +537,10 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           type="button"
           id="fleet-subtab-rodizio"
           onClick={() => setActiveSubTab('rodizio')}
-          className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeSubTab === 'rodizio'
               ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/30'
-              : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
+              : 'text-black hover:text-black hover:bg-slate-100'
           }`}
         >
           <RotateCcw className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -548,7 +548,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold transition ${
             activeSubTab === 'rodizio'
               ? 'bg-white/20 text-white border border-white/30'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200/60 dark:border-stone-700/60'
+              : 'bg-slate-100 text-black border border-slate-200'
           }`}>
             {tireRotationLogs.length}
           </span>

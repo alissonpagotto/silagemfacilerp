@@ -243,29 +243,29 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
   return (
     <div id="financial-module" className="space-y-4">
       
-      {/* 1. Header matching the screenshot */}
+      {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight font-['Outfit']">
+          <h1 className="text-xl font-black text-white tracking-tight font-['Outfit']">
             Financeiro
           </h1>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
+          <p className="text-xs text-white/90 font-medium">
             Contas a pagar, a receber e fluxo de caixa
           </p>
         </div>
       </div>
 
       {/* 2. Top Navigation Tabs Bar */}
-      <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto pb-0.5 scrollbar-none">
+      <div className="bg-white rounded-xl border border-slate-200 p-1.5 shadow-xs flex items-center overflow-x-auto gap-1.5 scrollbar-none text-black">
         
         {/* Aba Consolidado */}
         <button
           type="button"
           onClick={() => setActiveTab('consolidado')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'consolidado'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <LayoutGrid className="w-3.5 h-3.5" />
@@ -276,10 +276,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('despesas')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'despesas'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <DollarSign className="w-3.5 h-3.5" />
@@ -290,10 +290,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('contas')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'contas'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <BarChart2 className="w-3.5 h-3.5" />
@@ -304,10 +304,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('a_pagar')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'a_pagar'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <ArrowDownLeft className="w-3.5 h-3.5" />
@@ -318,10 +318,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('a_receber')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'a_receber'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -332,10 +332,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('acertos')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'acertos'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <Truck className="w-3.5 h-3.5" />
@@ -346,10 +346,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('nfe_importar')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'nfe_importar'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <UploadCloud className="w-3.5 h-3.5" />
@@ -360,10 +360,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('nfe_notas')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'nfe_notas'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
@@ -374,10 +374,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('exportar')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
+          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
             activeTab === 'exportar'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-black hover:bg-slate-100 hover:text-black'
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -390,9 +390,9 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
       {activeTab === 'consolidado' && (
         <div className="space-y-4">
           {/* 3. FILTRAR PERÍODO Section compact */}
-          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl px-3.5 py-2.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+          <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-black">
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[10px] font-black text-black uppercase tracking-wider whitespace-nowrap">
                 FILTRAR PERÍODO:
               </span>
               <div className="flex items-center space-x-1 overflow-x-auto scrollbar-none">
@@ -401,8 +401,8 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   onClick={() => handleQuickPeriodChange('mes_atual')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                     quickPeriod === 'mes_atual'
-                      ? 'bg-[#009688] text-white shadow-xs'
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-black hover:bg-slate-200'
                   }`}
                 >
                   Mês atual
@@ -412,8 +412,8 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   onClick={() => handleQuickPeriodChange('1_mes')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                     quickPeriod === '1_mes'
-                      ? 'bg-[#009688] text-white shadow-xs'
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-black hover:bg-slate-200'
                   }`}
                 >
                   1 mês
@@ -423,8 +423,8 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   onClick={() => handleQuickPeriodChange('3_meses')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                     quickPeriod === '3_meses'
-                      ? 'bg-[#009688] text-white shadow-xs'
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-black hover:bg-slate-200'
                   }`}
                 >
                   3 meses
@@ -434,8 +434,8 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   onClick={() => handleQuickPeriodChange('6_meses')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                     quickPeriod === '6_meses'
-                      ? 'bg-[#009688] text-white shadow-xs'
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-black hover:bg-slate-200'
                   }`}
                 >
                   6 meses
@@ -445,8 +445,8 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   onClick={() => handleQuickPeriodChange('12_meses')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                     quickPeriod === '12_meses'
-                      ? 'bg-[#009688] text-white shadow-xs'
-                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-black hover:bg-slate-200'
                   }`}
                 >
                   12 meses
@@ -455,7 +455,7 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
             </div>
 
             {/* Date range pickers */}
-            <div className="flex items-center space-x-1.5 text-xs text-stone-500">
+            <div className="flex items-center space-x-1.5 text-xs text-black">
               <input
                 type="date"
                 value={startDate}
@@ -463,9 +463,9 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   setStartDate(e.target.value);
                   setQuickPeriod('' as any);
                 }}
-                className="px-2.5 py-1 border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs font-medium focus:ring-1 focus:ring-[#009688] outline-none"
+                className="px-2.5 py-1 border border-slate-300 rounded-lg bg-white text-black text-xs font-medium focus:ring-1 focus:ring-sky-600 outline-none"
               />
-              <span className="text-[11px] font-semibold text-stone-400">até</span>
+              <span className="text-[11px] font-bold text-black">até</span>
               <input
                 type="date"
                 value={endDate}
@@ -473,7 +473,7 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                   setEndDate(e.target.value);
                   setQuickPeriod('' as any);
                 }}
-                className="px-2.5 py-1 border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs font-medium focus:ring-1 focus:ring-[#009688] outline-none"
+                className="px-2.5 py-1 border border-slate-300 rounded-lg bg-white text-black text-xs font-medium focus:ring-1 focus:ring-sky-600 outline-none"
               />
             </div>
           </div>
@@ -482,22 +482,22 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
       <div className="space-y-2">
         {/* Row 1: Mês Atual */}
         <div className="space-y-1">
-          <div className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+          <div className="text-[11px] font-black text-white uppercase tracking-wider">
             Mês atual — {currentMonthName}/{currentYear}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* Card Entradas (Mês Atual) */}
-            <div className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-100/70 dark:border-emerald-900/30 border-l-4 border-l-emerald-500 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100/70 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                   <ArrowUpRight className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Entradas
                   </span>
-                  <span className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+                  <span className="text-base sm:text-lg font-black text-emerald-700 tracking-tight font-['Outfit']">
                     {formatCurrencyBRL(currentMonthRevenue)}
                   </span>
                 </div>
@@ -505,16 +505,16 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
             </div>
 
             {/* Card Saídas (Mês Atual) */}
-            <div className="bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100/70 dark:border-rose-900/30 border-l-4 border-l-rose-500 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-rose-100/70 dark:bg-rose-900/40 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
                   <ArrowDownRight className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Saídas
                   </span>
-                  <span className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+                  <span className="text-base sm:text-lg font-black text-rose-700 tracking-tight font-['Outfit']">
                     {formatCurrencyBRL(currentMonthExpenses)}
                   </span>
                 </div>
@@ -522,17 +522,17 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
             </div>
 
             {/* Card Saldo Real (Mês Atual) */}
-            <div className="bg-blue-50/40 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-900/30 border-l-4 border-l-blue-500 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-100/70 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                   <DollarSign className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Saldo Real
                   </span>
-                  <span className={`text-base sm:text-lg font-extrabold tracking-tight ${
-                    currentMonthRealBalance >= 0 ? 'text-blue-900 dark:text-blue-200' : 'text-rose-600'
+                  <span className={`text-base sm:text-lg font-black tracking-tight font-['Outfit'] ${
+                    currentMonthRealBalance >= 0 ? 'text-emerald-700' : 'text-rose-600'
                   }`}>
                     {formatCurrencyBRL(currentMonthRealBalance)}
                   </span>
@@ -544,22 +544,22 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
 
         {/* Row 2: Período Filtrado */}
         <div className="space-y-1">
-          <div className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+          <div className="text-[11px] font-black text-white uppercase tracking-wider">
             Período: {periodLabel}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* Card Total Entradas */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 border-l-4 border-l-emerald-400 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                   <ArrowUpRight className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Total Entradas
                   </span>
-                  <span className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+                  <span className="text-base sm:text-lg font-black text-emerald-700 tracking-tight font-['Outfit']">
                     {formatCurrencyBRL(periodRevenue)}
                   </span>
                 </div>
@@ -567,16 +567,16 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
             </div>
 
             {/* Card Total Saídas */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 border-l-4 border-l-rose-400 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
                   <ArrowDownRight className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Total Saídas
                   </span>
-                  <span className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+                  <span className="text-base sm:text-lg font-black text-rose-700 tracking-tight font-['Outfit']">
                     {formatCurrencyBRL(periodExpenses)}
                   </span>
                 </div>
@@ -584,17 +584,17 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
             </div>
 
             {/* Card Saldo Acumulado */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 border-l-4 border-l-cyan-500 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between">
+            <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xs flex items-center justify-between text-black">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-600 shrink-0">
                   <BarChart2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 block leading-tight">
+                  <span className="text-[11px] font-bold text-black uppercase block leading-tight">
                     Saldo Acumulado
                   </span>
-                  <span className={`text-base sm:text-lg font-extrabold tracking-tight ${
-                    periodAccumulatedBalance >= 0 ? 'text-stone-900 dark:text-stone-100' : 'text-rose-600'
+                  <span className={`text-base sm:text-lg font-black tracking-tight font-['Outfit'] ${
+                    periodAccumulatedBalance >= 0 ? 'text-black' : 'text-rose-600'
                   }`}>
                     {formatCurrencyBRL(periodAccumulatedBalance)}
                   </span>
@@ -606,57 +606,57 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
       </div>
 
       {/* Structured DRE Statement Table */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs">
-            <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/50 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs text-black">
+            <div className="p-4 sm:p-5 border-b border-slate-200 bg-white flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                <h3 className="font-bold text-black text-sm">
                   Demonstração do Resultado do Exercício (DRE Agro Consolidado)
                 </h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400">
+                <p className="text-xs text-black/80 font-medium">
                   Acompanhamento gerencial das receitas, custos diretos de campo, frota e resultado operacional
                 </p>
               </div>
-              <span className="text-xs font-bold px-2.5 py-1 bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-lg">
+              <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-black border border-slate-200 rounded-lg">
                 {currentSeason?.name || 'Safra Atual'}
               </span>
             </div>
 
-            <div className="divide-y divide-stone-100 dark:divide-stone-800 text-xs sm:text-sm">
+            <div className="divide-y divide-slate-200 text-xs sm:text-sm">
               
               {/* Revenue */}
-              <div className="p-4 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/30 font-bold text-emerald-950 dark:text-emerald-200">
+              <div className="p-4 flex items-center justify-between bg-emerald-50/70 font-bold text-emerald-950">
                 <span>(+) RECEITA BRUTA DE VENDAS & SERVIÇOS DE SILAGEM</span>
-                <span>{formatCurrencyBRL(totalRevenue)}</span>
+                <span className="font-black">{formatCurrencyBRL(totalRevenue)}</span>
               </div>
 
               {/* Direct Costs */}
-              <div className="p-4 flex items-center justify-between pl-6 text-stone-700 dark:text-stone-300">
+              <div className="p-4 flex items-center justify-between pl-6 text-black">
                 <span>(-) Custos Diretos de Campo (Insumos, Sementes, Adubos, Lona, Inoculante)</span>
-                <span className="text-rose-600 dark:text-rose-400 font-semibold">{formatCurrencyBRL(directCosts)}</span>
+                <span className="text-rose-600 font-bold">{formatCurrencyBRL(directCosts)}</span>
               </div>
 
               {/* Gross Margin */}
-              <div className="p-4 flex items-center justify-between bg-stone-50 dark:bg-stone-800/40 font-bold text-stone-900 dark:text-stone-100">
+              <div className="p-4 flex items-center justify-between bg-slate-50 font-bold text-black">
                 <span>(=) MARGEM BRUTA DE CONTRIBUIÇÃO</span>
-                <span className="text-emerald-700 dark:text-emerald-400">{formatCurrencyBRL(grossMargin)}</span>
+                <span className="text-emerald-700 font-black">{formatCurrencyBRL(grossMargin)}</span>
               </div>
 
               {/* Machinery Costs */}
-              <div className="p-4 flex items-center justify-between pl-6 text-stone-700 dark:text-stone-300">
+              <div className="p-4 flex items-center justify-between pl-6 text-black">
                 <span>(-) Manutenção da Frota & Peças de Ensiladeira</span>
-                <span className="text-rose-600 dark:text-rose-400 font-semibold">{formatCurrencyBRL(machineryCosts)}</span>
+                <span className="text-rose-600 font-bold">{formatCurrencyBRL(machineryCosts)}</span>
               </div>
 
               {/* Overhead */}
-              <div className="p-4 flex items-center justify-between pl-6 text-stone-700 dark:text-stone-300">
+              <div className="p-4 flex items-center justify-between pl-6 text-black">
                 <span>(-) Despesas Operacionais, Fretes Terceirizados & Administrativo</span>
-                <span className="text-rose-600 dark:text-rose-400 font-semibold">{formatCurrencyBRL(overheadCosts)}</span>
+                <span className="text-rose-600 font-bold">{formatCurrencyBRL(overheadCosts)}</span>
               </div>
 
               {/* Net Profit */}
-              <div className="p-4 sm:p-5 flex items-center justify-between bg-stone-900 text-white font-extrabold text-sm sm:text-base">
+              <div className="p-4 sm:p-5 flex items-center justify-between bg-slate-900 text-white font-extrabold text-sm sm:text-base">
                 <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
-                <span className={netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                <span className={netProfit >= 0 ? 'text-emerald-400 font-black' : 'text-rose-400 font-black'}>
                   {formatCurrencyBRL(netProfit)}
                 </span>
               </div>
@@ -665,32 +665,32 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
           </div>
 
           {/* Unit Cost & Silage Metrics */}
-          <div className="bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
-            <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm mb-3">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs text-black">
+            <h3 className="font-bold text-black text-sm mb-3">
               Unitizadores por Tonelada de Silagem
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-              <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700">
-                <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-[11px] font-bold text-black uppercase">
                   Preço Médio de Venda
                 </span>
-                <p className="text-xl font-extrabold text-stone-900 dark:text-stone-100 mt-1">
+                <p className="text-xl font-black text-black mt-1 font-['Outfit']">
                   {formatCurrencyBRL(revenuePerTon)}/ton
                 </p>
               </div>
-              <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900/40">
-                <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase">
+              <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-200">
+                <span className="text-[11px] font-bold text-rose-800 uppercase">
                   Custo Total de Produção
                 </span>
-                <p className="text-xl font-extrabold text-rose-900 dark:text-rose-200 mt-1">
+                <p className="text-xl font-black text-rose-800 mt-1 font-['Outfit']">
                   {formatCurrencyBRL(costPerTon)}/ton
                 </p>
               </div>
-              <div className="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
-                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">
+              <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                <span className="text-[11px] font-bold text-emerald-800 uppercase">
                   Lucro Líquido Unitário
                 </span>
-                <p className="text-xl font-extrabold text-emerald-900 dark:text-emerald-200 mt-1">
+                <p className="text-xl font-black text-emerald-800 mt-1 font-['Outfit']">
                   {formatCurrencyBRL(profitPerTon)}/ton
                 </p>
               </div>

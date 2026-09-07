@@ -112,93 +112,93 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
         {/* Card 1: TOTAL DE VEÍCULOS */}
         <div 
           onClick={() => onNavigateSubtab('veiculos')}
-          className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3 sm:p-3.5 shadow-xs hover:border-sky-300 dark:hover:border-sky-700 transition cursor-pointer group"
+          className="bg-white border border-slate-200 rounded-xl p-3 sm:p-3.5 shadow-xs hover:border-sky-300 transition cursor-pointer group text-black"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase">
+            <span className="text-[10px] font-black tracking-wider text-black uppercase">
               FROTA TOTAL
             </span>
-            <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition">
               <Car className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5 font-['Outfit']">
-            {totalVehicles} <span className="text-[11px] font-semibold text-stone-400">veículos</span>
+          <div className="text-xl sm:text-2xl font-black text-black mt-0.5 font-['Outfit']">
+            {totalVehicles} <span className="text-[11px] font-bold text-black/60">veículos</span>
           </div>
-          <div className="flex items-center space-x-1.5 text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-            <span className="inline-flex items-center text-emerald-600 font-bold">
+          <div className="flex items-center space-x-1.5 text-[11px] text-black/80 font-medium mt-1">
+            <span className="inline-flex items-center text-emerald-700 font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
               {operationalCount + availableCount} ativos
             </span>
             <span>•</span>
-            <span className="text-amber-600 font-semibold">{maintenanceCount} na oficina</span>
+            <span className="text-amber-700 font-bold">{maintenanceCount} na oficina</span>
           </div>
         </div>
 
         {/* Card 2: MOTORISTAS & EQUIPE */}
         <div 
           onClick={() => onNavigateSubtab('motoristas')}
-          className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3 sm:p-3.5 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition cursor-pointer group"
+          className="bg-white border border-slate-200 rounded-xl p-3 sm:p-3.5 shadow-xs hover:border-blue-300 transition cursor-pointer group text-black"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase">
+            <span className="text-[10px] font-black tracking-wider text-black uppercase">
               MOTORISTAS & EQUIPE
             </span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition">
               <UserCheck className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5 font-['Outfit']">
-            {employees.length} <span className="text-[11px] font-semibold text-stone-400">colaboradores</span>
+          <div className="text-xl sm:text-2xl font-black text-black mt-0.5 font-['Outfit']">
+            {employees.length} <span className="text-[11px] font-bold text-black/60">colaboradores</span>
           </div>
-          <div className="flex items-center space-x-1.5 text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-            <span className="font-semibold text-blue-600">{drivers.length} motoristas</span>
+          <div className="flex items-center space-x-1.5 text-[11px] text-black/80 font-medium mt-1">
+            <span className="font-bold text-blue-700">{drivers.length} motoristas</span>
             <span>•</span>
-            <span className="font-semibold text-stone-600 dark:text-stone-300">{teamMembers.length} operadores</span>
+            <span className="font-bold text-black">{teamMembers.length} operadores</span>
           </div>
         </div>
 
         {/* Card 3: COMBUSTÍVEL DIESEL */}
         <div 
           onClick={() => onNavigateSubtab('combustivel')}
-          className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3 sm:p-3.5 shadow-xs hover:border-amber-300 dark:hover:border-amber-700 transition cursor-pointer group"
+          className="bg-white border border-slate-200 rounded-xl p-3 sm:p-3.5 shadow-xs hover:border-amber-300 transition cursor-pointer group text-black"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase">
+            <span className="text-[10px] font-black tracking-wider text-black uppercase">
               COMBUSTÍVEL ACUMULADO
             </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition">
               <Fuel className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5 font-['Outfit']">
+          <div className="text-xl sm:text-2xl font-black text-black mt-0.5 font-['Outfit']">
             {formatCurrencyBRL(totalFuelAmount)}
           </div>
-          <div className="flex items-center space-x-1.5 text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-            <span className="font-bold text-amber-700 dark:text-amber-400">{totalFuelLiters.toLocaleString('pt-BR')} L</span>
+          <div className="flex items-center space-x-1.5 text-[11px] text-black/80 font-medium mt-1">
+            <span className="font-bold text-amber-800">{totalFuelLiters.toLocaleString('pt-BR')} L</span>
             <span>•</span>
-            <span className="text-stone-500">Média {formatCurrencyBRL(avgDieselPrice)}/L</span>
+            <span className="text-black/70">Média {formatCurrencyBRL(avgDieselPrice)}/L</span>
           </div>
         </div>
 
         {/* Card 4: MANUTENÇÕES */}
         <div 
           onClick={() => onNavigateSubtab('manutencoes')}
-          className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3 sm:p-3.5 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-700 transition cursor-pointer group"
+          className="bg-white border border-slate-200 rounded-xl p-3 sm:p-3.5 shadow-xs hover:border-indigo-300 transition cursor-pointer group text-black"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase">
+            <span className="text-[10px] font-black tracking-wider text-black uppercase">
               MANUTENÇÕES & OFICINA
             </span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition">
               <Wrench className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 mt-0.5 font-['Outfit']">
+          <div className="text-xl sm:text-2xl font-black text-black mt-0.5 font-['Outfit']">
             {formatCurrencyBRL(totalMaintenanceAmount)}
           </div>
-          <div className="flex items-center space-x-1.5 text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-            <span className="font-semibold text-indigo-600">{maintenanceLogs.length} ordens</span>
+          <div className="flex items-center space-x-1.5 text-[11px] text-black/80 font-medium mt-1">
+            <span className="font-bold text-indigo-700">{maintenanceLogs.length} ordens</span>
             {activeMaintenances > 0 && (
               <span className="text-rose-600 font-bold">• {activeMaintenances} abertas</span>
             )}
@@ -297,19 +297,19 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         
         {/* Left 2 Cols: Maiores Custos da Frota */}
-        <div className="lg:col-span-2 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3.5 sm:p-4 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-2">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs space-y-2.5 text-black">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+              <h3 className="text-xs sm:text-sm font-bold text-black font-['Outfit']">
                 Custo Total por Veículo (Combustível + Manutenção)
               </h3>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400">
+              <p className="text-[11px] text-black/80 font-medium">
                 Veículos com maior impacto de custos na operação
               </p>
             </div>
             <button 
               onClick={() => onNavigateSubtab('veiculos')}
-              className="text-xs font-semibold text-sky-600 hover:text-sky-700 flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-bold text-sky-700 hover:text-sky-800 flex items-center space-x-1 cursor-pointer"
             >
               <span>Ver todos</span>
               <ArrowUpRight className="w-3 h-3" />
@@ -322,24 +322,24 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
               const pct = Math.min(100, Math.round((data.total / (maxTotal || 1)) * 100));
 
               return (
-                <div key={plate} className="p-2 sm:p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-700/60 space-y-1.5">
+                <div key={plate} className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2">
-                      <span className="w-4 h-4 rounded-md bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold flex items-center justify-center text-[9px]">
+                      <span className="w-4 h-4 rounded-md bg-slate-200 text-black font-bold flex items-center justify-center text-[9px]">
                         #{index + 1}
                       </span>
-                      <span className="font-bold text-stone-900 dark:text-stone-100 text-xs">{plate}</span>
-                      <span className="text-stone-500 dark:text-stone-400 text-[10px] truncate max-w-[180px]">
+                      <span className="font-bold text-black text-xs">{plate}</span>
+                      <span className="text-black/80 font-medium text-[10px] truncate max-w-[180px]">
                         {data.name}
                       </span>
                     </div>
-                    <span className="font-extrabold text-stone-900 dark:text-stone-100 text-xs font-['Outfit']">
+                    <span className="font-black text-black text-xs font-['Outfit']">
                       {formatCurrencyBRL(data.total)}
                     </span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-stone-200 dark:bg-stone-700 h-1.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden flex">
                     <div 
                       className="bg-amber-500 h-full"
                       style={{ width: `${(data.fuel / (data.total || 1)) * pct}%` }}
@@ -352,7 +352,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                     ></div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] text-stone-500">
+                  <div className="flex items-center justify-between text-[10px] text-black/80 font-medium">
                     <span className="flex items-center space-x-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                       <span>Diesel: {formatCurrencyBRL(data.fuel)}</span>
@@ -369,12 +369,12 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
         </div>
 
         {/* Right 1 Col: Distribuição por Tipo de Frota */}
-        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3.5 sm:p-4 shadow-xs space-y-2.5">
-          <div className="border-b border-stone-100 dark:border-stone-800 pb-2">
-            <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+        <div className="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs space-y-2.5 text-black">
+          <div className="border-b border-slate-200 pb-2">
+            <h3 className="text-xs sm:text-sm font-bold text-black font-['Outfit']">
               Composição da Frota
             </h3>
-            <p className="text-[11px] text-stone-500 dark:text-stone-400">
+            <p className="text-[11px] text-black/80 font-medium">
               Distribuição por categoria de equipamento
             </p>
           </div>
@@ -382,72 +382,72 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
           <div className="space-y-2">
             <div 
               onClick={() => onNavigateSubtab('veiculos')}
-              className="p-2 sm:p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
+              className="p-2 sm:p-2.5 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
             >
               <div className="flex items-center space-x-2.5">
                 <div className="w-7 h-7 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold text-xs">
                   🚛
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">Caminhões de Silagem</h4>
-                  <p className="text-[10px] text-sky-700 dark:text-sky-300">Basculantes e caçambas</p>
+                  <h4 className="text-xs font-bold text-black">Caminhões de Silagem</h4>
+                  <p className="text-[10px] text-sky-800 font-medium">Basculantes e caçambas</p>
                 </div>
               </div>
-              <span className="text-base font-black text-sky-700 dark:text-sky-300 font-['Outfit']">
+              <span className="text-base font-black text-sky-800 font-['Outfit']">
                 {trucksCount}
               </span>
             </div>
 
             <div 
               onClick={() => onNavigateSubtab('veiculos')}
-              className="p-2 sm:p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
+              className="p-2 sm:p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
             >
               <div className="flex items-center space-x-2.5">
                 <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
                   🌽
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">Ensiladeiras Autopropelidas</h4>
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300">Claas Jaguar / John Deere</p>
+                  <h4 className="text-xs font-bold text-black">Ensiladeiras Autopropelidas</h4>
+                  <p className="text-[10px] text-emerald-800 font-medium">Claas Jaguar / John Deere</p>
                 </div>
               </div>
-              <span className="text-base font-black text-emerald-700 dark:text-emerald-300 font-['Outfit']">
+              <span className="text-base font-black text-emerald-800 font-['Outfit']">
                 {harvestersCount}
               </span>
             </div>
 
             <div 
               onClick={() => onNavigateSubtab('veiculos')}
-              className="p-2 sm:p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
+              className="p-2 sm:p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
             >
               <div className="flex items-center space-x-2.5">
                 <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
                   🚜
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">Tratores Agrícolas</h4>
-                  <p className="text-[10px] text-amber-700 dark:text-amber-300">Corte, carga e compactação</p>
+                  <h4 className="text-xs font-bold text-black">Tratores Agrícolas</h4>
+                  <p className="text-[10px] text-amber-800 font-medium">Corte, carga e compactação</p>
                 </div>
               </div>
-              <span className="text-base font-black text-amber-700 dark:text-amber-300 font-['Outfit']">
+              <span className="text-base font-black text-amber-800 font-['Outfit']">
                 {tractorsCount}
               </span>
             </div>
 
             <div 
               onClick={() => onNavigateSubtab('veiculos')}
-              className="p-2 sm:p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
+              className="p-2 sm:p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between cursor-pointer hover:scale-[1.01] transition"
             >
               <div className="flex items-center space-x-2.5">
                 <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs">
                   🚐
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">Apoio, Vans & Ônibus</h4>
-                  <p className="text-[10px] text-purple-700 dark:text-purple-300">Transporte de equipe e oficina</p>
+                  <h4 className="text-xs font-bold text-black">Apoio, Vans & Ônibus</h4>
+                  <p className="text-[10px] text-purple-800 font-medium">Transporte de equipe e oficina</p>
                 </div>
               </div>
-              <span className="text-base font-black text-purple-700 dark:text-purple-300 font-['Outfit']">
+              <span className="text-base font-black text-purple-800 font-['Outfit']">
                 {supportCount}
               </span>
             </div>
@@ -460,17 +460,17 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         
         {/* Últimos Abastecimentos */}
-        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3.5 sm:p-4 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-2">
+        <div className="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs space-y-2.5 text-black">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center space-x-1.5">
               <Fuel className="w-3.5 h-3.5 text-amber-600" />
-              <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+              <h3 className="text-xs sm:text-sm font-bold text-black font-['Outfit']">
                 Últimos Abastecimentos
               </h3>
             </div>
             <button 
               onClick={() => onNavigateSubtab('combustivel')}
-              className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center space-x-1 cursor-pointer"
             >
               <span>Ver todos ({fuelLogs.length})</span>
               <ArrowUpRight className="w-3 h-3" />
@@ -479,25 +479,25 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 
           <div className="space-y-2">
             {fuelLogs.slice(0, 4).map((log) => (
-              <div key={log.id} className="p-2 sm:p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <div key={log.id} className="p-2 sm:p-2.5 rounded-xl border border-slate-200 flex items-center justify-between bg-slate-50">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100">
+                    <span className="font-bold text-xs text-black">
                       {log.machineryPlateOrName}
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-semibold">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold">
                       {log.fuelType}
                     </span>
                   </div>
-                  <p className="text-[10px] text-stone-500 mt-0.5">
+                  <p className="text-[10px] text-black/80 font-medium mt-0.5">
                     {formatDateBR(log.date)} • {log.liters} L • {log.driverOrOperator || 'Sem motorista'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100 block font-['Outfit']">
+                  <span className="text-xs sm:text-sm font-black text-black block font-['Outfit']">
                     {formatCurrencyBRL(log.totalAmount)}
                   </span>
-                  <span className="text-[9px] text-stone-400">
+                  <span className="text-[9px] text-black/70 font-semibold">
                     {formatCurrencyBRL(log.pricePerLiter)}/L
                   </span>
                 </div>
@@ -507,17 +507,17 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
         </div>
 
         {/* Últimas Manutenções */}
-        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3.5 sm:p-4 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-2">
+        <div className="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs space-y-2.5 text-black">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center space-x-1.5">
               <Wrench className="w-3.5 h-3.5 text-indigo-600" />
-              <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+              <h3 className="text-xs sm:text-sm font-bold text-black font-['Outfit']">
                 Últimas Ordens de Manutenção
               </h3>
             </div>
             <button 
               onClick={() => onNavigateSubtab('manutencoes')}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-bold text-indigo-700 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
             >
               <span>Ver todas ({maintenanceLogs.length})</span>
               <ArrowUpRight className="w-3 h-3" />
@@ -526,25 +526,25 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 
           <div className="space-y-2">
             {maintenanceLogs.slice(0, 4).map((m) => (
-              <div key={m.id} className="p-2 sm:p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <div key={m.id} className="p-2 sm:p-2.5 rounded-xl border border-slate-200 flex items-center justify-between bg-slate-50">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-xs text-stone-900 dark:text-stone-100">
+                    <span className="font-bold text-xs text-black">
                       {m.machineryPlateOrName}
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-semibold">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold">
                       {m.serviceCategory}
                     </span>
                   </div>
-                  <p className="text-[10px] text-stone-500 mt-0.5 line-clamp-1">
+                  <p className="text-[10px] text-black/80 font-medium mt-0.5 line-clamp-1">
                     {formatDateBR(m.date)} • {m.description}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100 block font-['Outfit']">
+                  <span className="text-xs sm:text-sm font-black text-black block font-['Outfit']">
                     {formatCurrencyBRL(m.totalCost)}
                   </span>
-                  <span className="text-[9px] font-bold text-emerald-600">
+                  <span className="text-[9px] font-bold text-emerald-700">
                     {m.status === 'concluida' ? 'Concluída' : 'Em andamento'}
                   </span>
                 </div>

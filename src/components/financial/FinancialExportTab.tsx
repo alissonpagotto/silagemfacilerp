@@ -74,12 +74,12 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Export Options Banner */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 text-black">
         <div>
-          <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
+          <h3 className="text-base font-bold text-black">
             Exportação & Relatórios Gerenciais Financeiros
           </h3>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          <p className="text-xs text-black/80 font-medium mt-0.5">
             Gere demonstrativos em Excel/CSV para contabilidade ou imprima fechamentos de safra
           </p>
         </div>
@@ -88,7 +88,7 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer"
+            className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-black text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Imprimir / PDF</span>
@@ -97,7 +97,7 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
           <button
             type="button"
             onClick={() => handleExportCSV(selectedFormat)}
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-[#009688] hover:bg-[#00796b] text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-xs cursor-pointer"
+            className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-xs cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Exportar CSV (Excel)</span>
@@ -106,14 +106,14 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
       </div>
 
       {/* Selector Tabs */}
-      <div className="flex items-center space-x-2 border-b border-stone-200 dark:border-stone-800 pb-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center space-x-2 overflow-x-auto shadow-xs">
         <button
           type="button"
           onClick={() => setSelectedFormat('dre')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
             selectedFormat === 'dre'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'bg-slate-100 text-black hover:bg-slate-200'
           }`}
         >
           DRE Consolidado
@@ -121,10 +121,10 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
         <button
           type="button"
           onClick={() => setSelectedFormat('despesas')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
             selectedFormat === 'despesas'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'bg-slate-100 text-black hover:bg-slate-200'
           }`}
         >
           Despesas & Pagamentos ({expenses.length})
@@ -132,10 +132,10 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
         <button
           type="button"
           onClick={() => setSelectedFormat('receitas')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
             selectedFormat === 'receitas'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'bg-slate-100 text-black hover:bg-slate-200'
           }`}
         >
           Receitas de Silagem ({orders.length})
@@ -143,10 +143,10 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
         <button
           type="button"
           onClick={() => setSelectedFormat('terceiros')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
             selectedFormat === 'terceiros'
-              ? 'bg-[#009688] text-white shadow-xs'
-              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'bg-slate-100 text-black hover:bg-slate-200'
           }`}
         >
           Acertos de Terceiros ({settlements.length})
@@ -154,35 +154,35 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
       </div>
 
       {/* Preview Sheet */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4 text-black">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
-            <h4 className="font-extrabold text-stone-900 dark:text-stone-100 text-base">
+            <h4 className="font-bold text-black text-base">
               Pré-visualização do Relatório
             </h4>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-black/75 font-medium">
               Data de Emissão: {new Date().toLocaleDateString('pt-BR')}
             </p>
           </div>
-          <span className="text-xs font-bold px-3 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full">
+          <span className="text-xs font-bold px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full">
             Pronto para Download
           </span>
         </div>
 
         {selectedFormat === 'dre' && (
           <div className="space-y-3">
-            <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
-              <div className="flex justify-between font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div className="flex justify-between font-bold text-emerald-800 text-sm">
                 <span>(+) Faturamento Total (Silagem)</span>
-                <span>{formatCurrencyBRL(totalRevenue)}</span>
+                <span className="font-black font-['Outfit']">{formatCurrencyBRL(totalRevenue)}</span>
               </div>
-              <div className="flex justify-between font-bold text-rose-600 dark:text-rose-400 text-sm">
+              <div className="flex justify-between font-bold text-rose-700 text-sm">
                 <span>(-) Custos Totais de Campo & Frota</span>
-                <span>{formatCurrencyBRL(totalCosts)}</span>
+                <span className="font-black font-['Outfit']">{formatCurrencyBRL(totalCosts)}</span>
               </div>
-              <div className="pt-2 border-t border-stone-200 dark:border-stone-700 flex justify-between font-extrabold text-stone-900 dark:text-stone-100 text-base">
+              <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-black text-base">
                 <span>(=) Resultado Operacional Líquido</span>
-                <span className={netResult >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                <span className={`font-['Outfit'] ${netResult >= 0 ? 'text-emerald-800 font-black' : 'text-rose-700 font-black'}`}>
                   {formatCurrencyBRL(netResult)}
                 </span>
               </div>
@@ -191,23 +191,23 @@ export const FinancialExportTab: React.FC<FinancialExportTabProps> = ({
         )}
 
         {selectedFormat === 'despesas' && (
-          <div className="text-xs text-stone-600 dark:text-stone-400 space-y-1">
+          <div className="text-xs text-black font-medium space-y-1">
             <p>Total de {expenses.length} lançamentos de despesas.</p>
-            <p>Soma total: <strong>{formatCurrencyBRL(totalCosts)}</strong></p>
+            <p>Soma total: <strong className="font-black text-black">{formatCurrencyBRL(totalCosts)}</strong></p>
           </div>
         )}
 
         {selectedFormat === 'receitas' && (
-          <div className="text-xs text-stone-600 dark:text-stone-400 space-y-1">
+          <div className="text-xs text-black font-medium space-y-1">
             <p>Total de {orders.length} pedidos e vendas de silagem.</p>
-            <p>Faturamento total: <strong>{formatCurrencyBRL(totalRevenue)}</strong></p>
+            <p>Faturamento total: <strong className="font-black text-black">{formatCurrencyBRL(totalRevenue)}</strong></p>
           </div>
         )}
 
         {selectedFormat === 'terceiros' && (
-          <div className="text-xs text-stone-600 dark:text-stone-400 space-y-1">
+          <div className="text-xs text-black font-medium space-y-1">
             <p>Total de {settlements.length} acertos de caminhões e operadores.</p>
-            <p>Total Líquido: <strong>{formatCurrencyBRL(settlements.reduce((acc, s) => acc + s.netAmount, 0))}</strong></p>
+            <p>Total Líquido: <strong className="font-black text-black">{formatCurrencyBRL(settlements.reduce((acc, s) => acc + s.netAmount, 0))}</strong></p>
           </div>
         )}
       </div>

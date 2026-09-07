@@ -676,12 +676,12 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
     <div id="employees-module" className="space-y-6 animate-fade-in">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 dark:border-stone-800 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/20 pb-3">
         <div>
-          <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 tracking-tight font-['Outfit']">
+          <h2 className="text-sm sm:text-base font-black text-white tracking-tight font-['Outfit']">
             Funcionários, Motoristas & Operadores
           </h2>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          <p className="text-xs text-white/90 font-medium mt-0.5">
             Cadastro completo, remuneração, comissões por hectare/alqueire e controle de CNH
           </p>
         </div>
@@ -691,16 +691,16 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
           <button
             onClick={() => setIsPrintModalOpen(true)}
             title="Imprimir relatório completo de funcionários e operadores com logotipo e dados cadastrais"
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700/80 border border-stone-300 dark:border-stone-700 rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs sm:text-sm font-bold text-black bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-stone-600 dark:text-stone-300" />
+            <Printer className="w-4 h-4 text-black" />
             <span>Imprimir Lista</span>
           </button>
 
           {/* New Employee Button */}
           <button
             onClick={handleOpenNew}
-            className="inline-flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-[#009688] hover:bg-[#00897b] text-white shadow-sm transition active:scale-95 cursor-pointer"
+            className="inline-flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Cadastro</span>
@@ -710,77 +710,77 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
 
       {/* CNH Alert & Staff Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between text-black">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-rose-700">
               CNHs Vencidas
             </span>
-            <div className="text-2xl font-black text-rose-700 dark:text-rose-300 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-rose-700 font-['Outfit'] mt-1">
               {cnhReport.expiredCount}
             </div>
-            <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">
+            <p className="text-[11px] text-black/75 font-medium mt-0.5">
               Exige regularização imediata
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center font-black">
             !
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between text-black">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">
               CNHs a Vencer (60 dias)
             </span>
-            <div className="text-2xl font-black text-amber-800 dark:text-amber-300 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-amber-700 font-['Outfit'] mt-1">
               {cnhReport.expiringIn60DaysCount}
             </div>
-            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+            <p className="text-[11px] text-black/75 font-medium mt-0.5">
               Agendar renovação com motorista
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold">
             <AlertTriangle className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex items-center justify-between text-black">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            <span className="text-[11px] font-black uppercase tracking-wider text-black">
               Total de Colaboradores
             </span>
-            <div className="text-2xl font-black text-stone-900 dark:text-stone-100 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-black font-['Outfit'] mt-1">
               {employees.length}
             </div>
-            <p className="text-[11px] text-stone-500 mt-0.5">
+            <p className="text-[11px] text-black/75 font-medium mt-0.5">
               {employees.filter(e => e.active !== false && e.status !== 'inativo').length} ativos no momento
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-[#009688] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-black flex items-center justify-center">
             <UserSquare2 className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="flex items-center space-x-3">
+      <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-xs flex items-center space-x-3 text-black">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-black absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por nome, cargo, CPF ou número de CNH..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#009688] outline-none"
+            className="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-300 rounded-lg text-xs sm:text-sm text-black placeholder-slate-400 focus:ring-1 focus:ring-sky-600 outline-none"
           />
         </div>
       </div>
 
       {/* Employees Table / Cards */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-black">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 uppercase text-[10px] font-bold tracking-wider">
+            <thead className="bg-slate-50 border-b border-slate-200 text-black uppercase text-[10px] font-black tracking-wider">
               <tr>
                 <th className="py-3 px-4">Nome & Contato</th>
                 <th className="py-3 px-4">Cargo / Regime</th>
@@ -790,31 +790,31 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                 <th className="py-3 px-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody className="divide-y divide-slate-200">
               {filteredEmployees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/40 transition">
+                <tr key={emp.id} className="hover:bg-slate-50 transition">
                   <td className="py-3.5 px-4">
                     <div className="flex items-center space-x-2">
-                      <div className="font-bold text-stone-900 dark:text-stone-100">
+                      <div className="font-bold text-black">
                         {emp.name}
                       </div>
                       {emp.active === false || emp.status === 'inativo' ? (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-800 text-stone-600 font-bold">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-black font-bold">
                           INATIVO
                         </span>
                       ) : (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
                           ATIVO
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-black/75 font-medium mt-0.5">
                       {emp.cpf && (
                         <span className="font-mono text-[11px]">CPF: {emp.cpf}</span>
                       )}
                       {emp.phone && (
-                        <div className="flex items-center space-x-1 text-stone-500">
-                          <Phone className="w-3 h-3 text-stone-400" />
+                        <div className="flex items-center space-x-1 text-black/75">
+                          <Phone className="w-3 h-3 text-black/60" />
                           <span>{emp.phone}</span>
                         </div>
                       )}
@@ -822,34 +822,34 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <div className="flex items-center space-x-1.5 text-stone-800 dark:text-stone-200 font-medium">
-                      <Briefcase className="w-3.5 h-3.5 text-stone-400" />
+                    <div className="flex items-center space-x-1.5 text-black font-bold">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-500" />
                       <span>{emp.role}</span>
                     </div>
-                    <div className="text-[11px] text-stone-500 mt-0.5">
+                    <div className="text-[11px] text-black/75 font-medium mt-0.5">
                       {emp.contractType || 'Registrado (CLT)'}
                       {emp.admissionDate && ` • Adm: ${formatDateBR(emp.admissionDate)}`}
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 font-semibold text-stone-900 dark:text-stone-100 font-mono">
+                  <td className="py-3.5 px-4 font-black text-black font-['Outfit']">
                     {formatCurrencyBRL(emp.baseSalary || emp.salary || 0)}
                   </td>
 
                   <td className="py-3.5 px-4">
                     {emp.receivesCommission ? (
                       <div className="space-y-0.5 text-[11px]">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold text-[10px]">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold text-[10px]">
                           Comissão Ativa
                         </span>
-                        <div className="text-stone-500 font-mono text-[10px]">
+                        <div className="text-black/80 font-bold font-['Outfit'] text-[10px]">
                           {emp.commissionPerHour ? `${formatCurrencyBRL(emp.commissionPerHour)}/h ` : ''}
                           {emp.commissionPerAlqueire ? `${formatCurrencyBRL(emp.commissionPerAlqueire)}/alq ` : ''}
                           {emp.commissionPerHectare ? `${formatCurrencyBRL(emp.commissionPerHectare)}/ha` : ''}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-stone-400 text-xs">Sem comissão</span>
+                      <span className="text-black/60 text-xs font-medium">Sem comissão</span>
                     )}
                   </td>
 
@@ -857,8 +857,8 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                     <div className="space-y-1">
                       {emp.cnhNumber ? (
                         <div className="flex items-center space-x-1 text-xs">
-                          <CreditCard className="w-3 h-3 text-stone-400" />
-                          <span className="font-mono text-stone-700 dark:text-stone-300">
+                          <CreditCard className="w-3 h-3 text-slate-500" />
+                          <span className="font-bold text-black">
                             Cat. {emp.cnhCategory || 'B'}
                           </span>
                         </div>
@@ -872,21 +872,21 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                       <button
                         type="button"
                         onClick={() => handlePrintEmployeeSheet(emp)}
-                        className="p-1.5 text-stone-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-lg transition cursor-pointer"
+                        className="p-1.5 text-black hover:text-amber-700 hover:bg-amber-50 rounded-lg transition cursor-pointer"
                         title="Imprimir cadastro do funcionário para assinatura"
                       >
-                        <Printer className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <Printer className="w-4 h-4 text-amber-600" />
                       </button>
                       <button
                         onClick={() => handleOpenEdit(emp)}
-                        className="p-1.5 text-stone-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950 rounded-lg transition cursor-pointer"
+                        className="p-1.5 text-black hover:text-sky-700 hover:bg-sky-50 rounded-lg transition cursor-pointer"
                         title="Editar"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(emp.id)}
-                        className="p-1.5 text-stone-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition cursor-pointer"
+                        className="p-1.5 text-black hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                         title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />

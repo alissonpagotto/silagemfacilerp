@@ -143,15 +143,15 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header & Total Balance */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 text-black">
         <div>
-          <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+          <span className="text-xs font-black text-black uppercase tracking-wider">
             Saldo Consolidado em Contas
           </span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-stone-100 mt-1">
+          <div className="text-2xl sm:text-3xl font-black text-black mt-1 font-['Outfit']">
             {formatCurrencyBRL(totalBalance)}
           </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          <p className="text-xs text-black/80 font-medium mt-0.5">
             Total disponível somando contas correntes, cooperativas de crédito e caixa sede
           </p>
         </div>
@@ -159,7 +159,7 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
         <button
           type="button"
           onClick={() => handleOpenModal()}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#009688] hover:bg-[#00796b] text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-xs cursor-pointer active:scale-95"
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-xs cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4" />
           <span>Cadastrar Nova Conta</span>
@@ -171,7 +171,7 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
         {accounts.map((acc) => (
           <div
             key={acc.id}
-            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-stone-300 dark:hover:border-stone-700 transition"
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition text-black"
           >
             <div className="space-y-3">
               <div className="flex items-start justify-between">
@@ -187,42 +187,42 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                    <h4 className="font-bold text-black text-sm">
                       {acc.name}
                     </h4>
-                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                    <p className="text-xs text-black/80 font-medium">
                       {acc.bankName}
                     </p>
                   </div>
                 </div>
 
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-black border border-slate-200">
                   {getAccountTypeLabel(acc.accountType)}
                 </span>
               </div>
 
-              <div className="p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-stone-100 dark:border-stone-800 space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-black text-black uppercase tracking-wider">
                   Saldo Disponível
                 </span>
-                <div className={`text-xl font-extrabold ${acc.balance >= 0 ? 'text-stone-900 dark:text-stone-100' : 'text-rose-600 dark:text-rose-400'}`}>
+                <div className={`text-xl font-black font-['Outfit'] ${acc.balance >= 0 ? 'text-black' : 'text-rose-600'}`}>
                   {formatCurrencyBRL(acc.balance)}
                 </div>
               </div>
 
-              <div className="space-y-1 text-xs text-stone-600 dark:text-stone-400 pt-1">
+              <div className="space-y-1 text-xs text-black pt-1 font-medium">
                 {acc.agency && acc.accountNumber && (
                   <div className="flex justify-between">
-                    <span className="text-stone-400">Ag / Conta:</span>
-                    <span className="font-semibold text-stone-700 dark:text-stone-300">
+                    <span className="text-black/70">Ag / Conta:</span>
+                    <span className="font-bold text-black">
                       Ag: {acc.agency} | CC: {acc.accountNumber}
                     </span>
                   </div>
                 )}
                 {acc.pixKey && (
                   <div className="flex justify-between items-center">
-                    <span className="text-stone-400">Chave PIX:</span>
-                    <span className="font-mono text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                    <span className="text-black/70">Chave PIX:</span>
+                    <span className="font-mono text-[11px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                       {acc.pixKey}
                     </span>
                   </div>
@@ -230,11 +230,11 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-stone-100 dark:border-stone-800">
+            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => handleOpenModal(acc)}
-                className="p-2 text-stone-500 hover:text-[#009688] hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition"
+                className="p-2 text-black hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition"
                 title="Editar Conta"
               >
                 <Edit2 className="w-4 h-4" />
@@ -242,7 +242,7 @@ export const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
               <button
                 type="button"
                 onClick={() => handleDelete(acc.id)}
-                className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                className="p-2 text-black hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                 title="Excluir Conta"
               >
                 <Trash2 className="w-4 h-4" />
