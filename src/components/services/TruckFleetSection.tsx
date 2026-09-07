@@ -79,7 +79,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
 
     const linkedOp = findLinkedOperator(mach, employees);
     const opEmployee = employees.find((e) => e.id === linkedOp.id || e.name === linkedOp.name);
-    const defaultRate = opEmployee?.commissionPerHour && opEmployee.commissionPerHour > 0 ? opEmployee.commissionPerHour : 10;
+    const defaultRate = opEmployee?.commissionPerHour && opEmployee.commissionPerHour > 0 ? Number(opEmployee.commissionPerHour.toFixed(2)) : 10;
     const capacity = mach.capacityM3 && mach.capacityM3 > 0 ? mach.capacityM3 : 20;
 
     // Obtém o caminhão atual para preservar ou inicializar cargas
@@ -92,9 +92,11 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
       : hourSource === 'motor'
       ? (typeof horasMotor === 'number' ? horasMotor : 0)
       : (typeof currentTruck?.driverHours === 'number' ? currentTruck.driverHours : 0);
-    const base = mode === 'horas' ? hours : loads;
+    const base = mode === 'livre'
+      ? (typeof currentTruck?.driverCommissionBase === 'number' ? currentTruck.driverCommissionBase : hours)
+      : mode === 'horas' ? hours : loads;
     const rateToUse = typeof currentTruck?.driverCommissionRate === 'number' && currentTruck.driverCommissionRate > 0
-      ? currentTruck.driverCommissionRate
+      ? Number(currentTruck.driverCommissionRate.toFixed(2))
       : defaultRate;
 
     onUpdateTruck(truckId, {
@@ -108,7 +110,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
       driverHourSource: hourSource,
       driverCommissionMode: mode,
       driverCommissionRate: rateToUse,
-      driverCommission: base * rateToUse,
+      driverCommission: Number((base * rateToUse).toFixed(2)),
       // OPERADOR/MOTORISTA PRINCIPAL preenchido obrigatoriamente (inclusive terceirizado)
       primaryDriverId: linkedOp.id,
       primaryDriverName: linkedOp.name,
@@ -134,20 +136,25 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
 
     const mode = currentTruck?.driverCommissionMode || 'horas';
     const rate = typeof currentTruck?.driverCommissionRate === 'number' && currentTruck.driverCommissionRate > 0
-      ? currentTruck.driverCommissionRate
+      ? Number(currentTruck.driverCommissionRate.toFixed(2))
       : 10;
-    const base = mode === 'horas' ? hours : (currentTruck?.tripLoads || 0);
+    const base = mode === 'livre'
+      ? (typeof currentTruck?.driverCommissionBase === 'number' ? currentTruck.driverCommissionBase : hours)
+      : mode === 'horas' ? hours : (currentTruck?.tripLoads || 0);
 
     onUpdateTruck(truckId, {
       driverHourSource: nextSource,
       driverHours: hours,
       driverCommissionRate: rate,
-      driverCommission: base * rate,
+      driverCommission: Number((base * rate).toFixed(2)),
     });
   };
 
   return (
-    <div className="border border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl p-4 space-y-4">
+    <div 
+      className="border border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 rounded-xl p-4 space-y-4 w-full max-w-full overflow-hidden"
+      style={{ backgroundColor: '#5c82e0' }}
+    >
       
       {/* Cabeçalho da Seção de Frotas */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-slate-700 pb-3">
@@ -252,7 +259,8 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
             return (
               <div
                 key={truck.id}
-                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm space-y-3"
+                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm space-y-3 w-full max-w-full overflow-hidden"
+                style={idx === 1 ? { backgroundColor: '#66a2e6' } : undefined}
               >
                 {/* Cabeçalho do Card: Exibe primordialmente a PLACA do veículo no título + Botão Excluir */}
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-2.5">
@@ -346,21 +354,23 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                           value={truck.primaryDriverId || ''}
                           onChange={(e) => {
                             const emp = employees.find((em) => em.id === e.target.value);
-                            const defaultRate = emp?.commissionPerHour && emp.commissionPerHour > 0 ? emp.commissionPerHour : 10;
+                            const defaultRate = emp?.commissionPerHour && emp.commissionPerHour > 0 ? Number(emp.commissionPerHour.toFixed(2)) : 10;
                             const currentTruck = trucks.find(t => t.id === truck.id);
                             const mode = currentTruck?.driverCommissionMode || 'horas';
-                            const base = mode === 'cargas' 
-                               ? (currentTruck?.tripLoads || 0) 
+                            const base = mode === 'livre'
+                              ? (typeof currentTruck?.driverCommissionBase === 'number' ? currentTruck.driverCommissionBase : (typeof currentTruck?.driverHours === 'number' ? currentTruck.driverHours : 0))
+                              : mode === 'cargas' 
+                              ? (currentTruck?.tripLoads || 0) 
                               : (typeof currentTruck?.driverHours === 'number' ? currentTruck.driverHours : 0);
                             const rateToUse = (typeof currentTruck?.driverCommissionRate === 'number' && currentTruck.driverCommissionRate > 0)
-                              ? currentTruck.driverCommissionRate
+                              ? Number(currentTruck.driverCommissionRate.toFixed(2))
                               : defaultRate;
 
                             onUpdateTruck(truck.id, {
                               primaryDriverId: e.target.value,
                               primaryDriverName: emp ? emp.name : '',
                               driverCommissionRate: rateToUse,
-                              driverCommission: base * rateToUse,
+                              driverCommission: Number((base * rateToUse).toFixed(2)),
                             });
                           }}
                           className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
@@ -417,7 +427,8 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                 </div>
 
                 {/* Métricas de Produção: Cap. m³, Nº Cargas, Total m³ & Horas Motorista */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+                {/* 2. DADOS OPERACIONAIS: Capacidade, Cargas e Total m³ */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
                       Cap. m³
@@ -450,14 +461,16 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       onChange={(e) => {
                         const loads = e.target.value === '' ? 0 : Number(e.target.value);
-                        const rate = truck.driverCommissionRate || 0;
-                        const comm = truck.driverCommissionMode === 'cargas'
+                        const rate = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                        const comm = truck.driverCommissionMode === 'livre'
+                          ? (typeof truck.driverCommissionBase === 'number' ? truck.driverCommissionBase : 0) * rate
+                          : truck.driverCommissionMode === 'cargas'
                           ? loads * rate
                           : (typeof truck.driverHours === 'number' ? truck.driverHours : 0) * rate;
                         onUpdateTruck(truck.id, { 
                           tripLoads: loads,
                           totalM3: (truck.capacityM3 || 0) * loads,
-                          driverCommission: comm,
+                          driverCommission: Number(comm.toFixed(2)),
                         });
                       }}
                       placeholder="0"
@@ -474,174 +487,238 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                       <span className="text-[10px] text-slate-500 font-semibold">Cap × Cargas</span>
                     </div>
                   </div>
-
-                  {/* Horas Motorista com Alternador Rosa 'Tambor' / 'Motor' */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300">
-                        Horas motorista (h)
-                      </label>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleHourSource(truck.id, 'tambor')}
-                          className={`text-[10px] px-2 py-0.5 rounded font-bold transition cursor-pointer border ${
-                            truck.driverHourSource === 'tambor'
-                              ? 'bg-pink-600 text-white border-pink-700 shadow-xs'
-                              : 'bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-900/50 hover:bg-pink-100 dark:hover:bg-pink-900/40'
-                          }`}
-                          title="Puxar e travar horas da Forrageira (Hora do Tambor)"
-                        >
-                          Tambor
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleHourSource(truck.id, 'motor')}
-                          className={`text-[10px] px-2 py-0.5 rounded font-bold transition cursor-pointer border ${
-                            truck.driverHourSource === 'motor'
-                              ? 'bg-pink-600 text-white border-pink-700 shadow-xs'
-                              : 'bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-900/50 hover:bg-pink-100 dark:hover:bg-pink-900/40'
-                          }`}
-                          title="Puxar e travar horas da Forrageira (Hora do Motor)"
-                        >
-                          Motor
-                        </button>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        readOnly={truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor'}
-                        value={truck.driverHours ?? ''}
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        onChange={(e) => {
-                          const hoursVal = e.target.value === '' ? '' : Number(e.target.value);
-                          const hoursNum = typeof hoursVal === 'number' ? hoursVal : 0;
-                          const rate = truck.driverCommissionRate || 0;
-                          const comm = truck.driverCommissionMode === 'cargas'
-                            ? (truck.tripLoads || 0) * rate
-                            : hoursNum * rate;
-                          onUpdateTruck(truck.id, { 
-                            driverHours: hoursVal,
-                            driverHourSource: 'manual',
-                            driverCommission: comm,
-                          });
-                        }}
-                        placeholder="0.0"
-                        className={`w-full px-3 py-2 rounded-lg text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                          truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor'
-                            ? 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 font-bold text-slate-900 dark:text-white cursor-not-allowed'
-                            : 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors'
-                        }`}
-                      />
-                      {(truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor') && (
-                        <span className="absolute right-2.5 top-2.5 text-pink-600 dark:text-pink-400 text-[10px] font-bold flex items-center gap-1 pointer-events-none">
-                          <Lock className="w-2.5 h-2.5" />
-                          {truck.driverHourSource === 'tambor' ? 'Tambor' : 'Motor'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
-                {/* 3. BLOCO ESTRUTURADO DE COMISSÃO INDIVIDUAL DO MOTORISTA */}
-                <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-lg p-3 space-y-2.5 mt-2 shadow-xs print-client-hide">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-emerald-100 dark:border-slate-800 pb-1.5">
-                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                {/* 3. BLOCO ESTRUTURADO DE COMISSÃO INDIVIDUAL DO MOTORISTA COM HORAS MOTORISTA REPOSICIONADAS */}
+                <div className="w-full max-w-full bg-white/90 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-lg p-3 space-y-2.5 mt-2 shadow-xs print-client-hide overflow-hidden">
+                  <div className="w-full flex flex-wrap items-center justify-between gap-2.5 border-b border-emerald-100 dark:border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 shrink-0">
                       <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       Comissão do Motorista ({truck.primaryDriverName || 'Motorista'})
                     </span>
 
-                    {/* Seletor de Modalidade: Por Hora (h) vs Por Cargas */}
-                    <div className="inline-flex rounded-lg p-0.5 bg-emerald-100/70 dark:bg-slate-800 self-start sm:self-auto text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const mode = 'horas';
-                          const rate = truck.driverCommissionRate || 0;
-                          const base = typeof truck.driverHours === 'number' ? truck.driverHours : 0;
-                          onUpdateTruck(truck.id, {
-                            driverCommissionMode: mode,
-                            driverCommission: base * rate,
-                          });
-                        }}
-                        className={`px-2.5 py-0.5 font-semibold rounded-md transition cursor-pointer ${
-                          (truck.driverCommissionMode || 'horas') === 'horas'
-                            ? 'bg-emerald-700 text-white shadow-xs font-bold'
-                            : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
-                        }`}
-                      >
-                        Por Hora (h)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const mode = 'cargas';
-                          const rate = truck.driverCommissionRate || 0;
-                          const base = typeof truck.tripLoads === 'number' ? truck.tripLoads : 0;
-                          onUpdateTruck(truck.id, {
-                            driverCommissionMode: mode,
-                            driverCommission: base * rate,
-                          });
-                        }}
-                        className={`px-2.5 py-0.5 font-semibold rounded-md transition cursor-pointer ${
-                          truck.driverCommissionMode === 'cargas'
-                            ? 'bg-emerald-700 text-white shadow-xs font-bold'
-                            : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
-                        }`}
-                      >
-                        Por Cargas
-                      </button>
+                    {/* Grupo de Controles: Horas Motorista (h) posicionado alinhado à esquerda dos botões de modalidade */}
+                    <div className="flex flex-wrap items-center gap-2 max-w-full">
+                      
+                      {/* CARD 'Horas motorista (h)' REPOSICIONADO PARA DENTRO DA BARRA DE COMISSÃO */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 bg-slate-100/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1 shadow-2xs shrink-0">
+                        <span className="text-[11px] font-bold text-gray-700 dark:text-slate-300 whitespace-nowrap">
+                          Horas motorista (h):
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleHourSource(truck.id, 'tambor')}
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer border ${
+                              truck.driverHourSource === 'tambor'
+                                ? 'bg-pink-600 text-white border-pink-700 shadow-xs'
+                                : 'bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-900/50 hover:bg-pink-100 dark:hover:bg-pink-900/40'
+                            }`}
+                            title="Puxar e travar horas da Forrageira (Hora do Tambor)"
+                          >
+                            Tambor
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleHourSource(truck.id, 'motor')}
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition cursor-pointer border ${
+                              truck.driverHourSource === 'motor'
+                                ? 'bg-pink-600 text-white border-pink-700 shadow-xs'
+                                : 'bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-900/50 hover:bg-pink-100 dark:hover:bg-pink-900/40'
+                            }`}
+                            title="Puxar e travar horas da Forrageira (Hora do Motor)"
+                          >
+                            Motor
+                          </button>
+                        </div>
+                        <div className="relative w-18 sm:w-20 shrink-0">
+                          <input
+                            type="number"
+                            step="0.1"
+                            readOnly={truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor'}
+                            value={truck.driverHours ?? ''}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                            onChange={(e) => {
+                              const hoursVal = e.target.value === '' ? '' : Number(e.target.value);
+                              const hoursNum = typeof hoursVal === 'number' ? hoursVal : 0;
+                              const rate = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                              const comm = truck.driverCommissionMode === 'livre'
+                                ? (typeof truck.driverCommissionBase === 'number' ? truck.driverCommissionBase : 0) * rate
+                                : truck.driverCommissionMode === 'cargas'
+                                ? (truck.tripLoads || 0) * rate
+                                : hoursNum * rate;
+                              onUpdateTruck(truck.id, { 
+                                driverHours: hoursVal,
+                                driverHourSource: 'manual',
+                                driverCommission: Number(comm.toFixed(2)),
+                              });
+                            }}
+                            placeholder="0.0"
+                            className={`w-full px-2 py-0.5 rounded text-xs text-center font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                              truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor'
+                                ? 'bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white cursor-not-allowed'
+                                : 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white font-semibold focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/30'
+                            }`}
+                          />
+                          {(truck.driverHourSource === 'tambor' || truck.driverHourSource === 'motor') && (
+                            <span className="absolute right-1 top-1 text-pink-600 dark:text-pink-400 text-[9px] font-bold pointer-events-none">
+                              <Lock className="w-2.5 h-2.5 inline" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Seletor de Modalidade: Digitar (livre) vs Por Hora (h) vs Por Cargas */}
+                      <div className="inline-flex flex-wrap rounded-lg p-0.5 bg-emerald-100/70 dark:bg-slate-800 text-xs shrink-0 max-w-full">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const mode = 'livre';
+                            const rate = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                            const currentBase = (truck.driverCommissionBase !== undefined && truck.driverCommissionBase !== '')
+                              ? truck.driverCommissionBase
+                              : (typeof truck.driverHours === 'number' && truck.driverHours > 0
+                                ? truck.driverHours
+                                : (typeof truck.tripLoads === 'number' && truck.tripLoads > 0 ? truck.tripLoads : ''));
+                            const baseNum = typeof currentBase === 'number' ? currentBase : 0;
+                            onUpdateTruck(truck.id, {
+                              driverCommissionMode: mode,
+                              driverCommissionBase: currentBase,
+                              driverCommission: Number((baseNum * rate).toFixed(2)),
+                            });
+                          }}
+                          className={`px-2 sm:px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                            truck.driverCommissionMode === 'livre'
+                              ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                          }`}
+                        >
+                          Digitar (livre)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const mode = 'horas';
+                            const rate = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                            const base = typeof truck.driverHours === 'number' ? truck.driverHours : 0;
+                            onUpdateTruck(truck.id, {
+                              driverCommissionMode: mode,
+                              driverCommission: Number((base * rate).toFixed(2)),
+                            });
+                          }}
+                          className={`px-2 sm:px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                            (truck.driverCommissionMode || 'horas') === 'horas'
+                              ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                          }`}
+                        >
+                          Por Hora (h)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const mode = 'cargas';
+                            const rate = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                            const base = typeof truck.tripLoads === 'number' ? truck.tripLoads : 0;
+                            onUpdateTruck(truck.id, {
+                              driverCommissionMode: mode,
+                              driverCommission: Number((base * rate).toFixed(2)),
+                            });
+                          }}
+                          className={`px-2 sm:px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                            truck.driverCommissionMode === 'cargas'
+                              ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                              : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
+                          }`}
+                        >
+                          Por Cargas
+                        </button>
+                      </div>
+
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {/* Base da Comissão (Travado com Lock) */}
+                    {/* Base da Comissão */}
                     <div>
                       <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                        <span>Base ({truck.driverCommissionMode === 'cargas' ? 'Cargas' : 'Horas (h)'})</span>
-                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 rounded flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" />
-                          Travado
-                        </span>
+                        <span>Base ({truck.driverCommissionMode === 'livre' ? 'Livre' : truck.driverCommissionMode === 'cargas' ? 'Cargas' : 'Horas (h)'})</span>
+                        {truck.driverCommissionMode !== 'livre' && (
+                          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 rounded flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" />
+                            Travado
+                          </span>
+                        )}
                       </label>
                       <input
                         type="number"
-                        readOnly
+                        step="0.01"
+                        readOnly={truck.driverCommissionMode !== 'livre'}
                         value={
-                          truck.driverCommissionMode === 'cargas'
+                          truck.driverCommissionMode === 'livre'
+                            ? (truck.driverCommissionBase ?? '')
+                            : truck.driverCommissionMode === 'cargas'
                             ? (typeof truck.tripLoads === 'number' && truck.tripLoads > 0 ? truck.tripLoads : '')
                             : (typeof truck.driverHours === 'number' && truck.driverHours > 0 ? truck.driverHours : '')
                         }
+                        onChange={(e) => {
+                          if (truck.driverCommissionMode === 'livre') {
+                            const baseVal = e.target.value === '' ? '' : Number(e.target.value);
+                            const baseNum = typeof baseVal === 'number' ? baseVal : 0;
+                            const rateNum = typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : 0;
+                            onUpdateTruck(truck.id, {
+                              driverCommissionBase: baseVal,
+                              driverCommission: Number((baseNum * rateNum).toFixed(2)),
+                            });
+                          }
+                        }}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        placeholder={truck.driverCommissionMode === 'cargas' ? 'Puxado das Cargas' : 'Puxado das Horas'}
-                        className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder={
+                          truck.driverCommissionMode === 'livre'
+                            ? 'Digite a base livremente'
+                            : truck.driverCommissionMode === 'cargas'
+                            ? 'Puxado das Cargas'
+                            : 'Puxado das Horas'
+                        }
+                        className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                          truck.driverCommissionMode === 'livre'
+                            ? 'bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 shadow-2xs transition-colors'
+                            : 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 cursor-not-allowed'
+                        }`}
                       />
                     </div>
 
                     {/* R$ / Unidade */}
                     <div>
                       <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
-                        R$ / {truck.driverCommissionMode === 'cargas' ? 'Carga (R$/carga)' : 'Hora (R$/h)'}
+                        R$ / {truck.driverCommissionMode === 'livre' ? 'Unidade (R$)' : truck.driverCommissionMode === 'cargas' ? 'Carga (R$/carga)' : 'Hora (R$/h)'}
                       </label>
                       <input
                         type="number"
                         step="0.01"
-                        value={truck.driverCommissionRate ?? ''}
+                        value={typeof truck.driverCommissionRate === 'number' ? Number(truck.driverCommissionRate.toFixed(2)) : (truck.driverCommissionRate ?? '')}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
                         onChange={(e) => {
                           const rateVal = e.target.value === '' ? '' : Number(e.target.value);
-                          const rateNum = typeof rateVal === 'number' ? rateVal : 0;
-                          const base = truck.driverCommissionMode === 'cargas' 
+                          const rateNum = typeof rateVal === 'number' ? Number(rateVal.toFixed(2)) : 0;
+                          const base = truck.driverCommissionMode === 'livre'
+                            ? (typeof truck.driverCommissionBase === 'number' ? truck.driverCommissionBase : 0)
+                            : truck.driverCommissionMode === 'cargas' 
                             ? (typeof truck.tripLoads === 'number' ? truck.tripLoads : 0) 
                             : (typeof truck.driverHours === 'number' ? truck.driverHours : 0);
                           onUpdateTruck(truck.id, {
                             driverCommissionRate: rateVal,
-                            driverCommission: base * rateNum,
+                            driverCommission: Number((base * rateNum).toFixed(2)),
                           });
                         }}
                         placeholder="Ex: 15.00"
+                        onBlur={() => {
+                          if (typeof truck.driverCommissionRate === 'number') {
+                            onUpdateTruck(truck.id, {
+                              driverCommissionRate: Number(truck.driverCommissionRate.toFixed(2)),
+                            });
+                          }
+                        }}
                         className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs text-slate-900 dark:text-white font-semibold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 shadow-2xs transition-colors"
                       />
                     </div>
@@ -655,7 +732,12 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
                         <span className="font-mono text-emerald-700 dark:text-emerald-400 font-extrabold">
                           {formatCurrencyBRL(
                             truck.driverCommission ?? (
-                              ((truck.driverCommissionMode === 'cargas' ? (truck.tripLoads || 0) : (truck.driverHours || 0)) * (truck.driverCommissionRate || 0))
+                              ((truck.driverCommissionMode === 'livre'
+                                ? (typeof truck.driverCommissionBase === 'number' ? truck.driverCommissionBase : 0)
+                                : truck.driverCommissionMode === 'cargas'
+                                ? (truck.tripLoads || 0)
+                                : (truck.driverHours || 0)
+                              ) * (typeof truck.driverCommissionRate === 'number' ? truck.driverCommissionRate : 0))
                             )
                           )}
                         </span>
@@ -669,7 +751,7 @@ export const TruckFleetSection: React.FC<TruckFleetSectionProps> = ({
 
                 {/* Bloco de Adicional KM (Exclusivo quando Alqueires) */}
                 {unidadeArea === 'alqueires' && (
-                  <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-lg p-3 space-y-2 mt-2 shadow-xs">
+                  <div className="w-full max-w-full bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 rounded-lg p-3 space-y-2 mt-2 shadow-xs overflow-hidden">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-amber-600" />

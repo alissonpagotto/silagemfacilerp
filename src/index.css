@@ -34,6 +34,135 @@
     display: none !important;
   }
 
+  /* FORÇAR NEGRITO GLOBAL NA IMPRESSÃO: ALTA LEGIBILIDADE FÍSICA NO PAPEL */
+  *, *::before, *::after {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+  }
+
+  body.printing-service-order *,
+  body.printing-service-order *::before,
+  body.printing-service-order *::after,
+  #printable-document-content,
+  #printable-document-content *,
+  #printable-document-content *::before,
+  #printable-document-content *::after,
+  .a4-sheet,
+  .a4-sheet *,
+  .a4-sheet *::before,
+  .a4-sheet *::after {
+    font-weight: 700 !important;
+  }
+
+  body.printing-service-order span,
+  body.printing-service-order p,
+  body.printing-service-order div,
+  body.printing-service-order td,
+  body.printing-service-order th,
+  body.printing-service-order label,
+  body.printing-service-order h1,
+  body.printing-service-order h2,
+  body.printing-service-order h3,
+  body.printing-service-order h4,
+  body.printing-service-order h5,
+  body.printing-service-order h6,
+  body.printing-service-order b,
+  body.printing-service-order strong,
+  body.printing-service-order small,
+  body.printing-service-order input,
+  body.printing-service-order select,
+  body.printing-service-order textarea,
+  #printable-document-content span,
+  #printable-document-content p,
+  #printable-document-content div,
+  #printable-document-content td,
+  #printable-document-content th,
+  #printable-document-content label,
+  #printable-document-content h1,
+  #printable-document-content h2,
+  #printable-document-content h3,
+  #printable-document-content h4,
+  #printable-document-content h5,
+  #printable-document-content h6,
+  #printable-document-content b,
+  #printable-document-content strong,
+  #printable-document-content small,
+  .a4-sheet span,
+  .a4-sheet p,
+  .a4-sheet div,
+  .a4-sheet td,
+  .a4-sheet th,
+  .a4-sheet label,
+  .a4-sheet h1,
+  .a4-sheet h2,
+  .a4-sheet h3,
+  .a4-sheet h4,
+  .a4-sheet h5,
+  .a4-sheet h6,
+  .a4-sheet b,
+  .a4-sheet strong,
+  .a4-sheet small {
+    font-weight: 700 !important;
+  }
+
+  body.printing-service-order h1,
+  body.printing-service-order h2,
+  body.printing-service-order h3,
+  body.printing-service-order h4,
+  body.printing-service-order th,
+  body.printing-service-order b,
+  body.printing-service-order strong,
+  body.printing-service-order .font-bold,
+  body.printing-service-order .font-extrabold,
+  body.printing-service-order .font-black,
+  #printable-document-content h1,
+  #printable-document-content h2,
+  #printable-document-content h3,
+  #printable-document-content h4,
+  #printable-document-content th,
+  #printable-document-content b,
+  #printable-document-content strong,
+  #printable-document-content .font-bold,
+  #printable-document-content .font-extrabold,
+  #printable-document-content .font-black,
+  .a4-sheet h1,
+  .a4-sheet h2,
+  .a4-sheet h3,
+  .a4-sheet h4,
+  .a4-sheet th,
+  .a4-sheet b,
+  .a4-sheet strong,
+  .a4-sheet .font-bold,
+  .a4-sheet .font-extrabold,
+  .a4-sheet .font-black {
+    font-weight: 800 !important;
+  }
+
+  body.printing-service-order .text-slate-400,
+  body.printing-service-order .text-slate-500,
+  body.printing-service-order .text-slate-600,
+  body.printing-service-order .text-gray-400,
+  body.printing-service-order .text-gray-500,
+  body.printing-service-order .text-gray-600,
+  body.printing-service-order .text-gray-700,
+  #printable-document-content .text-slate-400,
+  #printable-document-content .text-slate-500,
+  #printable-document-content .text-slate-600,
+  #printable-document-content .text-gray-400,
+  #printable-document-content .text-gray-500,
+  #printable-document-content .text-gray-600,
+  #printable-document-content .text-gray-700,
+  .a4-sheet .text-slate-400,
+  .a4-sheet .text-slate-500,
+  .a4-sheet .text-slate-600,
+  .a4-sheet .text-gray-400,
+  .a4-sheet .text-gray-500,
+  .a4-sheet .text-gray-600,
+  .a4-sheet .text-gray-700 {
+    color: #000000 !important;
+  }
+
   /* Impressão isolada da Ordem de Serviço (Novo Corte de Silagem e demais abas) */
   body.printing-service-order {
     background: #ffffff !important;
@@ -41,6 +170,9 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
   }
 
   /* Oculta layout e elementos externos quando imprimindo a ordem de serviço */
@@ -215,4 +347,20 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Modificações de cores aplicadas aos elementos selecionados */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(3),
+div#printable-service-order-modal > div:nth-of-type(3) {
+  background-color: #2e65aa;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(5),
+div#printable-service-order-modal > div:nth-of-type(3) > div:nth-of-type(5) {
+  background-color: #5c82e0;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(5) > div:nth-of-type(3) > div:nth-of-type(2),
+div#printable-service-order-modal > div:nth-of-type(3) > div:nth-of-type(5) > div:nth-of-type(3) > div:nth-of-type(2) {
+  background-color: #66a2e6;
 }

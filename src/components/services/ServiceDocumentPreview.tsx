@@ -607,7 +607,56 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
           height: auto !important;
           min-height: 100% !important;
           overflow: visible !important;
+          -webkit-font-smoothing: antialiased !important;
+          -moz-osx-font-smoothing: grayscale !important;
+          text-rendering: optimizeLegibility !important;
         }
+
+        /* FORÇAR NEGRITO GLOBAL NA IMPRESSÃO: ALTA LEGIBILIDADE FÍSICA NO PAPEL */
+        *, *::before, *::after {
+          font-weight: 700 !important;
+          -webkit-font-smoothing: antialiased !important;
+          -moz-osx-font-smoothing: grayscale !important;
+          text-rendering: optimizeLegibility !important;
+        }
+
+        span, p, div, td, th, label, h1, h2, h3, h4, h5, h6, b, strong, i, em, small, input, select, textarea, li, a {
+          font-weight: 700 !important;
+        }
+
+        /* Títulos, cabeçalhos de tabela e tags de maior destaque em negrito máximo */
+        h1, h2, h3, h4, th, b, strong, .font-bold, .font-extrabold, .font-black {
+          font-weight: 800 !important;
+        }
+
+        /* Garante alto contraste e cor nítida para evitar textos apagados em tons claros de cinza */
+        .text-slate-400,
+        .text-slate-500,
+        .text-slate-600,
+        .text-gray-400,
+        .text-gray-500,
+        .text-gray-600,
+        .text-gray-700 {
+          color: #000000 !important;
+        }
+
+        /* Preserva textos claros onde o fundo é escuro/colorido */
+        .text-white,
+        .bg-gradient-to-br,
+        .bg-gradient-to-br span,
+        .bg-gradient-to-br strong,
+        .bg-gradient-to-br div,
+        .bg-emerald-950\\/40 span,
+        .bg-emerald-950\\/40 strong,
+        .bg-emerald-700\\/60 span,
+        .bg-emerald-700\\/60 strong,
+        .bg-emerald-700\\/50 span,
+        .bg-emerald-700\\/50 strong,
+        .bg-emerald-900 span,
+        .bg-emerald-900 strong {
+          color: #ffffff !important;
+        }
+
         .no-print {
           display: none !important;
         }

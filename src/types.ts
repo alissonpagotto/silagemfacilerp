@@ -329,7 +329,7 @@ export interface ServiceOrder {
   tractorHours?: number;
   tractorRatePerHour?: number;
   tractorTotalAmount?: number;
-  tractorOperatorCommissionMode?: 'horas' | 'area';
+  tractorOperatorCommissionMode?: 'horas' | 'area' | 'livre';
   tractorOperatorHours?: number;
   tractorOperatorCommissionRate?: number;
   tractorOperatorCommission?: number;
@@ -343,7 +343,9 @@ export interface ServiceOrder {
   forageSecondOperatorName?: string;
   forageDrumHours?: number; // Hora do Tambor (H)
   forageEngineHours?: number; // Hora do Motor (H)
-  forageCommissionMode?: 'tambor' | 'motor' | 'area'; // Modalidade de comissão da forrageira
+  forageCommissionMode?: 'tambor' | 'motor' | 'area' | 'livre'; // Modalidade de comissão da forrageira
+  forageCommissionBase?: number; // Base livre da comissão da forrageira
+  forageCommissionRate?: number; // Taxa R$ da comissão da forrageira
   forageRatePerHour?: number;
   forageTotalAmount?: number;
   forageOperatorCommission?: number;
@@ -402,7 +404,8 @@ export interface ServiceTruckItem {
   additionalKm?: number; // KM Adicional (quando Alqueires)
   ratePerKm?: number; // R$ / KM
   totalAdditionalKm?: number; // Total Adicional KM (calculado)
-  driverCommissionMode?: 'horas' | 'cargas'; // Modo de comissão do motorista
+  driverCommissionMode?: 'horas' | 'cargas' | 'livre'; // Modo de comissão do motorista
+  driverCommissionBase?: number | ''; // Base livre digitada quando modo é 'livre'
   driverCommissionRate?: number; // R$/hora ou R$/carga
   driverCommission?: number; // Comissão informativa do motorista
   distributedValue?: number; // Valor proporcional m³ da distribuição da frota
