@@ -101,16 +101,16 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div 
           id="stat-card-despesas-mes"
           onClick={() => onNavigate('despesas')}
-          className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition flex items-center justify-between cursor-pointer group text-black"
+          className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs hover:border-blue-300 dark:hover:border-stone-700 transition flex items-center justify-between cursor-pointer group text-black dark:text-white"
         >
           <div>
-            <span className="text-[10px] font-black tracking-wider text-black uppercase block">
+            <span className="text-[10px] font-black tracking-wider text-black dark:text-stone-300 uppercase block">
               DESPESAS DO MÊS
             </span>
-            <div className="text-xl font-black text-black mt-0.5 font-['Outfit']">
+            <div className="text-xl font-black text-black dark:text-white mt-0.5 font-['Outfit']">
               {formatCurrencyBRL(currentMonthTotal)}
             </div>
-            <span className="text-[11px] font-bold text-black/80 block">
+            <span className="text-[11px] font-bold text-black/80 dark:text-stone-400 block">
               {currentMonthCount} lançamentos
             </span>
           </div>
@@ -123,16 +123,16 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div 
           id="stat-card-total-despesas"
           onClick={() => onNavigate('despesas')}
-          className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition flex items-center justify-between cursor-pointer group text-black"
+          className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs hover:border-blue-300 dark:hover:border-stone-700 transition flex items-center justify-between cursor-pointer group text-black dark:text-white"
         >
           <div>
-            <span className="text-[10px] font-black tracking-wider text-black uppercase block">
+            <span className="text-[10px] font-black tracking-wider text-black dark:text-stone-300 uppercase block">
               TOTAL DESPESAS
             </span>
-            <div className="text-xl font-black text-black mt-0.5 font-['Outfit']">
+            <div className="text-xl font-black text-black dark:text-white mt-0.5 font-['Outfit']">
               {formatCurrencyBRL(totalExpensesAmount)}
             </div>
-            <span className="text-[11px] font-bold text-black/80 block">
+            <span className="text-[11px] font-bold text-black/80 dark:text-stone-400 block">
               {totalExpensesCount} registros
             </span>
           </div>
@@ -145,16 +145,16 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div 
           id="stat-card-clientes"
           onClick={() => onNavigate('clientes')}
-          className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition flex items-center justify-between cursor-pointer group text-black"
+          className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs hover:border-blue-300 dark:hover:border-stone-700 transition flex items-center justify-between cursor-pointer group text-black dark:text-white"
         >
           <div>
-            <span className="text-[10px] font-black tracking-wider text-black uppercase block">
+            <span className="text-[10px] font-black tracking-wider text-black dark:text-stone-300 uppercase block">
               CLIENTES
             </span>
-            <div className="text-xl font-black text-black mt-0.5 font-['Outfit']">
+            <div className="text-xl font-black text-black dark:text-white mt-0.5 font-['Outfit']">
               {clientsCount}
             </div>
-            <span className="text-[11px] font-bold text-black/80 block">
+            <span className="text-[11px] font-bold text-black/80 dark:text-stone-400 block">
               {clientsCount} cadastrados
             </span>
           </div>
@@ -167,16 +167,16 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div 
           id="stat-card-frotas"
           onClick={() => onNavigate('frotas')}
-          className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition flex items-center justify-between cursor-pointer group text-black"
+          className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-3.5 shadow-xs hover:border-blue-300 dark:hover:border-stone-700 transition flex items-center justify-between cursor-pointer group text-black dark:text-white"
         >
           <div>
-            <span className="text-[10px] font-black tracking-wider text-black uppercase block">
+            <span className="text-[10px] font-black tracking-wider text-black dark:text-stone-300 uppercase block">
               FROTAS
             </span>
-            <div className="text-xl font-black text-black mt-0.5 font-['Outfit']">
+            <div className="text-xl font-black text-black dark:text-white mt-0.5 font-['Outfit']">
               {machineriesCount}
             </div>
-            <span className="text-[11px] font-bold text-black/80 block">
+            <span className="text-[11px] font-bold text-black/80 dark:text-stone-400 block">
               {operatorsCount} motoristas/operadores
             </span>
           </div>
@@ -194,7 +194,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div className="lg:col-span-2 space-y-3">
           
           {/* Main Container: Dashed placeholder or Active visual charts */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs text-black">
+          <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 sm:p-5 shadow-xs text-black dark:text-white">
             
             {!showActiveCharts ? (
               /* Screenshot Migration Box Layout */
@@ -337,46 +337,46 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               onClick={() => onNavigate('despesas')}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-emerald-500 transition text-left cursor-pointer group shadow-xs text-black"
+              className="p-2.5 crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl hover:border-blue-400 transition text-left cursor-pointer group shadow-xs text-black dark:text-white"
             >
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
                 <Receipt className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-bold text-black">Despesas</p>
-              <p className="text-[10px] text-black/75 font-medium">Lançamentos</p>
+              <p className="text-xs font-bold text-black dark:text-white">Despesas</p>
+              <p className="text-[10px] text-black/75 dark:text-stone-400 font-medium">Lançamentos</p>
             </button>
 
             <button
               onClick={() => onNavigate('servicos')}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-emerald-500 transition text-left cursor-pointer group shadow-xs text-black"
+              className="p-2.5 crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl hover:border-blue-400 transition text-left cursor-pointer group shadow-xs text-black dark:text-white"
             >
-              <div className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+              <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-950/60 text-green-800 dark:text-green-300 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
                 <Tractor className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-bold text-black">Serviços</p>
-              <p className="text-[10px] text-black/75 font-medium">Ensilagem</p>
+              <p className="text-xs font-bold text-black dark:text-white">Serviços</p>
+              <p className="text-[10px] text-black/75 dark:text-stone-400 font-medium">Ensilagem</p>
             </button>
 
             <button
               onClick={() => onNavigate('estoque')}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-emerald-500 transition text-left cursor-pointer group shadow-xs text-black"
+              className="p-2.5 crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl hover:border-blue-400 transition text-left cursor-pointer group shadow-xs text-black dark:text-white"
             >
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
                 <ShieldCheck className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-bold text-black">Estoque</p>
-              <p className="text-[10px] text-black/75 font-medium">Insumos</p>
+              <p className="text-xs font-bold text-black dark:text-white">Estoque</p>
+              <p className="text-[10px] text-black/75 dark:text-stone-400 font-medium">Insumos</p>
             </button>
 
             <button
               onClick={() => onNavigate('clientes')}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:border-emerald-500 transition text-left cursor-pointer group shadow-xs text-black"
+              className="p-2.5 crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl hover:border-blue-400 transition text-left cursor-pointer group shadow-xs text-black dark:text-white"
             >
-              <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
                 <Users className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-bold text-black">Clientes</p>
-              <p className="text-[10px] text-black/75 font-medium">Produtores</p>
+              <p className="text-xs font-bold text-black dark:text-white">Clientes</p>
+              <p className="text-[10px] text-black/75 dark:text-stone-400 font-medium">Produtores</p>
             </button>
           </div>
 
@@ -386,13 +386,13 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
         <div className="space-y-3">
           <div 
             id="card-status-frota"
-            className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs text-black"
+            className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 shadow-xs text-black dark:text-white"
           >
             
             {/* Header: Status da Frota */}
-            <div className="flex items-center space-x-2 pb-3 border-b border-slate-200">
+            <div className="flex items-center space-x-2 pb-3 border-b border-blue-200/60 dark:border-stone-800">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-black font-['Outfit']">
+              <h3 className="text-sm font-bold text-black dark:text-white font-['Outfit']">
                 Status da Frota
               </h3>
             </div>
@@ -447,9 +447,9 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
             </div>
 
             {/* Footer status text */}
-            <div className="mt-3 pt-2.5 border-t border-slate-200">
+            <div className="mt-3 pt-2.5 border-t border-blue-200/60 dark:border-stone-800">
               {cnhReport.expiredCount === 0 && cnhReport.expiringIn60DaysCount === 0 ? (
-                <div className="flex items-center space-x-1.5 text-[11px] text-black/75 font-semibold">
+                <div className="flex items-center space-x-1.5 text-[11px] text-black/75 dark:text-stone-400 font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Nenhum alerta de CNH pendente.</span>
                 </div>
@@ -459,7 +459,7 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
                     Motoristas com CNH próxima do vencimento:
                   </span>
                   {cnhReport.expiringEmployees.map(emp => (
-                    <div key={emp.id} className="flex justify-between text-black font-medium">
+                    <div key={emp.id} className="flex justify-between text-black dark:text-stone-200 font-medium">
                       <span className="truncate pr-1">{emp.name}</span>
                       <span className="font-bold shrink-0">{formatDateBR(emp.cnhExpiration)}</span>
                     </div>
@@ -471,25 +471,25 @@ export const MainDashboard: React.FC<MainDashboardProps> = ({
             {/* Button to fleet management */}
             <button
               onClick={() => onNavigate('frotas')}
-              className="w-full mt-3 py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-black text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer border border-slate-200"
+              className="w-full mt-3 py-1.5 px-2.5 bg-blue-100/70 hover:bg-blue-100 dark:bg-stone-800 dark:hover:bg-stone-700 text-black dark:text-white text-xs font-bold rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer border border-blue-200/80 dark:border-stone-700"
             >
-              <Truck className="w-3.5 h-3.5 text-black" />
+              <Truck className="w-3.5 h-3.5 text-black dark:text-white" />
               <span>Ver Gestão de Frotas</span>
             </button>
 
           </div>
 
           {/* Quick Machinery Status Widget */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-black">
-            <h4 className="text-xs font-black text-black uppercase tracking-wider mb-3">
+          <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-5 shadow-xs text-black dark:text-white">
+            <h4 className="text-xs font-black text-black dark:text-stone-300 uppercase tracking-wider mb-3">
               Máquinas no Pátio / Operação
             </h4>
             <div className="space-y-2">
               {machineries.slice(0, 3).map((m) => (
-                <div key={m.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-200">
+                <div key={m.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-blue-50/70 dark:bg-stone-800 border border-blue-200/60 dark:border-stone-700">
                   <div className="min-w-0 pr-2">
-                    <p className="font-bold text-black truncate">{m.name}</p>
-                    <span className="text-[11px] text-black/75 font-medium">{m.hourMeter}h de uso</span>
+                    <p className="font-bold text-black dark:text-white truncate">{m.name}</p>
+                    <span className="text-[11px] text-black/75 dark:text-stone-400 font-medium">{m.hourMeter}h de uso</span>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     m.status === 'operacional' 

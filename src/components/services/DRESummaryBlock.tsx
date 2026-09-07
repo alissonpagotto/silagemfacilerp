@@ -254,7 +254,7 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] text-gray-500 dark:text-slate-400 font-medium sm:hidden">
+                    <label className="block text-[10px] text-gray-700 dark:text-slate-300 font-bold sm:hidden">
                       Quantidade de Litros:
                     </label>
                     <div className="relative">
@@ -271,14 +271,14 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                             e.target.value === '' ? '' : Number(e.target.value)
                           )
                         }
-                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-medium focus:ring-1 focus:ring-sky-500 text-right pr-6"
+                        className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-600/30 focus:border-sky-600 text-right pr-6 shadow-2xs"
                       />
-                      <span className="absolute right-2 top-1 text-[10px] text-gray-400">L</span>
+                      <span className="absolute right-2 top-1 text-[10px] text-gray-500 font-bold">L</span>
                     </div>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] text-gray-500 dark:text-slate-400 font-medium sm:hidden">
+                    <label className="block text-[10px] text-gray-700 dark:text-slate-300 font-bold sm:hidden">
                       Valor por Litro (R$):
                     </label>
                     <div className="relative">
@@ -295,9 +295,9 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                             e.target.value === '' ? '' : Number(e.target.value)
                           )
                         }
-                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-medium focus:ring-1 focus:ring-sky-500 text-right pr-6"
+                        className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-600/30 focus:border-sky-600 text-right pr-6 shadow-2xs"
                       />
-                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-400">R$</span>
+                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-500 font-bold">R$</span>
                     </div>
                   </div>
 
@@ -370,7 +370,7 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                     <select
                       value={meal.description}
                       onChange={(e) => onMealExpenseChange?.(meal.id, 'description', e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-medium focus:ring-1 focus:ring-amber-500"
+                      className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 shadow-2xs"
                     >
                       <option value="Café da manhã">Café da manhã</option>
                       <option value="Almoço">Almoço</option>
@@ -387,7 +387,7 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                       type="date"
                       value={meal.date}
                       onChange={(e) => onMealExpenseChange?.(meal.id, 'date', e.target.value)}
-                      className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono text-gray-700 dark:text-slate-200 focus:ring-1 focus:ring-amber-500"
+                      className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 shadow-2xs"
                     />
                   </div>
 
@@ -406,9 +406,9 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                             e.target.value === '' ? '' : Number(e.target.value)
                           )
                         }
-                        className="w-full px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded font-mono font-bold text-gray-900 dark:text-white focus:ring-1 focus:ring-amber-500 text-right pr-6"
+                        className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-right pr-6 shadow-2xs"
                       />
-                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-400">R$</span>
+                      <span className="absolute right-1.5 top-1 text-[10px] text-gray-500 font-bold">R$</span>
                     </div>
                   </div>
 

@@ -350,49 +350,78 @@ input[type=number] {
 }
 
 /* Modificações de cores aplicadas aos elementos selecionados */
-div#root:nth-of-type(1) > div:nth-of-type(1) > aside#main-sidebar:nth-of-type(1) > div:nth-of-type(1),
-aside#main-sidebar > div:nth-of-type(1) {
+html:not(.dark) div#root:nth-of-type(1) > div:nth-of-type(1) > aside#main-sidebar:nth-of-type(1) > div:nth-of-type(1),
+html:not(.dark) aside#main-sidebar > div:nth-of-type(1) {
   background-color: #2e65aa;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(1) > aside#main-sidebar:nth-of-type(1) > div:nth-of-type(2),
-aside#main-sidebar > div:nth-of-type(2) {
+html:not(.dark) div#root:nth-of-type(1) > div:nth-of-type(1) > aside#main-sidebar:nth-of-type(1) > div:nth-of-type(2),
+html:not(.dark) aside#main-sidebar > div:nth-of-type(2) {
   background-color: #2e65aa;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div#top-bar-container:nth-of-type(1) > div:nth-of-type(2),
-div#top-bar-container > div:nth-of-type(2) {
+html:not(.dark) div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div#top-bar-container:nth-of-type(1) > div:nth-of-type(2),
+html:not(.dark) div#top-bar-container > div:nth-of-type(2) {
   background-color: #2e65aa;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1),
-main#crm-main-content {
+html:not(.dark) div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1),
+html:not(.dark) main#crm-main-content {
   background-color: #2e65aa !important;
+}
+
+html.dark main#crm-main-content {
+  background-color: #0c0a09 !important;
 }
 
 /* ========================================================
    PADRONIZAÇÃO GLOBAL DE CARDS - ALTO CONTRASTE (SILAGEM FÁCIL CRM)
+   Novo Fundo Padrão dos Cards: #87AFE3 no Modo Dia
+   Preservação integral do Modo Noite (Dark Mode)
    ======================================================== */
-.crm-card {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important; /* border-slate-200 */
+html:not(.dark) .crm-card {
+  background-color: #87AFE3 !important;
+  border: 1px solid #729dce !important; /* borda sutil e nítida */
   border-radius: 0.75rem !important;    /* rounded-xl */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-xs */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
   color: #000000 !important;
 }
 
-.crm-card-title,
-.crm-card h1,
-.crm-card h2,
-.crm-card h3,
-.crm-card h4,
-.crm-card h5,
-.crm-card h6 {
+html.dark .crm-card {
+  background-color: #1c1917 !important; /* dark:bg-stone-900 */
+  border-color: #292524 !important;    /* dark:border-stone-800 */
+  color: #ffffff !important;
+}
+
+html:not(.dark) .crm-card-title,
+html:not(.dark) .crm-card h1,
+html:not(.dark) .crm-card h2,
+html:not(.dark) .crm-card h3,
+html:not(.dark) .crm-card h4,
+html:not(.dark) .crm-card h5,
+html:not(.dark) .crm-card h6 {
   color: #000000 !important;
 }
 
-.crm-card-label {
+html.dark .crm-card-title,
+html.dark .crm-card h1,
+html.dark .crm-card h2,
+html.dark .crm-card h3,
+html.dark .crm-card h4,
+html.dark .crm-card h5,
+html.dark .crm-card h6 {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .crm-card-label {
   color: #000000 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+html.dark .crm-card-label {
+  color: #d6d3d1 !important;
   font-weight: 700 !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;

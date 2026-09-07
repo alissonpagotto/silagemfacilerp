@@ -320,54 +320,54 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
 
       {/* ========================================================
           5. TABELA / CARDS DAS ORDENS DE SERVIÇO
-          Fundo BRANCO TOTAL (bg-white) e Fontes PRETO PURO (text-black)
+          Fundo #87AFE3 no Modo Dia e Fontes PRETO PURO (text-black)
           ======================================================== */}
       <section 
         aria-label="Lista de Serviços"
-        className="bg-white border border-gray-300 rounded-xl shadow-lg overflow-hidden"
+        className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl shadow-lg overflow-hidden"
       >
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            {/* Cabeçalho da Tabela - Fundo Branco com Texto Preto Puro */}
+            {/* Cabeçalho da Tabela - Fundo #87AFE3 com Texto Preto Puro */}
             <thead>
-              <tr className="border-b-2 border-gray-300 bg-white">
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider w-20">
+              <tr className="border-b-2 border-blue-200/80 dark:border-stone-800 bg-[#87AFE3] dark:bg-stone-900">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider w-20">
                   Nº
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
                   CLIENTE
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
                   {tabConfig.dateColumn}
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-center">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
                   {tabConfig.quantityColumn}
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-center">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
                   STATUS
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black uppercase tracking-wider text-right">
+                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right">
                   TOTAL
                 </th>
-                <th scope="col" className="px-4 py-3.5 text-xs font-black text-black uppercase tracking-wider text-right w-24">
+                <th scope="col" className="px-4 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right w-24">
                   <span className="sr-only">Ações</span>
                 </th>
               </tr>
             </thead>
 
-            {/* Corpo da Tabela - Linhas / Cards com Fundo Branco Total e Textos Preto Puro */}
-            <tbody className="divide-y divide-gray-200 bg-white">
+            {/* Corpo da Tabela - Linhas / Cards com Fundo #87AFE3 e Textos Preto Puro */}
+            <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 bg-[#87AFE3] dark:bg-stone-900">
               {filteredServices.length === 0 ? (
                 /* Bloco de Estado Vazio Centralizado */
-                <tr className="bg-white">
-                  <td colSpan={7} className="px-6 py-20 text-center bg-white">
-                    <p className="text-sm font-bold text-black">
+                <tr className="bg-[#87AFE3] dark:bg-stone-900">
+                  <td colSpan={7} className="px-6 py-20 text-center bg-[#87AFE3] dark:bg-stone-900">
+                    <p className="text-sm font-bold text-black dark:text-white">
                       Nenhum registro encontrado
                     </p>
                   </td>
                 </tr>
               ) : (
-                /* Linhas Preenchidas com Fundo Branco Total e Textos em Preto Puro */
+                /* Linhas Preenchidas com Fundo #87AFE3 e Textos em Preto Puro */
                 filteredServices.map((service, index) => {
                   const itemNumber = (index + 1).toString().padStart(3, '0');
                   const statusColors: Record<string, string> = {
@@ -401,7 +401,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
                   return (
                     <tr 
                       key={service.id} 
-                      className="bg-white hover:bg-slate-50 transition-colors duration-150 group border-b border-gray-200"
+                      className="bg-[#87AFE3] dark:bg-stone-900 hover:bg-blue-200/50 dark:hover:bg-stone-800 transition-colors duration-150 group border-b border-blue-200/60 dark:border-stone-800"
                     >
                       {/* Nº em Preto Puro */}
                       <td className="px-5 py-4 text-xs font-mono text-black font-bold">

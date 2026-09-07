@@ -103,16 +103,16 @@ export const RHModule: React.FC<RHModuleProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('funcionarios')}
-            className="self-start sm:self-auto inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-black hover:bg-slate-50 text-xs font-bold transition shadow-xs cursor-pointer"
+            className="self-start sm:self-auto inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-blue-200/80 dark:border-stone-800 bg-[#87AFE3] dark:bg-stone-900 text-black dark:text-white hover:bg-blue-200/60 dark:hover:bg-stone-800 text-xs font-bold transition shadow-xs cursor-pointer"
           >
-            <UserSquare2 className="w-3.5 h-3.5 text-sky-700" />
+            <UserSquare2 className="w-3.5 h-3.5 text-black dark:text-sky-400" />
             <span>Cadastros & CNH</span>
           </button>
         )}
       </div>
 
       {/* Navegação por Abas */}
-      <div className="no-print bg-white rounded-xl border border-slate-200 p-1.5 flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto shadow-xs">
+      <div className="no-print crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-xl border border-blue-200/80 dark:border-stone-800 p-1.5 flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto shadow-xs">
         
         {/* Aba 1: Dashboard */}
         <button
@@ -121,7 +121,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'dashboard'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'funcionarios'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <UserSquare2 className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'folha'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'ferias'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />
@@ -177,7 +177,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'afastamentos'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
           className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
             activeTab === 'adiantamentos'
               ? 'bg-sky-600 text-white shadow-xs'
-              : 'bg-slate-100 text-black hover:bg-slate-200'
+              : 'bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-blue-100 dark:hover:bg-stone-700'
           }`}
         >
           <DollarSign className="w-3.5 h-3.5" />

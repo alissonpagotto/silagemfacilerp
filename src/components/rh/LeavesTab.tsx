@@ -162,16 +162,16 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
     <div className="space-y-3 sm:space-y-4">
       
       {/* Top Header & Actions */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-black">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-black dark:text-white">
         <div className="flex items-center space-x-2">
-          <div className="p-2 rounded-lg bg-slate-100 border border-slate-200 text-black">
+          <div className="p-2 rounded-lg bg-blue-100/70 dark:bg-stone-800 border border-blue-200/80 dark:border-stone-700 text-black dark:text-white">
             <AlertCircle className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-black">
+            <h3 className="text-sm font-black text-black dark:text-white">
               Afastamentos, Atestados e Licenças
             </h3>
-            <p className="text-xs text-black/75 font-medium">
+            <p className="text-xs text-black/85 dark:text-stone-300 font-medium">
               Controle médico, CAT, licenças e previsões de retorno
             </p>
           </div>
@@ -189,54 +189,54 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs text-black">
-          <span className="text-[11px] font-black text-rose-700 block uppercase">Afastamentos Ativos</span>
-          <span className="text-base font-black text-rose-700 font-['Outfit']">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-2.5 shadow-xs text-black dark:text-white">
+          <span className="text-[11px] font-black text-black dark:text-rose-400 block uppercase">Afastamentos Ativos</span>
+          <span className="text-base font-black text-black dark:text-rose-400 font-['Outfit']">
             {activeLeavesCount} colaborador(es)
           </span>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs text-black">
-          <span className="text-[11px] font-black text-black block uppercase">Atestados Médicos</span>
-          <span className="text-base font-black text-black font-['Outfit']">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-2.5 shadow-xs text-black dark:text-white">
+          <span className="text-[11px] font-black text-black dark:text-stone-300 block uppercase">Atestados Médicos</span>
+          <span className="text-base font-black text-black dark:text-white font-['Outfit']">
             {atestadosCount} registro(s)
           </span>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs text-black">
-          <span className="text-[11px] font-black text-black block uppercase">Acidente Trabalho (CAT)</span>
-          <span className="text-base font-black text-amber-700 font-['Outfit']">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-2.5 shadow-xs text-black dark:text-white">
+          <span className="text-[11px] font-black text-black dark:text-amber-400 block uppercase">Acidente Trabalho (CAT)</span>
+          <span className="text-base font-black text-black dark:text-amber-400 font-['Outfit']">
             {catCount} registro(s)
           </span>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs text-black">
-          <span className="text-[11px] font-black text-black block uppercase">Auxílio INSS</span>
-          <span className="text-base font-black text-sky-700 font-['Outfit']">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-2.5 shadow-xs text-black dark:text-white">
+          <span className="text-[11px] font-black text-black dark:text-sky-400 block uppercase">Auxílio INSS</span>
+          <span className="text-base font-black text-black dark:text-sky-400 font-['Outfit']">
             {inssCount} registro(s)
           </span>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-xs flex items-center justify-between text-black">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl px-3 py-2 shadow-xs flex items-center justify-between text-black dark:text-white">
         <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-black absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-black dark:text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por colaborador, tipo ou CID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-black placeholder-slate-400 outline-none focus:ring-1 focus:ring-sky-600"
+            className="w-full pl-8 pr-2.5 py-1.5 text-xs border border-blue-300 dark:border-stone-700 rounded-lg bg-blue-100/50 dark:bg-stone-800 text-black dark:text-white placeholder-black/60 dark:placeholder-stone-400 outline-none focus:ring-1 focus:ring-sky-600"
           />
         </div>
-        <span className="text-xs text-black/75 font-medium hidden sm:block">
+        <span className="text-xs text-black/85 dark:text-stone-300 font-bold hidden sm:block">
           {filtered.length} afastamento(s)
         </span>
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-black">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl overflow-hidden shadow-xs text-black dark:text-white">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[11px] font-black text-black uppercase tracking-wider border-b border-slate-200">
+            <thead className="bg-blue-100/60 dark:bg-stone-800 text-[11px] font-black text-black dark:text-white uppercase tracking-wider border-b border-blue-200/80 dark:border-stone-700">
               <tr>
                 <th className="py-2.5 px-3">Status</th>
                 <th className="py-2.5 px-3">Colaborador</th>
@@ -248,18 +248,18 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
                 <th className="py-2.5 px-3 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 bg-[#87AFE3] dark:bg-stone-900">
               {filtered.length > 0 ? (
                 filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition">
+                  <tr key={item.id} className="hover:bg-blue-200/40 dark:hover:bg-stone-800/60 transition">
                     <td className="py-2 px-3">
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(item.id, item.status)}
                         className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold cursor-pointer transition border ${
                           item.status === 'ativo'
-                            ? 'bg-rose-50 border-rose-200 text-rose-800'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            ? 'bg-rose-100 border-rose-300 text-rose-900'
+                            : 'bg-emerald-100 border-emerald-300 text-emerald-900'
                         }`}
                       >
                         {item.status === 'ativo' ? (
@@ -277,27 +277,27 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
                     </td>
 
                     <td className="py-2 px-3">
-                      <div className="font-bold text-black text-xs">
+                      <div className="font-bold text-black dark:text-white text-xs">
                         {item.employeeName}
                       </div>
                       {item.notes && (
-                        <div className="text-[10px] text-black/70 font-medium truncate max-w-xs">
+                        <div className="text-[10px] text-black/80 dark:text-stone-300 font-medium truncate max-w-xs">
                           {item.notes}
                         </div>
                       )}
                     </td>
 
-                    <td className="py-2 px-3 font-bold text-black text-xs">
+                    <td className="py-2 px-3 font-bold text-black dark:text-white text-xs">
                       {item.type}
                     </td>
 
-                    <td className="py-2 px-3 text-black/80 font-medium text-xs whitespace-nowrap">
+                    <td className="py-2 px-3 text-black/85 dark:text-stone-300 font-medium text-xs whitespace-nowrap">
                       {formatDateBR(item.startDate)}
                     </td>
 
-                    <td className="py-2 px-3 text-black/80 font-medium text-xs whitespace-nowrap">
+                    <td className="py-2 px-3 text-black/85 dark:text-stone-300 font-medium text-xs whitespace-nowrap">
                       {item.actualReturnDate ? (
-                        <span className="text-emerald-700 font-bold">Retornou: {formatDateBR(item.actualReturnDate)}</span>
+                        <span className="text-black dark:text-emerald-400 font-bold">Retornou: {formatDateBR(item.actualReturnDate)}</span>
                       ) : item.expectedReturnDate ? (
                         <span>Prev: {formatDateBR(item.expectedReturnDate)}</span>
                       ) : (
@@ -305,12 +305,12 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
                       )}
                     </td>
 
-                    <td className="py-2 px-3 text-center font-bold text-xs text-black">
+                    <td className="py-2 px-3 text-center font-bold text-xs text-black dark:text-white">
                       {item.daysCount}d
                     </td>
 
-                    <td className="py-2 px-3 text-black/80 font-medium text-xs">
-                      {item.cid && <span className="font-mono font-bold bg-slate-100 border border-slate-200 px-1 py-0.5 rounded text-[10px] mr-1 text-black">{item.cid}</span>}
+                    <td className="py-2 px-3 text-black/85 dark:text-stone-300 font-medium text-xs">
+                      {item.cid && <span className="font-mono font-bold bg-blue-100/70 dark:bg-stone-800 border border-blue-300 dark:border-stone-700 px-1 py-0.5 rounded text-[10px] mr-1 text-black dark:text-white">{item.cid}</span>}
                       {item.doctorName && <span>{item.doctorName}</span>}
                       {!item.cid && !item.doctorName && <span>-</span>}
                     </td>
@@ -320,7 +320,7 @@ export const LeavesTab: React.FC<LeavesTabProps> = ({
                         <button
                           type="button"
                           onClick={() => handleOpenModal(item)}
-                          className="p-1 text-stone-400 hover:text-[#009688] hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition cursor-pointer"
+                          className="p-1 text-black/70 dark:text-stone-400 hover:text-black dark:hover:text-[#009688] hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded transition cursor-pointer"
                           title="Editar Afastamento"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
