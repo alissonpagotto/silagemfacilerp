@@ -607,7 +607,7 @@ export const FleetTeamView: React.FC<FleetTeamViewProps> = ({
               Escalação & Montagem de Equipes de Campo
             </h2>
           </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+          <p className="text-xs text-[#0a0a09] dark:text-stone-400 mt-1">
             Arraste os funcionários com o mouse para transferi-los entre as frentes de trabalho (Maq 02, Maq 03, etc.), crie ou edite equipes livremente.
           </p>
         </div>

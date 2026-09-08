@@ -441,3 +441,19 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
 div#printable-service-order-modal > div:nth-of-type(3) > div:nth-of-type(5) > div:nth-of-type(3) > div:nth-of-type(2) {
   background-color: #66a2e6;
 }
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main#crm-main-content:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(2),
+div#printable-service-order-modal > div:nth-of-type(2) {
+  background-color: #2f4db8;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main#crm-main-content:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > p:nth-of-type(1),
+div#printable-service-order-modal > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > p:nth-of-type(1) {
+  color: #040404;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main#crm-main-content:nth-of-type(1) > div:nth-of-type(1) > div#printable-modal-overlay:nth-of-type(1) > div#printable-service-order-modal:nth-of-type(1) > div:nth-of-type(4),
+div#printable-service-order-modal > div:nth-of-type(4) {
+  background-color: #0042a7;
+}
+

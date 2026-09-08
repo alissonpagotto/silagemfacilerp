@@ -65,6 +65,7 @@ export interface ServiceDocumentPreviewProps {
   // Frota de Caminhões
   trucks: ServiceTruckItem[];
   totalAdicionalKm: number;
+  totalFrotasPorHora?: number;
 
   // Resumo Financeiro Pedido
   fretePrancha?: number | string | '';
@@ -126,6 +127,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
   modoCobrancaTratorLabel,
   trucks,
   totalAdicionalKm,
+  totalFrotasPorHora = 0,
   fretePrancha,
   totalPedido,
   fuelEntries,
@@ -214,6 +216,15 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
   const totalKmAdicionalValor = useMemo(() => {
     return trucks.reduce((sum, t) => sum + (Number(t.totalAdditionalKm) || 0), 0);
   }, [trucks]);
+
+  const totalTransporteHoras = useMemo(() => {
+    if (typeof totalFrotasPorHora === 'number' && totalFrotasPorHora > 0) return totalFrotasPorHora;
+    return trucks.reduce((sum, t) => {
+      const h = typeof t.truckHours === 'number' ? t.truckHours : 0;
+      const rate = typeof t.truckHourlyRate === 'number' ? t.truckHourlyRate : 0;
+      return sum + (h * rate);
+    }, 0);
+  }, [trucks, totalFrotasPorHora]);
 
   // 2. Subtotais para discriminação detalhada no DRE Gerencial
   const subtotalTransporteFrotas = useMemo(() => {
@@ -1138,6 +1149,14 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                           </span>
                         </div>
                       )}
+                      {(unidadeArea === 'hectares' || unidadeArea === 'hora') && totalTransporteHoras > 0 && (
+                        <div className="flex justify-between text-gray-700">
+                          <span>Transporte Frotas (Horas):</span>
+                          <span className="font-mono font-bold">
+                            {formatCurrencyBRL(totalTransporteHoras)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1150,7 +1169,9 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                 </p>
 
                 <div className="flex justify-between">
-                  <span>Serviço Base ({unidadeAreaLabel}):</span>
+                  <span className={unidadeArea === 'hectares' ? 'font-bold' : ''}>
+                    {unidadeArea === 'hectares' ? 'Valor Base do Serviço (Hectares):' : `Serviço Base (${unidadeAreaLabel}):`}
+                  </span>
                   <span className="font-mono font-bold">{formatCurrencyBRL(valorBaseArea)}</span>
                 </div>
 
@@ -1165,6 +1186,26 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                   <div className="flex justify-between">
                     <span>Frete / KM Adicional:</span>
                     <span className="font-mono font-bold">{formatCurrencyBRL(totalAdicionalKm)}</span>
+                  </div>
+                )}
+
+                {(unidadeArea === 'hectares' || unidadeArea === 'hora') && totalTransporteHoras > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="flex justify-between">
+                      <span>Transporte Frotas (Horas):</span>
+                      <span className="font-mono font-bold">{formatCurrencyBRL(totalTransporteHoras)}</span>
+                    </div>
+                    {/* INÍCIO DO MAPEAMENTO DE FROTAS NO RESUMO DO PEDIDO 80MM */}
+                    {trucksExpenseDetails && trucksExpenseDetails.length > 0 && (
+                      <div className="pl-1 space-y-0.5 text-[8.5px] text-gray-700">
+                        {trucksExpenseDetails.map((truckItem) => (
+                          <div key={`80mm-resumo-truck-${truckItem.truckId}`} className="leading-tight">
+                            • Transp. <strong>{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) – {truckItem.loads} Cargas ({truckItem.totalM3.toFixed(1)} m³) – {truckItem.truckHours || 0}h × {formatCurrencyBRL(truckItem.truckHourlyRate || 0)}/h = <span className="font-bold font-mono">{formatCurrencyBRL(truckItem.rateioCost)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* FIM DO MAPEAMENTO DE FROTAS NO RESUMO DO PEDIDO 80MM */}
                   </div>
                 )}
 
@@ -1503,7 +1544,7 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                             <th className="py-0.5 px-2 text-center">Capacidade</th>
                             <th className="py-0.5 px-2 text-center">Viagens</th>
                             <th className="py-0.5 px-2 text-center">Total m³</th>
-                            <th className="py-0.5 px-2 text-right">KM Adicional</th>
+                            <th className="py-0.5 px-2 text-right">{(unidadeArea === 'hectares' || unidadeArea === 'hora') ? 'Horas / Total' : 'KM Adicional'}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1515,7 +1556,11 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               <td className="py-0.5 px-2 text-center font-bold text-slate-900">{t.tripLoads || 0}</td>
                               <td className="py-0.5 px-2 text-center">{(t.totalM3 || ((t.capacityM3 || 0) * (t.tripLoads || 0))).toFixed(1).replace('.', ',')} m³</td>
                               <td className="py-0.5 px-2 text-right">
-                                {(t.additionalKm || 0) > 0 ? `${t.additionalKm} km (${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'}
+                                {(unidadeArea === 'hectares' || unidadeArea === 'hora') ? (
+                                  (t.truckHours || 0) > 0 ? `${t.truckHours}h (${formatCurrencyBRL((t.truckHours || 0) * (t.truckHourlyRate || 0))})` : '-'
+                                ) : (
+                                  (t.additionalKm || 0) > 0 ? `${t.additionalKm} km (${formatCurrencyBRL(t.totalAdditionalKm || 0)})` : '-'
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -1533,11 +1578,15 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                               {totalVolumeTransportadoM3.toFixed(1).replace('.', ',')} m³
                             </td>
                             <td className="py-1 px-2 text-right font-black text-slate-950">
-                              {totalKmAdicionalSoma > 0 
-                                ? `${totalKmAdicionalSoma} km${(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}` 
-                                : totalAdicionalKm > 0 
-                                  ? `${formatCurrencyBRL(totalAdicionalKm)}` 
-                                  : '-'}
+                              {(unidadeArea === 'hectares' || unidadeArea === 'hora') ? (
+                                totalTransporteHoras > 0 ? formatCurrencyBRL(totalTransporteHoras) : '-'
+                              ) : (
+                                totalKmAdicionalSoma > 0 
+                                  ? `${totalKmAdicionalSoma} km${(totalKmAdicionalValor > 0 || totalAdicionalKm > 0) ? ` (${formatCurrencyBRL(totalKmAdicionalValor || totalAdicionalKm)})` : ''}` 
+                                  : totalAdicionalKm > 0 
+                                    ? `${formatCurrencyBRL(totalAdicionalKm)}` 
+                                    : '-'
+                              )}
                             </td>
                           </tr>
                         </tfoot>
@@ -1560,7 +1609,9 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
 
                   <div className={`grid gap-1.5 text-[10px] pt-0.5 ${numFretePrancha > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
                     <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
-                      <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Serviço Base ({unidadeAreaLabel})</span>
+                      <span className="text-[8.5px] text-slate-600 font-bold block mb-0.5">
+                        {unidadeArea === 'hectares' ? 'Valor Base do Serviço (Hectares)' : `Serviço Base (${unidadeAreaLabel})`}
+                      </span>
                       <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(valorBaseArea)}</span>
                       <span className="text-[8.5px] text-slate-500 block mt-0.5">{quantidadeArea || 0} {unidadeAreaLabel} x {formatCurrencyBRL(typeof valorHectare === 'number' ? valorHectare : parseCurrencyToFloat(valorHectare || 0))}</span>
                     </div>
@@ -1571,11 +1622,19 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       <span className="text-[8.5px] text-slate-500 block mt-0.5">{qtdCobrancaTrator || 0} {modoCobrancaTratorLabel}</span>
                     </div>
 
-                    <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
-                      <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Frete / KM Adicional Frotas</span>
-                      <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(totalAdicionalKm)}</span>
-                      <span className="text-[8.5px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
-                    </div>
+                    {(unidadeArea === 'hectares' || unidadeArea === 'hora') ? (
+                      <div className="bg-white p-1 rounded border border-blue-200 flex flex-col justify-start">
+                        <span className="text-[8.5px] text-blue-800 font-bold block mb-0.5">Transporte Frotas (Horas)</span>
+                        <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(totalTransporteHoras)}</span>
+                        <span className="text-[8.5px] text-slate-500 block mt-0.5">Cobrança por horas trabalhadas</span>
+                      </div>
+                    ) : (
+                      <div className="bg-white p-1 rounded border border-emerald-100 flex flex-col justify-start">
+                        <span className="text-[8.5px] text-slate-500 font-bold block mb-0.5">Frete / KM Adicional Frotas</span>
+                        <span className="font-bold text-slate-900 text-[11px] block">{formatCurrencyBRL(totalAdicionalKm)}</span>
+                        <span className="text-[8.5px] text-slate-500 block mt-0.5">Cobrança de deslocamento</span>
+                      </div>
+                    )}
 
                     {numFretePrancha > 0 && (
                       <div className="bg-white p-1 rounded border border-emerald-200 flex flex-col justify-start">
@@ -1585,6 +1644,23 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* INÍCIO DO MAPEAMENTO DE FROTAS NO RESUMO DO PEDIDO A4 */}
+                  {(unidadeArea === 'hectares' || unidadeArea === 'hora') && totalTransporteHoras > 0 && trucksExpenseDetails && trucksExpenseDetails.length > 0 && (
+                    <div className="mt-1 pt-1 border-t border-emerald-200/80 text-[8.5px] text-slate-600 space-y-0.5">
+                      <span className="font-bold text-slate-800 uppercase text-[8.5px] block">
+                        Detalhamento do Transporte por Horas (Cobrado do Produtor):
+                      </span>
+                      <div className="space-y-0.5">
+                        {trucksExpenseDetails.map((truckItem) => (
+                          <div key={`a4-resumo-truck-${truckItem.truckId}`} className="text-[8.5px]">
+                            • Transp. <strong className="font-mono text-slate-900">{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) – {truckItem.loads} Cargas ({truckItem.totalM3.toFixed(1)} m³) – Cobrança por Horas: {truckItem.truckHours || 0}h × {formatCurrencyBRL(truckItem.truckHourlyRate || 0)}/h = Total: <strong className="font-mono text-slate-900">{formatCurrencyBRL(truckItem.rateioCost)}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* FIM DO MAPEAMENTO DE FROTAS NO RESUMO DO PEDIDO A4 */}
                 </div>
 
                 {/* SEÇÃO 4 & 5 (EXCLUSIVO VIA COMPLETA): DRE E LUCRO OPERACIONAL */}
@@ -1635,9 +1711,15 @@ export const ServiceDocumentPreview: React.FC<ServiceDocumentPreviewProps> = ({
                                       <strong>{truck.loads}</strong> Cargas (Cap: {truck.capacityM3 || 0} m³ | Total: <strong>{truck.totalM3.toFixed(1)} m³</strong>)
                                     </span>
                                     <span className="text-slate-300">•</span>
-                                    <span className="text-slate-700">
-                                      <strong>{truck.distributionPercent.toFixed(1)}%</strong> Distribuição ({formatCurrencyBRL(truck.rateioCost)})
-                                    </span>
+                                    {(unidadeArea === 'hectares' || unidadeArea === 'hora') ? (
+                                      <span className="text-slate-700">
+                                        Horas: <strong>{truck.truckHours || 0}h</strong> × {formatCurrencyBRL(truck.truckHourlyRate || 0)}/h ({formatCurrencyBRL(truck.rateioCost)})
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-700">
+                                        <strong>{truck.distributionPercent.toFixed(1)}%</strong> Distribuição ({formatCurrencyBRL(truck.rateioCost)})
+                                      </span>
+                                    )}
                                     {truck.additionalKmCost > 0 && (
                                       <span className="text-amber-800 font-semibold bg-amber-50 px-1 rounded border border-amber-200 text-[8.5px]">
                                         + KM ({formatCurrencyBRL(truck.additionalKmCost)})

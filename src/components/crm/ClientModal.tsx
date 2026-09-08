@@ -10,18 +10,24 @@ import {
   fetchCompanyByCnpj 
 } from '../../lib/formatters';
 
-interface ClientModalProps {
+export interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (client: Client) => void;
+  onSave?: (client: Client) => void;
+  onSuccess?: (client: Client) => void;
   editingClient?: Client | null;
+  initialName?: string;
+  zIndexClass?: string;
 }
 
 export const ClientModal: React.FC<ClientModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onSuccess,
   editingClient,
+  initialName = '',
+  zIndexClass = 'z-[70]',
 }) => {
   const [name, setName] = useState('');
   const [farmName, setFarmName] = useState('');
@@ -62,7 +68,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setStatus(editingClient.status);
       setNotes(editingClient.notes || '');
     } else {
-      setName('');
+      setName(initialName || '');
       setFarmName('');
       setCpfCnpj('');
       setZipCode('');
@@ -78,7 +84,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setStatus('cliente_ativo');
       setNotes('');
     }
-  }, [editingClient, isOpen]);
+  }, [editingClient, isOpen, initialName]);
 
   // Handle CNPJ / CPF dynamic typing and auto search
   const handleCpfCnpjChange = async (val: string) => {
@@ -202,15 +208,20 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       createdAt: editingClient?.createdAt || new Date().toISOString(),
     };
 
-    onSave(client);
+    if (onSuccess) {
+      onSuccess(client);
+    }
+    if (onSave) {
+      onSave(client);
+    }
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs">
-      <div className="bg-white dark:bg-stone-900 rounded-2xl max-w-2xl w-full shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className={`fixed inset-0 ${zIndexClass} flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs overflow-y-auto`}>
+      <div className="bg-white dark:bg-stone-900 rounded-2xl max-w-2xl w-full shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
         
         {/* Header */}
         <div className="px-5 py-3.5 bg-[#009688] text-white flex items-center justify-between">
@@ -530,3 +541,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     </div>
   );
 };
+
+// Aliases para uso unificado e flexível em outros módulos
+export const NewClientModal = ClientModal;
+export const UnifiedClientModal = ClientModal;
+export default ClientModal;

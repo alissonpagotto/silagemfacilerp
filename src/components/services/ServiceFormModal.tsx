@@ -42,7 +42,8 @@ import {
 } from '../../types';
 import { formatCurrencyBRL } from '../../lib/storage';
 import { parseCurrencyToFloat, maskCurrencyBRLInput, formatCurrencyBRLOnBlur } from '../../lib/formatters';
-import { QuickClientModal } from './QuickClientModal';
+// Cadastro Unificado de Cliente (Modal Completo Oficial "Novo Produtor Rural / Pecuarista")
+import { ClientModal } from '../crm/ClientModal';
 import { TractorBlock } from './TractorBlock';
 import { TruckFleetSection } from './TruckFleetSection';
 import { DRESummaryBlock, TruckExpenseDetail } from './DRESummaryBlock';
@@ -115,9 +116,76 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   const [horasMotor, setHorasMotor] = useState<number | ''>('');
   const [valorHoraForrageira, setValorHoraForrageira] = useState<number | ''>('');
   // Alternância (Toggles) e Comissão da Forrageira (4 modalidades)
-  const [modoComissaoForrageira, setModoComissaoForrageira] = useState<'tambor' | 'motor' | 'area' | 'livre'>('tambor');
+  const [modoComissaoForrageira, setModoComissaoForrageira] = useState<'tambor' | 'motor' | 'area' | 'livre'>('area');
   const [qtdBaseComissaoForrageira, setQtdBaseComissaoForrageira] = useState<number | ''>('');
   const [taxaComissaoForrageira, setTaxaComissaoForrageira] = useState<number | ''>('');
+
+  // =========================================================================
+  // HELPERS DE COMISSÃO DO OPERADOR DA FORRAGEIRA (DINÂMICO)
+  // =========================================================================
+  const getSelectedForageOperator = (empId?: string, empName?: string): Employee | undefined => {
+    if (empId) {
+      const found = employees.find((e) => e.id === empId);
+      if (found) return found;
+    }
+    if (empName && empName.trim()) {
+      const clean = empName.toLowerCase().trim();
+      return employees.find((e) => e.name.toLowerCase().trim() === clean);
+    }
+    return undefined;
+  };
+
+  const getEmpCommissionPerHectare = (emp?: Employee | null): number => {
+    if (!emp) return 0;
+    const anyEmp = emp as any;
+    const val = anyEmp.comissao_hectare ?? anyEmp.comissaoHectare ?? anyEmp.commission_hectare ?? emp.commissionPerHectare ?? 0;
+    return typeof val === 'number' ? val : Number(val) || 0;
+  };
+
+  const getEmpCommissionPerHour = (emp?: Employee | null): number => {
+    if (!emp) return 0;
+    const anyEmp = emp as any;
+    const val = anyEmp.comissao_hora ?? anyEmp.comissaoHora ?? anyEmp.commission_hour ?? emp.commissionPerHour ?? 0;
+    return typeof val === 'number' ? val : Number(val) || 0;
+  };
+
+  // Aplica dinamicamente a taxa e o modo de comissão do operador da forrageira conforme a modalidade ativa
+  // 🚨 DIRETIVA DE SEGURANÇA MÁXIMA: A aba "alqueires" permanece 100% congelada com a regra e fórmula original
+  const applyForageOperatorCommission = (
+    emp: Employee | undefined,
+    targetUnit: 'hectares' | 'alqueires' | 'hora'
+  ) => {
+    if (!emp) return;
+
+    if (targetUnit === 'hectares') {
+      // 1. Modalidade "Por Hectare (ha)"
+      const taxaHa = getEmpCommissionPerHectare(emp);
+      if (taxaHa > 0) {
+        setModoComissaoForrageira('area');
+        setTaxaComissaoForrageira(Number(taxaHa.toFixed(2)));
+      } else if (getEmpCommissionPerHour(emp) > 0) {
+        setModoComissaoForrageira('tambor');
+        setTaxaComissaoForrageira(Number(getEmpCommissionPerHour(emp).toFixed(2)));
+      }
+    } else if (targetUnit === 'hora') {
+      // 2. Modalidade "Por Hora (h)"
+      const taxaHora = getEmpCommissionPerHour(emp);
+      if (taxaHora > 0) {
+        setModoComissaoForrageira('tambor');
+        setTaxaComissaoForrageira(Number(taxaHora.toFixed(2)));
+      }
+    } else {
+      // 3. Aba "Por Alqueire (alq)" - 🚨 100% CONGELADO / INTOCADO
+      if (emp.commissionPerHour) {
+        setModoComissaoForrageira('tambor');
+        setTaxaComissaoForrageira(Number(emp.commissionPerHour.toFixed(2)));
+      } else if (emp.commissionPerHectare || emp.commissionPerAlqueire) {
+        setModoComissaoForrageira('area');
+        const rate = emp.commissionPerHectare || emp.commissionPerAlqueire || 0;
+        setTaxaComissaoForrageira(Number(rate.toFixed(2)));
+      }
+    }
+  };
 
   // 4. Bloco Trator / Máquina (Borda Azul) com Independência Total
   const [tratorId, setTratorId] = useState('');
@@ -313,7 +381,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       setHorasTambor('');
       setHorasMotor('');
       setValorHoraForrageira('');
-      setModoComissaoForrageira('tambor');
+      setModoComissaoForrageira('area');
       setQtdBaseComissaoForrageira('');
       setTaxaComissaoForrageira('');
 
@@ -410,19 +478,10 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     setSegundoOperadorForrageiraId('');
     setSegundoOperadorForrageiraNome('');
 
-    // Preenche taxa de comissão se o operador tiver configurada
-    if (linkedOp.id) {
-      const emp = employees.find((e) => e.id === linkedOp.id);
-      if (emp) {
-        if (emp.commissionPerHour) {
-          setModoComissaoForrageira('tambor');
-          setTaxaComissaoForrageira(Number(emp.commissionPerHour.toFixed(2)));
-        } else if (emp.commissionPerHectare || emp.commissionPerAlqueire) {
-          setModoComissaoForrageira('area');
-          const rate = emp.commissionPerHectare || emp.commissionPerAlqueire || 0;
-          setTaxaComissaoForrageira(Number(rate.toFixed(2)));
-        }
-      }
+    // Preenche taxa de comissão dinamicamente conforme a modalidade ativa
+    const emp = getSelectedForageOperator(linkedOp.id, linkedOp.name);
+    if (emp) {
+      applyForageOperatorCommission(emp, unidadeArea);
     }
   };
 
@@ -480,6 +539,9 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       ratePerKm: 0,
       totalAdditionalKm: 0,
       driverCommission: 0,
+      truckHours: 0,
+      truckHourlyRate: 0,
+      truckTotalCost: 0,
     };
 
     setTrucks((prev) => [...prev, newTruck]);
@@ -558,21 +620,39 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     return trucks.reduce((sum, t) => sum + (t.totalAdditionalKm || 0), 0);
   }, [trucks, unidadeArea]);
 
-  // 5. TOTAL DO PEDIDO (Cobrado do Cliente - com Frete Prancha)
+  // Custo Total de Transporte das Frotas por Hora (quando Hectares ou Por Hora)
+  // Modalidade Por Alqueire permanece 100% congelada.
+  const totalFrotasPorHora = useMemo(() => {
+    if (unidadeArea !== 'hectares' && unidadeArea !== 'hora') return 0;
+    return trucks.reduce((sum, t) => {
+      const h = typeof t.truckHours === 'number' ? t.truckHours : 0;
+      const rate = typeof t.truckHourlyRate === 'number' ? t.truckHourlyRate : 0;
+      return sum + (h * rate);
+    }, 0);
+  }, [trucks, unidadeArea]);
+
+  // 5. TOTAL DO PEDIDO (Cobrado do Cliente - com Frete Prancha e Frotas por Hora quando Hectares ou Por Hora)
   const totalPedido = useMemo(() => {
     const valorFretePrancha = parseCurrencyToFloat(fretePrancha);
-    return valorBaseArea + subtotalTrator + subtotalForrageira + totalAdicionalKm + valorFretePrancha;
-  }, [valorBaseArea, subtotalTrator, subtotalForrageira, totalAdicionalKm, fretePrancha]);
+    // Inclusão da modalidade Por Hora (h) para frotas cobradas por hora
+    const adicionalFrotasHoras = (unidadeArea === 'hectares' || unidadeArea === 'hora') ? totalFrotasPorHora : 0;
+    return valorBaseArea + subtotalTrator + subtotalForrageira + totalAdicionalKm + adicionalFrotasHoras + valorFretePrancha;
+  }, [valorBaseArea, subtotalTrator, subtotalForrageira, totalAdicionalKm, totalFrotasPorHora, fretePrancha, unidadeArea]);
 
   // =========================================================================
   // REGRA 3: CORREÇÃO MATEMÁTICA NA DISTRIBUIÇÃO GLOBAL DE FROTAS
   // Incide EXCLUSIVAMENTE sobre o "Valor Base do Serviço (Área)".
   // O Trator é TOTALMENTE EXCLUÍDO da base de cálculo!
+  // Em Hectares e Por Hora: reflete a Soma Total do Transporte (Por Horas)
+  // Em Alqueires: regra de % Distribuição 100% congelada e preservada
   // =========================================================================
   const valorDistribuicaoFrotas = useMemo(() => {
+    if (unidadeArea === 'hectares' || unidadeArea === 'hora') {
+      return totalFrotasPorHora;
+    }
     const pct = typeof truckFleetPercentage === 'number' ? truckFleetPercentage : 0;
     return (valorBaseArea * pct) / 100;
-  }, [valorBaseArea, truckFleetPercentage]);
+  }, [valorBaseArea, truckFleetPercentage, unidadeArea, totalFrotasPorHora]);
 
   // =========================================================================
   // REGRA 4: CÁLCULO DE RATIO PROPORCIONAL POR M³ INDIVIDUAL DOS CAMINHÕES
@@ -612,9 +692,13 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     const baseCalculada = modoComissaoForrageira === 'livre'
       ? (typeof qtdBaseComissaoForrageira === 'number' ? qtdBaseComissaoForrageira : 0)
       : modoComissaoForrageira === 'tambor'
-      ? (typeof horasTambor === 'number' ? horasTambor : 0)
+      ? (typeof horasTambor === 'number' && horasTambor > 0
+          ? horasTambor
+          : (unidadeArea === 'hora' && typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : (typeof horasTambor === 'number' ? horasTambor : 0)))
       : modoComissaoForrageira === 'motor'
-      ? (typeof horasMotor === 'number' ? horasMotor : 0)
+      ? (typeof horasMotor === 'number' && horasMotor > 0
+          ? horasMotor
+          : (unidadeArea === 'hora' && typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : (typeof horasMotor === 'number' ? horasMotor : 0)))
       : (typeof quantidadeArea === 'number' ? quantidadeArea : 0);
 
     const taxaP1 = typeof taxaComissaoForrageira === 'number' ? Number(taxaComissaoForrageira.toFixed(2)) : 0;
@@ -622,7 +706,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     const unLabel = modoComissaoForrageira === 'livre'
       ? 'un'
       : modoComissaoForrageira === 'tambor'
-      ? 'h (tambor)'
+      ? (typeof horasTambor === 'number' && horasTambor > 0 ? 'h (tambor)' : unidadeArea === 'hora' ? 'h' : 'h (tambor)')
       : modoComissaoForrageira === 'motor'
       ? 'h'
       : (unidadeArea === 'alqueires' ? 'alq' : 'ha');
@@ -712,10 +796,14 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
         ? (truckTotalM3 / totalVolumeGeralM3) * 100 
         : 0;
 
-      // Valor do Rateio = (Total m³ do Caminhão / Total Volume Geral) x Valor Total Distribuído da Frota
-      const rateioCost = totalVolumeGeralM3 > 0 
-        ? (truckTotalM3 / totalVolumeGeralM3) * valorDistribuicaoFrotas 
-        : 0;
+      // Valor do Rateio / Custo de Transporte
+      // Em Hectares e Por Hora: Horas Trabalhadas x Valor por Hora
+      // Em Alqueires: (Total m³ do Caminhão / Total Volume Geral) x Valor Total Distribuído da Frota (100% congelado)
+      const rateioCost = (unidadeArea === 'hectares' || unidadeArea === 'hora')
+        ? (Number(truck.truckHours) || 0) * (Number(truck.truckHourlyRate) || 0)
+        : (totalVolumeGeralM3 > 0 
+            ? (truckTotalM3 / totalVolumeGeralM3) * valorDistribuicaoFrotas 
+            : 0);
 
       // Adicional KM individual do caminhão
       const additionalKmCost = truck.totalAdditionalKm ?? ((truck.additionalKm || 0) * (truck.ratePerKm || 0));
@@ -742,9 +830,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
         additionalKmCost: additionalKmCost,
         driverCommissionCost: driverCommissionCost,
         totalCost: totalCost,
+        truckHours: truck.truckHours,
+        truckHourlyRate: truck.truckHourlyRate,
       };
     });
-  }, [trucks, totalVolumeGeralM3, valorDistribuicaoFrotas]);
+  }, [trucks, totalVolumeGeralM3, valorDistribuicaoFrotas, unidadeArea]);
 
   // =========================================================================
   // GESTÃO OPERACIONAL DE COMBUSTÍVEL E ALIMENTAÇÃO (DRE)
@@ -876,12 +966,17 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
     const updatedTrucks = trucks.map((t) => {
       const m3 = (t.capacityM3 || 0) * (t.tripLoads || 0);
       const ratio = totalVolumeGeralM3 > 0 ? (m3 / totalVolumeGeralM3) * 100 : 0;
-      const distVal = totalVolumeGeralM3 > 0 ? (m3 / totalVolumeGeralM3) * valorDistribuicaoFrotas : 0;
+      const truckCostHoras = (Number(t.truckHours) || 0) * (Number(t.truckHourlyRate) || 0);
+      // Hectares e Por Hora usam cobrança por horas; Alqueires preserva o rateio percentual congelado
+      const distVal = (unidadeArea === 'hectares' || unidadeArea === 'hora')
+        ? truckCostHoras
+        : (totalVolumeGeralM3 > 0 ? (m3 / totalVolumeGeralM3) * valorDistribuicaoFrotas : 0);
       return {
         ...t,
         totalM3: m3,
         ratioPercent: ratio,
         distributedValue: distVal,
+        truckTotalCost: truckCostHoras,
       };
     });
 
@@ -945,8 +1040,9 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
 
       // Frotas
       trucks: updatedTrucks,
-      truckFleetPercentage: typeof truckFleetPercentage === 'number' ? truckFleetPercentage : undefined,
+      truckFleetPercentage: (unidadeArea === 'hectares' || unidadeArea === 'hora') ? undefined : (typeof truckFleetPercentage === 'number' ? truckFleetPercentage : undefined),
       truckFleetTotalDistributed: valorDistribuicaoFrotas,
+      truckFleetHourlyTotal: (unidadeArea === 'hectares' || unidadeArea === 'hora') ? totalFrotasPorHora : undefined,
       trucksTotalKmAdditional: totalAdicionalKm,
 
       // Combustível e Alimentação
@@ -1670,7 +1766,10 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           </div>
           
           {/* CABEÇALHO DO MODAL (COMPACTO) */}
-          <div className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/90 shrink-0 w-full">
+          <div 
+            className="flex items-center justify-between px-4 sm:px-5 py-2.5 sm:py-3 border-b border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-900/90 shrink-0 w-full"
+            style={{ backgroundColor: '#2f4db8' }}
+          >
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shadow-2xs shrink-0">
                 <HeaderIcon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${iconColor}`} />
@@ -1681,7 +1780,10 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     {modalTitle}
                   </h3>
                 </div>
-                <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                <p 
+                  className="text-[11px] text-gray-500 dark:text-slate-400"
+                  style={{ color: '#040404' }}
+                >
                   Preencha os dados operacionais, frotas e fechamento DRE
                 </p>
               </div>
@@ -1772,6 +1874,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                               {c.name} {c.farmName ? `(${c.farmName})` : ''}
                             </option>
                           ))}
+                          {clientId && !clients.some((c) => c.id === clientId) && (
+                            <option value={clientId}>
+                              {clientName} {farmName ? `(${farmName})` : ''}
+                            </option>
+                          )}
                         </select>
                       )}
                     </div>
@@ -1780,7 +1887,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                       type="button"
                       onClick={() => setIsQuickClientOpen(true)}
                       className="p-1.5 sm:p-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 transition cursor-pointer shrink-0"
-                      title="Cadastrar Novo Cliente Rápido"
+                      title="Cadastrar Novo Produtor Rural / Pecuarista (Completo)"
                     >
                       <UserPlus className="w-4 h-4" />
                     </button>
@@ -1815,7 +1922,25 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                   <div className="inline-flex rounded-lg p-0.5 bg-gray-200 dark:bg-slate-700 self-start sm:self-auto text-xs">
                     <button
                       type="button"
-                      onClick={() => setUnidadeArea('hectares')}
+                      onClick={() => {
+                        setUnidadeArea('hectares');
+                        if (modoCobrancaTrator === 'area_alq') {
+                          setModoCobrancaTrator('area_ha');
+                        }
+                        if (modoComissaoOperador === 'area_alq') {
+                          setModoComissaoOperador('area_ha');
+                          if (operadorTratorId) {
+                            const emp = employees.find((e) => e.id === operadorTratorId);
+                            if (emp && emp.commissionPerHectare) {
+                              setTaxaComissaoOperador(Number(emp.commissionPerHectare.toFixed(2)));
+                            }
+                          }
+                        }
+                        const op = getSelectedForageOperator(operadorForrageiraId, operadorForrageiraNome);
+                        if (op) {
+                          applyForageOperatorCommission(op, 'hectares');
+                        }
+                      }}
                       className={`px-2.5 py-0.5 sm:py-1 font-semibold rounded-md transition cursor-pointer ${
                         unidadeArea === 'hectares'
                           ? 'bg-emerald-800 text-white shadow-xs font-bold'
@@ -1837,7 +1962,13 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setUnidadeArea('hora')}
+                      onClick={() => {
+                        setUnidadeArea('hora');
+                        const op = getSelectedForageOperator(operadorForrageiraId, operadorForrageiraNome);
+                        if (op) {
+                          applyForageOperatorCommission(op, 'hora');
+                        }
+                      }}
                       className={`px-2.5 py-0.5 sm:py-1 font-semibold rounded-md transition cursor-pointer ${
                         unidadeArea === 'hora'
                           ? 'bg-emerald-800 text-white shadow-xs font-bold'
@@ -1964,8 +2095,13 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
-                      Horímetro, Tambor & Comissões
+                    <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-800 flex items-center gap-1.5 shadow-2xs">
+                      <span>Horímetro, Tambor & Comissões</span>
+                      {comissaoForrageiraP1 > 0 && (
+                        <span className="font-bold bg-amber-200 dark:bg-amber-800/90 text-amber-950 dark:text-amber-100 px-1.5 py-0.2 rounded-full text-[10px]">
+                          {formatCurrencyBRL(comissaoForrageiraP1)}
+                        </span>
+                      )}
                     </span>
                     {(forrageiraId || forrageiraNome.trim()) && (
                       <button
@@ -2039,8 +2175,14 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                               type="text"
                               value={operadorForrageiraNome}
                               onChange={(e) => {
-                                setOperadorForrageiraNome(e.target.value);
+                                const newName = e.target.value;
+                                setOperadorForrageiraNome(newName);
                                 setOperadorForrageiraId('');
+                                const matched = getSelectedForageOperator('', newName);
+                                if (matched) {
+                                  setOperadorForrageiraId(matched.id);
+                                  applyForageOperatorCommission(matched, unidadeArea);
+                                }
                               }}
                               placeholder="Ex: Operador Roberto"
                               className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-600/30 focus:border-amber-600 shadow-2xs transition-colors"
@@ -2053,14 +2195,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                   setOperadorForrageiraId(e.target.value);
                                   setOperadorForrageiraNome(emp ? emp.name : '');
                                   if (emp) {
-                                    if (emp.commissionPerHour) {
-                                      setModoComissaoForrageira('tambor');
-                                      setTaxaComissaoForrageira(Number(emp.commissionPerHour.toFixed(2)));
-                                    } else if (emp.commissionPerHectare || emp.commissionPerAlqueire) {
-                                      setModoComissaoForrageira('area');
-                                      const rate = emp.commissionPerHectare || emp.commissionPerAlqueire || 0;
-                                      setTaxaComissaoForrageira(Number(rate.toFixed(2)));
-                                    }
+                                    applyForageOperatorCommission(emp, unidadeArea);
                                   }
                                 }}
                                 className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
@@ -2213,7 +2348,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                   : 'text-gray-600 dark:text-slate-300 hover:text-gray-900'
                               }`}
                             >
-                              Por Área (alq)
+                              Por Área ({unidadeArea === 'alqueires' ? 'alq' : 'ha'})
                             </button>
                           </div>
                         </div>
@@ -2237,9 +2372,13 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 modoComissaoForrageira === 'livre'
                                   ? (qtdBaseComissaoForrageira ?? '')
                                   : modoComissaoForrageira === 'tambor'
-                                  ? (typeof horasTambor === 'number' && horasTambor > 0 ? horasTambor : '')
+                                  ? (typeof horasTambor === 'number' && horasTambor > 0 
+                                      ? horasTambor 
+                                      : (unidadeArea === 'hora' && typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : ''))
                                   : modoComissaoForrageira === 'motor'
-                                  ? (typeof horasMotor === 'number' && horasMotor > 0 ? horasMotor : '')
+                                  ? (typeof horasMotor === 'number' && horasMotor > 0 
+                                      ? horasMotor 
+                                      : (unidadeArea === 'hora' && typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : ''))
                                   : (typeof quantidadeArea === 'number' && quantidadeArea > 0 ? quantidadeArea : '')
                               }
                               onChange={(e) => {
@@ -2252,9 +2391,9 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                                 modoComissaoForrageira === 'livre'
                                   ? 'Digite a base livremente'
                                   : modoComissaoForrageira === 'tambor'
-                                  ? 'Puxado de Hora do Tambor (H)'
+                                  ? (typeof horasTambor === 'number' && horasTambor > 0 ? 'Puxado de Hora do Tambor (H)' : unidadeArea === 'hora' ? 'Puxado das Horas da OS' : 'Puxado de Hora do Tambor (H)')
                                   : modoComissaoForrageira === 'motor'
-                                  ? 'Puxado de Hora do Motor (H)'
+                                  ? (typeof horasMotor === 'number' && horasMotor > 0 ? 'Puxado de Hora do Motor (H)' : unidadeArea === 'hora' ? 'Puxado das Horas da OS' : 'Puxado de Hora do Motor (H)')
                                   : 'Puxado da Área Global'
                               }
                               className={`w-full px-3 py-2 rounded-lg text-xs font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
@@ -2267,7 +2406,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
 
                           <div>
                             <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-1">
-                              R$ / {modoComissaoForrageira === 'livre' ? 'Unidade (R$)' : modoComissaoForrageira === 'tambor' ? 'Hora Tambor (R$/h)' : modoComissaoForrageira === 'motor' ? 'Hora Motor (R$/h)' : 'Área (R$/alq)'}
+                              R$ / {modoComissaoForrageira === 'livre' ? 'Unidade (R$)' : modoComissaoForrageira === 'tambor' ? 'Hora Tambor (R$/h)' : modoComissaoForrageira === 'motor' ? 'Hora Motor (R$/h)' : (unidadeArea === 'alqueires' ? 'Área (R$/alq)' : 'Área (R$/ha)')}
                             </label>
                             <input
                               type="number"
@@ -2293,7 +2432,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                               <Calculator className="w-3.5 h-3.5 text-amber-600" />
                               Comissão Operador ({operadorForrageiraNome || 'Não selecionado'}):
                             </span>
-                            <span className="font-mono font-bold">
+                            <span className="font-mono font-bold text-amber-900 dark:text-amber-100 bg-amber-100/80 dark:bg-amber-900/60 px-2 py-0.5 rounded text-[11px] sm:text-xs">
                               {formulaForrageiraP1 ? `${formulaForrageiraP1} (informativo)` : `${formatCurrencyBRL(comissaoForrageiraP1)} (informativo)`}
                             </span>
                           </div>
@@ -2377,6 +2516,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                 horasTambor={horasTambor}
                 horasMotor={horasMotor}
                 unidadeArea={unidadeArea}
+                totalTransporteFrotasHoras={totalFrotasPorHora}
                 onAddTruck={handleAddTruck}
                 onRemoveTruck={handleRemoveTruck}
                 onUpdateTruck={handleUpdateTruck}
@@ -2403,6 +2543,8 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
               unidadeAreaLabel={unidadeArea === 'hectares' ? 'ha' : unidadeArea === 'alqueires' ? 'alq' : 'h'}
               quantidadeArea={quantidadeArea}
               volumeTotalFrotaM3={totalVolumeGeralM3}
+              unidadeArea={unidadeArea}
+              totalFrotasPorHora={totalFrotasPorHora}
               subtotalTrator={subtotalTrator}
               qtdCobrancaTrator={qtdCobrancaTrator}
               modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'h' : modoCobrancaTrator === 'area_alq' ? 'alq' : 'ha'}
@@ -2474,7 +2616,10 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           </div>
 
           {/* RODAPÉ DO MODAL (AÇÕES COMPACTAS) */}
-          <div className="w-full max-w-full flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 border-t border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/90 shrink-0 print:hidden overflow-hidden">
+          <div 
+            className="w-full max-w-full flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 border-t border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-900/90 shrink-0 print:hidden overflow-hidden"
+            style={{ backgroundColor: '#0042a7' }}
+          >
             {/* BOTÃO 1: Imprimir Via Cliente */}
             <button
               type="button"
@@ -2536,11 +2681,14 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
         </div>
       </div>
 
-      {/* Modal Sobreposta de Cadastro Rápido de Cliente */}
-      <QuickClientModal
+      {/* Modal Sobreposta de Cadastro Unificado de Cliente ("Novo Produtor Rural / Pecuarista") */}
+      <ClientModal
         isOpen={isQuickClientOpen}
         onClose={() => setIsQuickClientOpen(false)}
+        onSuccess={handleQuickClientCreated}
         onSave={handleQuickClientCreated}
+        initialName={clientName}
+        zIndexClass="z-[70]"
       />
 
       {/* TELA DE PRÉVIA E IMPRESSÃO (VIA CLIENTE / COMPLETA & 80MM / A4) */}
@@ -2575,6 +2723,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
           modoCobrancaTratorLabel={modoCobrancaTrator === 'horas' ? 'Horas (h)' : modoCobrancaTrator === 'area_alq' ? 'Alqueires (alq)' : 'Hectares (ha)'}
           trucks={trucks}
           totalAdicionalKm={totalAdicionalKm}
+          totalFrotasPorHora={totalFrotasPorHora}
           fretePrancha={fretePrancha}
           totalPedido={totalPedido}
           fuelEntries={fuelEntries}

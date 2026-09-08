@@ -16,6 +16,8 @@ export interface TruckExpenseDetail {
   additionalKmCost: number;
   driverCommissionCost?: number;
   totalCost: number;
+  truckHours?: number;
+  truckHourlyRate?: number;
 }
 
 interface DRESummaryBlockProps {
@@ -31,6 +33,8 @@ interface DRESummaryBlockProps {
   fretePrancha?: number | string;
   totalPedido: number;
   volumeTotalFrotaM3?: number;
+  unidadeArea?: 'hectares' | 'alqueires' | 'hora' | 'horas';
+  totalFrotasPorHora?: number;
 
   // NOVO CARD: Consumo de Combustível e Alimentação
   fuelEntries?: ServiceFuelEntry[];
@@ -77,6 +81,8 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
   fretePrancha,
   totalPedido,
   volumeTotalFrotaM3 = 0,
+  unidadeArea,
+  totalFrotasPorHora = 0,
 
   fuelEntries = [],
   onFuelEntryChange,
@@ -179,6 +185,35 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
               <span className="font-semibold text-gray-900 dark:text-white font-mono">
                 {formatCurrencyBRL(totalAdicionalKm)}
               </span>
+            </div>
+          )}
+
+          {(unidadeArea === 'hectares' || unidadeArea === 'hora' || unidadeArea === 'horas') && totalFrotasPorHora > 0 && (
+            <div className="space-y-1 py-0.5">
+              <div className="flex items-center justify-between text-gray-700 dark:text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  Transporte Frotas (Cobrança por Horas):
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white font-mono">
+                  {formatCurrencyBRL(totalFrotasPorHora)}
+                </span>
+              </div>
+
+              {/* INÍCIO DO MAPEAMENTO DE FROTAS NO RESUMO DO CLIENTE (COBRADO DO CLIENTE) */}
+              {trucksExpenseDetails && trucksExpenseDetails.length > 0 && (
+                <div className="pl-5 space-y-1">
+                  {trucksExpenseDetails.map((truckItem) => (
+                    <div 
+                      key={`resumo-pedido-truck-${truckItem.truckId}`}
+                      className="text-xs text-gray-500 dark:text-slate-400 font-medium leading-relaxed"
+                    >
+                      • Transp. <strong className="font-mono font-bold text-gray-800 dark:text-slate-200">{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) – {truckItem.loads} Cargas ({truckItem.totalM3.toFixed(1)} m³) – Cobrança por Horas: {truckItem.truckHours || 0}h × {formatCurrencyBRL(truckItem.truckHourlyRate || 0)}/h = Total: <strong className="font-mono font-bold text-gray-900 dark:text-white">{formatCurrencyBRL(truckItem.rateioCost)}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* FIM DO MAPEAMENTO DE FROTAS NO RESUMO DO CLIENTE (COBRADO DO CLIENTE) */}
             </div>
           )}
 
@@ -518,7 +553,15 @@ export const DRESummaryBlock: React.FC<DRESummaryBlockProps> = ({
                 >
                   <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                   <span className="leading-relaxed">
-                    Transp. <strong className="font-mono font-bold text-gray-900 dark:text-white">{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) — {truckItem.loads} Cargas (Capacidade: {truckItem.capacityM3 || 0} m³ | Total Transportado: {truckItem.totalM3.toFixed(1)} m³) — {truckItem.distributionPercent.toFixed(1)}% de Distribuição Global ({formatCurrencyBRL(truckItem.rateioCost)}){truckItem.additionalKmCost > 0 ? ` + Adicional KM (${formatCurrencyBRL(truckItem.additionalKmCost)})` : ''} = Total: <strong className="font-mono font-bold text-orange-950 dark:text-orange-200">{formatCurrencyBRL(truckItem.rateioCost + truckItem.additionalKmCost)}</strong>
+                    {(unidadeArea === 'hectares' || unidadeArea === 'hora' || unidadeArea === 'horas') ? (
+                      <>
+                        Transp. <strong className="font-mono font-bold text-gray-900 dark:text-white">{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) — {truckItem.loads} Cargas ({truckItem.totalM3.toFixed(1)} m³) — Cobrança por Horas: {truckItem.truckHours || 0}h × {formatCurrencyBRL(truckItem.truckHourlyRate || 0)}/h = Total: <strong className="font-mono font-bold text-orange-950 dark:text-orange-200">{formatCurrencyBRL(truckItem.rateioCost)}</strong>
+                      </>
+                    ) : (
+                      <>
+                        Transp. <strong className="font-mono font-bold text-gray-900 dark:text-white">{truckItem.plate || 'S/ Placa'}</strong> ({truckItem.driverName || 'Motorista'}) — {truckItem.loads} Cargas (Capacidade: {truckItem.capacityM3 || 0} m³ | Total Transportado: {truckItem.totalM3.toFixed(1)} m³) — {truckItem.distributionPercent.toFixed(1)}% de Distribuição Global ({formatCurrencyBRL(truckItem.rateioCost)}){truckItem.additionalKmCost > 0 ? ` + Adicional KM (${formatCurrencyBRL(truckItem.additionalKmCost)})` : ''} = Total: <strong className="font-mono font-bold text-orange-950 dark:text-orange-200">{formatCurrencyBRL(truckItem.rateioCost + truckItem.additionalKmCost)}</strong>
+                      </>
+                    )}
                   </span>
                 </div>
               ))}

@@ -361,6 +361,7 @@ export interface ServiceOrder {
   trucks?: ServiceTruckItem[];
   truckFleetPercentage?: number; // % de distribuição para frotas/caminhões (ex: 10%)
   truckFleetTotalDistributed?: number;
+  truckFleetHourlyTotal?: number; // Total cobrado do cliente por horas de frotas (quando Hectares)
   trucksTotalKmAdditional?: number;
 
   // Frete Prancha
@@ -411,6 +412,9 @@ export interface ServiceTruckItem {
   additionalKm?: number; // KM Adicional (quando Alqueires)
   ratePerKm?: number; // R$ / KM
   totalAdditionalKm?: number; // Total Adicional KM (calculado)
+  truckHours?: number; // Horas Trabalhadas do Caminhão (modalidade Hectares)
+  truckHourlyRate?: number; // Valor por Hora (R$) do Caminhão cobrado do cliente (modalidade Hectares)
+  truckTotalCost?: number; // Custo calculado: Horas Trabalhadas * Valor por Hora
   driverCommissionMode?: 'horas' | 'cargas' | 'livre'; // Modo de comissão do motorista
   driverCommissionBase?: number | ''; // Base livre digitada quando modo é 'livre'
   driverCommissionRate?: number; // R$/hora ou R$/carga
