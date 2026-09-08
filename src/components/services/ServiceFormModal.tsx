@@ -2023,20 +2023,19 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                   <label className="block text-[11px] font-bold text-blue-900 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Tipo de Manutenção
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       { id: 'preventiva', label: 'Preventiva' },
                       { id: 'corretiva', label: 'Corretiva' },
-                      { id: 'revisao_periodica', label: 'Revisão' },
                       { id: 'preditiva', label: 'Preditiva' },
-                      { id: 'reforma_entressafra', label: 'Reforma / Entressafra' },
+                      { id: 'reforma_entressafra', label: 'Revisão / Entressafra' },
                     ].map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => setMaintenanceType(t.id as any)}
                         className={`py-2 px-3 text-xs font-bold rounded-xl border text-center transition cursor-pointer ${
-                          maintenanceType === t.id
+                          maintenanceType === t.id || (t.id === 'reforma_entressafra' && (maintenanceType as any) === 'revisao_periodica')
                             ? 'ring-2 ring-blue-600 bg-blue-500 text-white border-blue-600 shadow-xs'
                             : 'bg-white dark:bg-slate-900 border-blue-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-100/50'
                         }`}

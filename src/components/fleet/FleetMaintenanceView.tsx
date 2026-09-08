@@ -229,7 +229,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="w-full space-y-5 sm:space-y-6 animate-in fade-in duration-200">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-4">
@@ -269,7 +269,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
             className="inline-flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95 cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Ordem de Serviço</span>
+            <span>Nova Ordem de Manutenção</span>
           </button>
         </div>
       </div>
@@ -428,29 +428,29 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
         </div>
       </div>
 
-      {/* Maintenance Logs Table (Clean and Compact with requested visual badges) */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800/80 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider border-b border-stone-200 dark:border-stone-800">
+      {/* Maintenance Logs Table (Clean, Compact and Full-Width without Horizontal Scroll) */}
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs w-full">
+        <div className="w-full overflow-x-auto xl:overflow-x-visible scrollbar-none">
+          <table className="w-full text-left text-xs table-auto">
+            <thead className="bg-stone-50 dark:bg-stone-800/80 text-[10px] sm:text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider border-b border-stone-200 dark:border-stone-800">
               <tr>
-                <th className="py-3 px-3.5">Data & OS</th>
-                <th className="py-3 px-3.5">Veículo</th>
-                <th className="py-3 px-3.5">Local</th>
-                <th className="py-3 px-3.5">Executante</th>
-                <th className="py-3 px-3.5">Origem Peças</th>
-                <th className="py-3 px-3.5">Descrição do Serviço</th>
-                <th className="py-3 px-3.5 text-right">Peças</th>
-                <th className="py-3 px-3.5 text-right">M. Obra</th>
-                <th className="py-3 px-3.5 text-right">Total</th>
-                <th className="py-3 px-3.5 text-center">Status</th>
-                <th className="py-3 px-3.5 text-right">Ações</th>
+                <th className="py-2.5 px-2 whitespace-nowrap">Data & OS</th>
+                <th className="py-2.5 px-2">Veículo</th>
+                <th className="py-2.5 px-2 whitespace-nowrap">Local</th>
+                <th className="py-2.5 px-2">Executante</th>
+                <th className="py-2.5 px-2 whitespace-nowrap">Origem Peças</th>
+                <th className="py-2.5 px-2">Descrição do Serviço</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Peças</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">M. Obra</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Total</th>
+                <th className="py-2.5 px-2 text-center whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-2 text-right whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60 font-medium">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-stone-400">
+                  <td colSpan={11} className="py-10 text-center text-stone-400">
                     Nenhuma ordem de manutenção encontrada com os filtros selecionados.
                   </td>
                 </tr>
@@ -463,7 +463,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                     <tr key={log.id} className="hover:bg-stone-50/80 dark:hover:bg-stone-800/40 transition group">
                       
                       {/* Data & Nº OS */}
-                      <td className="py-3 px-3.5">
+                      <td className="py-2 px-2 whitespace-nowrap">
                         <div className="font-mono font-bold text-stone-800 dark:text-stone-200 text-xs">
                           {formatDateBR(log.date)}
                         </div>
@@ -473,40 +473,40 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                       </td>
 
                       {/* Veículo */}
-                      <td className="py-3 px-3.5">
-                        <div className="font-bold text-stone-900 dark:text-stone-100 text-xs">
+                      <td className="py-2 px-2 min-w-[120px] max-w-[180px]">
+                        <div className="font-bold text-stone-900 dark:text-stone-100 text-xs truncate" title={log.machineryPlateOrName}>
                           {log.machineryPlateOrName}
                         </div>
-                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium">
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium truncate" title={`${log.type.toUpperCase()} • ${log.serviceCategory}`}>
                           {log.type.toUpperCase()} • {log.serviceCategory}
                         </span>
                       </td>
 
                       {/* Local (Badge Sutil com Cores do Requisito) */}
-                      <td className="py-3 px-3.5">
-                        <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-md text-[11px] font-bold border ${locBadge.badgeClass}`}>
+                      <td className="py-2 px-2 whitespace-nowrap">
+                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${locBadge.badgeClass}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${locBadge.dotColor}`}></span>
                           <span>{locBadge.label}</span>
                         </span>
                         {log.locationDetails && (
-                          <span className="text-[10px] text-stone-400 block truncate max-w-[120px]" title={log.locationDetails}>
+                          <span className="text-[9px] text-stone-400 block truncate max-w-[100px]" title={log.locationDetails}>
                             {log.locationDetails}
                           </span>
                         )}
                       </td>
 
                       {/* Executante */}
-                      <td className="py-3 px-3.5">
-                        <div className={`text-xs font-bold ${execBadge.bg}`}>
+                      <td className="py-2 px-2 min-w-[110px] max-w-[140px]">
+                        <div className={`text-xs font-bold truncate ${execBadge.bg}`} title={execBadge.label}>
                           {execBadge.label}
                         </div>
-                        <span className="text-[10px] text-stone-500 dark:text-stone-400 truncate max-w-[130px] block" title={execBadge.detail}>
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400 truncate block" title={execBadge.detail}>
                           {execBadge.detail}
                         </span>
                       </td>
 
                       {/* Origem das Peças */}
-                      <td className="py-3 px-3.5">
+                      <td className="py-2 px-2 whitespace-nowrap">
                         {getPartsOriginBadge(log.partsOriginSummary)}
                         {log.nfeLink?.nfeNumber && (
                           <span className="text-[9px] font-mono text-stone-400 block mt-0.5">
@@ -516,33 +516,33 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                       </td>
 
                       {/* Descrição */}
-                      <td className="py-3 px-3.5 text-stone-700 dark:text-stone-300 max-w-xs">
-                        <p className="line-clamp-2 text-xs" title={log.description}>
+                      <td className="py-2 px-2 text-stone-700 dark:text-stone-300 min-w-[120px] max-w-xs">
+                        <p className="line-clamp-2 text-xs leading-snug" title={log.description}>
                           {log.description}
                         </p>
                       </td>
 
                       {/* Peças */}
-                      <td className="py-3 px-3.5 text-right font-mono text-xs text-stone-600 dark:text-stone-400">
+                      <td className="py-2 px-2 text-right font-mono text-xs text-stone-600 dark:text-stone-400 whitespace-nowrap">
                         {formatCurrencyBRL(log.partsCost)}
                       </td>
 
                       {/* M. Obra */}
-                      <td className="py-3 px-3.5 text-right font-mono text-xs text-stone-600 dark:text-stone-400">
+                      <td className="py-2 px-2 text-right font-mono text-xs text-stone-600 dark:text-stone-400 whitespace-nowrap">
                         {formatCurrencyBRL(log.laborCost)}
                       </td>
 
                       {/* Total */}
-                      <td className="py-3 px-3.5 text-right font-mono font-black text-xs text-stone-900 dark:text-stone-100">
+                      <td className="py-2 px-2 text-right font-mono font-black text-xs text-stone-900 dark:text-stone-100 whitespace-nowrap">
                         {formatCurrencyBRL(log.totalCost)}
                       </td>
 
                       {/* Status */}
-                      <td className="py-3 px-3.5 text-center">
+                      <td className="py-2 px-2 text-center whitespace-nowrap">
                         <select
                           value={log.status}
                           onChange={(e) => onUpdateStatus(log.id, e.target.value as any)}
-                          className={`text-[11px] font-bold px-2 py-1 rounded-lg border cursor-pointer ${
+                          className={`text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded-lg border cursor-pointer ${
                             log.status === 'concluida'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300'
                               : log.status === 'em_andamento'
@@ -560,14 +560,14 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                       </td>
 
                       {/* Ações */}
-                      <td className="py-3 px-3.5 text-right">
-                        <div className="flex items-center justify-end space-x-1.5">
+                      <td className="py-2 px-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end space-x-1">
                           <button
                             onClick={() => setViewingLog(log)}
                             title="Visualizar / Imprimir Laudo da OS"
                             className="p-1.5 text-stone-400 hover:text-indigo-600 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -575,7 +575,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                             title="Editar OS"
                             className="p-1.5 text-stone-400 hover:text-indigo-600 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -583,7 +583,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
                             title="Excluir OS"
                             className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

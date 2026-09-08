@@ -80,7 +80,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   employees = [],
 }) => {
   // Active subtab inside modal for clean navigation
-  const [activeTab, setActiveTab] = useState<'geral' | 'local_execucao' | 'pecas' | 'fiscal_financeiro'>('geral');
+  const [activeTab, setActiveTab] = useState<'geral' | 'pecas' | 'fiscal_financeiro'>('geral');
 
   // --- DADOS GERAIS ---
   const [osNumber, setOsNumber] = useState('');
@@ -95,6 +95,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   const [currentHourMeterOrKm, setCurrentHourMeterOrKm] = useState('');
   const [nextServiceDue, setNextServiceDue] = useState('');
   const [notes, setNotes] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // --- CATEGORIAS DE SERVIÇO DINÂMICAS ---
   const [categoriesList, setCategoriesList] = useState<MaintenanceCategoryDefinition[]>([]);
@@ -157,7 +158,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       setDate(editingLog.date);
       setCompletionDate(editingLog.completionDate || '');
       setMachineryId(editingLog.machineryId);
-      setType(editingLog.type);
+      setType(editingLog.type === 'revisao_periodica' ? 'reforma_entressafra' : editingLog.type);
       setServiceCategory(editingLog.serviceCategory);
       setDescription(editingLog.description);
       setStatus(editingLog.status);
@@ -262,17 +263,34 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       setGeneratePurchaseRequest(false);
       setPurchaseUrgency('alta');
     }
+    setSaveSuccess(false);
   }, [editingLog, isOpen, machineries]);
+
+  // Máscara visual de milhar em tempo real (padrão pt-BR, ex: 5000 vira "5.000"; 12550 vira "12.550")
+  const formatThousand = (val: string | number | undefined): string => {
+    if (val === undefined || val === null || val === '') return '';
+    const digits = String(val).replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Tratamento do input (onChange): remove qualquer caractere não numérico mantendo no estado apenas o número limpo
+  const handleThousandInput = (raw: string, setter: (val: string) => void) => {
+    const digitsOnly = raw.replace(/\D/g, '');
+    setter(digitsOnly);
+  };
 
   // Atualiza veículo e odômetro sugerido
   const handleMachineryChange = (id: string) => {
     setMachineryId(id);
     const mach = machineries.find(m => m.id === id);
     if (mach) {
-      if (mach.hourMeter) {
-        setCurrentHourMeterOrKm(String(mach.hourMeter));
-      } else if (mach.currentKm) {
-        setCurrentHourMeterOrKm(String(mach.currentKm));
+      if (mach.hourMeter !== undefined && mach.hourMeter !== null) {
+        const h = Number(mach.hourMeter);
+        setCurrentHourMeterOrKm(!isNaN(h) && h > 0 ? String(h) : '');
+      } else if (mach.currentKm !== undefined && mach.currentKm !== null) {
+        const k = Number(mach.currentKm);
+        setCurrentHourMeterOrKm(!isNaN(k) && k > 0 ? String(k) : '');
       }
       if (mach.assignedDrivers && mach.assignedDrivers.length > 0) {
         setWorkshopOrMechanic(`Operador: ${mach.assignedDrivers.join(', ')}`);
@@ -460,6 +478,19 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       finalMechanicName = laborItems.map(l => l.mechanicName).filter(Boolean).join(', ');
     }
 
+    // Tratamento rigoroso numérico antes de persistir (previne NaN e string pura)
+    const rawMeter = typeof currentHourMeterOrKm === 'number' 
+      ? currentHourMeterOrKm 
+      : parseInt(String(currentHourMeterOrKm).replace(/\D/g, ''), 10);
+    const parsedCurrentHourMeter = !isNaN(rawMeter) && isFinite(rawMeter) ? Number(rawMeter) : 0;
+
+    const rawNext = typeof nextServiceDue === 'number'
+      ? nextServiceDue
+      : parseInt(String(nextServiceDue).replace(/\D/g, ''), 10);
+    const parsedNextServiceDue = !isNaN(rawNext) && isFinite(rawNext) && String(nextServiceDue).trim() !== ''
+      ? Number(rawNext)
+      : undefined;
+
     const log: MaintenanceLog = {
       id: editingLog ? editingLog.id : `maint_${Date.now()}`,
       osNumber: osNumber.trim() || `OS-${Date.now().toString().slice(-6)}`,
@@ -481,8 +512,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       partsCost: totalPartsCalculated,
       laborCost: totalLaborCalculated,
       totalCost: grandTotal,
-      currentHourMeterOrKm: parseFloat(currentHourMeterOrKm) || 0,
-      nextServiceDueHourMeterOrKm: nextServiceDue ? parseFloat(nextServiceDue) : undefined,
+      currentHourMeterOrKm: parsedCurrentHourMeter,
+      nextServiceDueHourMeterOrKm: parsedNextServiceDue,
       status,
       notes: notes.trim() || undefined,
       createdAt: editingLog ? editingLog.createdAt : new Date().toISOString(),
@@ -510,7 +541,14 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       createPurchaseRequest: generatePurchaseRequest || (status === 'aguardando_pecas' && externalPartsCount > 0),
     });
 
-    onClose();
+    // Feedback visual temporário de salvamento sem fechar a janela automaticamente
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+    }, 3500);
+
+    // NOTA: onClose() foi removido daqui para não fechar a modal automaticamente ao salvar.
+    // O fechamento definitivo é executado exclusivamente através do botão "Sair / Fechar" ou botão de fechar (X).
   };
 
   if (!isOpen) return null;
@@ -701,20 +739,19 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                     <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
                       Tipo de Manutenção
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { id: 'preventiva', label: 'Preventiva', color: 'text-sky-700 bg-sky-50 dark:bg-sky-950/40 border-sky-200' },
                         { id: 'corretiva', label: 'Corretiva', color: 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 border-rose-200' },
-                        { id: 'revisao_periodica', label: 'Revisão', color: 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200' },
                         { id: 'preditiva', label: 'Preditiva', color: 'text-purple-700 bg-purple-50 dark:bg-purple-950/40 border-purple-200' },
-                        { id: 'reforma_entressafra', label: 'Reforma / Entressafra', color: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200' },
+                        { id: 'reforma_entressafra', label: 'Revisão / Entressafra', color: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200' },
                       ].map((t) => (
                         <button
                           key={t.id}
                           type="button"
                           onClick={() => setType(t.id as any)}
                           className={`py-2 text-[11px] font-bold rounded-xl border text-center transition cursor-pointer ${
-                            type === t.id
+                            type === t.id || (t.id === 'reforma_entressafra' && (type as any) === 'revisao_periodica')
                               ? 'ring-2 ring-blue-600 bg-blue-500 text-white border-blue-600 shadow-xs'
                               : 'bg-white dark:bg-stone-800 border-blue-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-blue-100/50'
                           }`}
@@ -808,12 +845,12 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       Horímetro / KM Atual
                     </label>
                     <input
-                      type="number"
-                      step="0.1"
-                      value={currentHourMeterOrKm}
-                      onChange={(e) => setCurrentHourMeterOrKm(e.target.value)}
-                      placeholder="Ex: 3450"
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatThousand(currentHourMeterOrKm)}
+                      onChange={(e) => handleThousandInput(e.target.value, setCurrentHourMeterOrKm)}
+                      placeholder="Ex: 5.000"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   </div>
 
@@ -822,12 +859,12 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       Próxima Revisão (Horas/KM)
                     </label>
                     <input
-                      type="number"
-                      step="0.1"
-                      value={nextServiceDue}
-                      onChange={(e) => setNextServiceDue(e.target.value)}
-                      placeholder="Ex: 3700"
-                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatThousand(nextServiceDue)}
+                      onChange={(e) => handleThousandInput(e.target.value, setNextServiceDue)}
+                      placeholder="Ex: 6.000"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     />
                   </div>
 
@@ -1831,22 +1868,53 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               <span className="text-base font-black text-blue-950 dark:text-stone-100 font-['Outfit']">
                 {formatCurrencyBRL(grandTotal)}
               </span>
+              {saveSuccess && (
+                <span className="ml-3 inline-flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold animate-in fade-in duration-150">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>OS Salva com Sucesso!</span>
+                </span>
+              )}
             </div>
 
             <div className="flex items-center space-x-3 w-full sm:w-auto">
               <button
                 type="button"
+                id="btn-cancelar-os"
                 onClick={onClose}
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-blue-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-blue-100/50 dark:hover:bg-stone-800 text-xs font-bold transition cursor-pointer"
               >
                 Cancelar
               </button>
               <button
-                type="submit"
-                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-900/20 transition active:scale-95 cursor-pointer"
+                type="button"
+                id="btn-sair-fechar-os"
+                onClick={onClose}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl border border-blue-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-blue-950 dark:text-stone-200 hover:bg-blue-50 dark:hover:bg-stone-700 text-xs font-bold transition cursor-pointer shadow-xs"
+                title="Fechar formulário de Ordem de Serviço"
               >
-                <Save className="w-4 h-4" />
-                <span>Salvar Ordem de Serviço</span>
+                <X className="w-3.5 h-3.5 text-blue-800 dark:text-stone-400" />
+                <span>Sair / Fechar</span>
+              </button>
+              <button
+                type="submit"
+                id="btn-salvar-os"
+                className={`flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer ${
+                  saveSuccess
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20'
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
+                }`}
+              >
+                {saveSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-white animate-pulse" />
+                    <span>Salva com Sucesso!</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Salvar Ordem de Serviço</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

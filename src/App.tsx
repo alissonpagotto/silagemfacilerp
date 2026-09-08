@@ -489,7 +489,11 @@ export default function App() {
         {/* Dynamic Page Content */}
         <main 
           id="crm-main-content"
-          className="flex-1 p-3 sm:p-4 lg:p-5 max-w-7xl w-full mx-auto"
+          className={`flex-1 p-3 sm:p-4 lg:p-5 w-full ${
+            ['frotas', 'veiculos', 'manutencoes', 'combustivel', 'motoristas', 'equipe', 'rodizio', 'rodizio_pneus'].includes(activeTab)
+              ? 'max-w-none px-2 sm:px-4 lg:px-6'
+              : 'max-w-7xl mx-auto'
+          }`}
         >
           
           {/* TAB 1: Main Dashboard (Matching Screenshot) */}

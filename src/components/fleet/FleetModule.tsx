@@ -415,7 +415,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
   };
 
   return (
-    <div id="fleet-management-module" className="space-y-5 sm:space-y-6">
+    <div id="fleet-management-module" className="w-full space-y-5 sm:space-y-6">
       
       {/* 1. Modern Horizontal Sub-Tabs Bar (Floating Card with #87AFE3 in Day Mode) */}
       <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-xl border border-slate-400 dark:border-stone-800 p-1.5 shadow-xs flex items-center overflow-x-auto gap-1.5 scrollbar-none text-black dark:text-white">
