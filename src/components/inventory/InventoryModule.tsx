@@ -121,47 +121,47 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Valor Total em Estoque
             </span>
-            <div className="text-2xl font-black text-sky-600 dark:text-sky-400 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-black dark:text-white font-['Outfit'] mt-1">
               {formatCurrencyBRL(totalInventoryValue)}
             </div>
-            <p className="text-[11px] text-stone-500 mt-0.5">{inventory.length} produtos cadastrados</p>
+            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">{inventory.length} produtos cadastrados</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-sky-950 text-blue-900 dark:text-sky-300 flex items-center justify-center">
             <Package className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Alertas de Estoque Mínimo
             </span>
-            <div className="text-2xl font-black text-amber-600 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-amber-950 dark:text-amber-300 font-['Outfit'] mt-1">
               {lowStockCount}
             </div>
-            <p className="text-[11px] text-stone-500 mt-0.5">Itens em nível crítico</p>
+            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Itens em nível crítico</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 flex items-center justify-center">
             <AlertTriangle className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Diesel em Tanque
             </span>
-            <div className="text-2xl font-black text-stone-900 dark:text-stone-100 font-['Outfit'] mt-1">
+            <div className="text-2xl font-black text-black dark:text-white font-['Outfit'] mt-1">
               {inventory.find(i => i.category === 'combustivel')?.quantity || 0} L
             </div>
-            <p className="text-[11px] text-stone-500 mt-0.5">Óleo diesel S10 disponível</p>
+            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Óleo diesel S10 disponível</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-stone-800 text-amber-900 dark:text-amber-300 flex items-center justify-center">
             <Fuel className="w-5 h-5" />
           </div>
         </div>
@@ -180,66 +180,66 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
       </div>
 
       {/* Inventory Table */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs text-black dark:text-white">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 uppercase text-[10px] font-bold tracking-wider">
+            <thead className="bg-[#87AFE3] dark:bg-stone-900 border-b-2 border-blue-200/80 dark:border-stone-800 text-black dark:text-white uppercase text-xs font-black tracking-wider">
               <tr>
-                <th className="py-3 px-4">Item & Local</th>
-                <th className="py-3 px-4">Categoria</th>
-                <th className="py-3 px-4">Quantidade</th>
-                <th className="py-3 px-4">Estoque Mínimo</th>
-                <th className="py-3 px-4">Custo Unitário</th>
-                <th className="py-3 px-4">Valor Total</th>
-                <th className="py-3 px-4 text-right">Ações</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">ITEM & LOCAL</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">CATEGORIA</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">QUANTIDADE</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">ESTOQUE MÍNIMO</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">CUSTO UNITÁRIO</th>
+                <th className="py-3 px-4 text-black dark:text-white font-black">VALOR TOTAL</th>
+                <th className="py-3 px-4 text-right text-black dark:text-white font-black">AÇÕES</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 bg-[#87AFE3] dark:bg-stone-900 text-black dark:text-white">
               {filteredItems.map((item) => {
                 const isLow = item.quantity <= item.minQuantity;
                 const itemTotal = item.quantity * item.unitCost;
 
                 return (
-                  <tr key={item.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/40 transition">
+                  <tr key={item.id} className="hover:bg-blue-300/30 dark:hover:bg-stone-800/40 transition">
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-stone-900 dark:text-stone-100">{item.name}</div>
-                      <span className="text-[11px] text-stone-400">{item.location || 'Geral'}</span>
+                      <div className="font-black text-black dark:text-stone-100">{item.name}</div>
+                      <span className="text-[11px] font-bold text-black/70 dark:text-stone-400">{item.location || 'Geral'}</span>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-1.5 capitalize text-stone-700 dark:text-stone-300">
+                      <div className="flex items-center space-x-1.5 capitalize font-black text-black dark:text-stone-200">
                         {getCategoryIcon(item.category)}
                         <span>{item.category.replace('_', ' ')}</span>
                       </div>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className={`font-bold ${isLow ? 'text-rose-600 dark:text-rose-400' : 'text-stone-900 dark:text-stone-100'}`}>
+                      <span className={`font-black ${isLow ? 'text-rose-950 dark:text-rose-400' : 'text-black dark:text-stone-100'}`}>
                         {item.quantity} {item.unit}
                       </span>
                       {isLow && (
-                        <span className="block text-[10px] font-bold text-rose-500">
+                        <span className="block text-[10px] font-black text-rose-900 dark:text-rose-400">
                           Estoque Baixo!
                         </span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-stone-500">
+                    <td className="py-3.5 px-4 font-bold text-black/80 dark:text-stone-300">
                       {item.minQuantity} {item.unit}
                     </td>
 
-                    <td className="py-3.5 px-4 text-stone-700 dark:text-stone-300 font-mono">
+                    <td className="py-3.5 px-4 font-black text-black dark:text-stone-300 font-mono">
                       {formatCurrencyBRL(item.unitCost)}
                     </td>
 
-                    <td className="py-3.5 px-4 font-bold text-stone-900 dark:text-stone-100 font-mono">
+                    <td className="py-3.5 px-4 font-black text-black dark:text-stone-100 font-mono">
                       {formatCurrencyBRL(itemTotal)}
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg transition"
+                        className="p-1.5 text-black/70 hover:text-rose-900 dark:text-stone-400 dark:hover:text-rose-400 rounded-lg transition"
                         title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />

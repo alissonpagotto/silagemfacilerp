@@ -201,7 +201,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             title="Notificações e Avisos de CNH"
             className="relative p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-4 h-4" style={{ color: '#0a0909' }} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
           </button>
 
@@ -215,9 +215,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             className="p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer flex items-center justify-center active:scale-95"
           >
             {isDarkMode ? (
-              <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+              <Sun className="w-4 h-4 fill-amber-400/20" style={{ color: '#0d0c0c' }} />
             ) : (
-              <Moon className="w-4 h-4 text-stone-600 fill-stone-600/10" />
+              <Moon className="w-4 h-4 fill-stone-600/10" style={{ color: '#0d0c0c' }} />
             )}
           </button>
 

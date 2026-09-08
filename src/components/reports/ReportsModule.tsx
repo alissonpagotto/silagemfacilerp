@@ -249,8 +249,8 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({
           <h1 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-stone-100 tracking-tight font-['Outfit']">
             Relatórios
           </h1>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            Visão consolidada de todas as categorias
+          <p className="text-xs text-black dark:text-stone-400 font-bold">
+            Visão consolidada de receitas, despesas e margem operacional
           </p>
         </div>
 
@@ -287,7 +287,7 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({
       </div>
 
       {/* 2. Barra de Navegação de Abas (Sub-tabs) */}
-      <div className="bg-white dark:bg-stone-900 rounded-lg border border-stone-200/90 dark:border-stone-800 p-1.5 shadow-sm flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-lg border border-slate-400 dark:border-stone-800 p-1.5 shadow-sm flex items-center gap-1.5 overflow-x-auto scrollbar-none text-black dark:text-white">
         {navSubTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeSubTab === tab.id;
@@ -300,8 +300,8 @@ export const ReportsModule: React.FC<ReportsModuleProps> = ({
                 inline-flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition cursor-pointer
                 ${
                   isActive
-                    ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs'
-                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800'
+                    ? 'bg-sky-600 text-white shadow-xs'
+                    : 'text-black dark:text-stone-400 hover:text-black dark:hover:text-stone-200 hover:bg-black/10 dark:hover:bg-stone-800'
                 }
               `}
             >

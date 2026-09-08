@@ -159,14 +159,14 @@ export const ReportsDashboardTab: React.FC<ReportsDashboardTabProps> = ({
     <div className="space-y-4 sm:space-y-6">
       
       {/* 1. FILTRAR PERÍODO (Em uma única linha horizontal compacta: Data primeiro, depois opções de meses) */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl px-3.5 py-2 sm:py-2.5 shadow-xs flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-slate-400 dark:border-stone-800 rounded-xl px-3.5 py-2 sm:py-2.5 shadow-xs flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 text-black dark:text-white">
         
         {/* Esquerda: Rótulo + Seleção por Data */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-1.5 text-stone-500 dark:text-stone-400">
-            <CalendarIcon className="w-3.5 h-3.5 text-[#009688]" />
-            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
-              Filtrar Período:
+          <div className="flex items-center space-x-1.5 text-black dark:text-stone-400">
+            <CalendarIcon className="w-3.5 h-3.5 text-black dark:text-[#009688]" />
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-black dark:text-white">
+              FILTRAR POR PERÍODO:
             </span>
           </div>
 
@@ -175,14 +175,14 @@ export const ReportsDashboardTab: React.FC<ReportsDashboardTabProps> = ({
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200 outline-none focus:ring-1 focus:ring-[#009688]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-400 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-stone-200 outline-none focus:ring-1 focus:ring-sky-600"
             />
-            <span className="text-[11px] text-stone-400 font-medium">até</span>
+            <span className="text-[11px] text-black dark:text-stone-400 font-bold">até</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200 outline-none focus:ring-1 focus:ring-[#009688]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-400 dark:border-stone-700 bg-white dark:bg-stone-800 text-black dark:text-stone-200 outline-none focus:ring-1 focus:ring-sky-600"
             />
           </div>
         </div>
@@ -202,8 +202,8 @@ export const ReportsDashboardTab: React.FC<ReportsDashboardTabProps> = ({
               onClick={() => onQuickPeriodChange(item.id as any)}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
                 quickPeriod === item.id
-                  ? 'bg-[#009688] text-white shadow-xs'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'bg-white/80 dark:bg-stone-800 text-black dark:text-stone-300 hover:bg-white border border-slate-300 dark:border-stone-700'
               }`}
             >
               {item.label}
@@ -214,8 +214,8 @@ export const ReportsDashboardTab: React.FC<ReportsDashboardTabProps> = ({
 
       {/* 2. Mês atual — setembro/2026 (Cards Compactos com metade do tamanho) */}
       <div className="space-y-1">
-        <h3 className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          Mês atual — {selectedMonthName}/{selectedYear}
+        <h3 className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-400">
+          MÊS ATUAL — {selectedMonthName ? selectedMonthName.toUpperCase() : 'MÊS ATUAL'}/{selectedYear}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-2.5">
@@ -268,10 +268,10 @@ export const ReportsDashboardTab: React.FC<ReportsDashboardTabProps> = ({
         </div>
       </div>
 
-      {/* 3. Período: Setembro/2026 (Cards Compactos com metade do tamanho) */}
+      {/* 3. Período Selecionado Acumulado */}
       <div className="space-y-1">
-        <h3 className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          Período: {selectedMonthName ? `${selectedMonthName.charAt(0).toUpperCase() + selectedMonthName.slice(1)}/${selectedYear}` : 'Personalizado'}
+        <h3 className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-400">
+          PERÍODO SELECIONADO — ACUMULADO
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-2.5">

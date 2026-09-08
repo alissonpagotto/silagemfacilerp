@@ -14,6 +14,13 @@ export interface CompanyProfile {
   state: string; // Estado UF (ex: PR)
   logoUrl?: string; // Logotipo da Empresa (data URL or image URL)
   activitySector?: string; // GESTÃO AGRÍCOLA
+  representativeName?: string; // Nome do Representante Responsável
+  representativeCpf?: string; // CPF do Representante Responsável
+  bankName?: string; // Nome do Banco
+  bankAgency?: string; // Agência
+  bankAccount?: string; // Conta Corrente
+  pixKeyType?: 'cnpj' | 'cpf' | 'email' | 'telefone' | 'aleatoria' | string; // Tipo de Chave PIX
+  pixKey?: string; // Chave PIX
 }
 
 export type ExpenseStatus = 'pago' | 'pendente' | 'atrasado' | 'agendado';

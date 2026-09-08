@@ -20,7 +20,10 @@ import {
   Cloud,
   RefreshCw,
   LogIn,
-  CheckCircle2
+  CheckCircle2,
+  CreditCard,
+  UserCheck,
+  PhoneCall
 } from 'lucide-react';
 import { CompanyProfile, ExpenseCategory, CostCenter } from '../../types';
 import { DEFAULT_FORAGE_HARVESTER_LOGO } from '../../lib/initialData';
@@ -67,6 +70,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
     stateRegistration: formatIE(companyProfile.stateRegistration || ''),
     phone: formatPhone(companyProfile.phone || ''),
     zipCode: formatCep(companyProfile.zipCode || ''),
+    representativeName: companyProfile.representativeName || '',
+    representativeCpf: companyProfile.representativeCpf ? formatCpfCnpj(companyProfile.representativeCpf) : '',
+    bankName: companyProfile.bankName || '',
+    bankAgency: companyProfile.bankAgency || '',
+    bankAccount: companyProfile.bankAccount || '',
+    pixKeyType: companyProfile.pixKeyType || 'cnpj',
+    pixKey: companyProfile.pixKey || '',
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -269,11 +279,11 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
       {/* Top Header Compact */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white dark:bg-stone-900 p-3 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs">
         <div>
-          <h1 className="text-base font-bold text-cyan-800 dark:text-cyan-400 tracking-tight font-['Outfit'] leading-tight">
+          <h1 className="text-base font-black text-stone-900 dark:text-cyan-400 tracking-tight font-['Outfit'] leading-tight">
             Configurações da Empresa
           </h1>
-          <p className="text-[11px] text-stone-500 dark:text-stone-400">
-            Identidade visual, dados cadastrais e preenchimento inteligente via CNPJ e CEP
+          <p className="text-[11px] text-black dark:text-stone-400 font-bold">
+            Defina os dados da sua empresa, identificação cadastral, localização e dados de pagamento para documentos
           </p>
         </div>
 
@@ -300,22 +310,24 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
 
       <form onSubmit={handleSave} className="space-y-3.5">
         
-        {/* Row 1: Identidade Visual (Left) & Dados Cadastrais (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          
-          {/* Card 1: Identidade Visual (Col-12 / Col-4) */}
-          <div className="lg:col-span-4 bg-white dark:bg-stone-900 rounded-2xl border border-cyan-100 dark:border-stone-800 p-3.5 shadow-xs flex flex-col justify-between">
-            <div>
-              <div className="flex items-center space-x-2 text-cyan-700 dark:text-cyan-400 mb-0.5">
-                <UploadCloud className="w-4 h-4" />
-                <h2 className="text-xs font-bold">Identidade Visual</h2>
-              </div>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400">Logotipo da Empresa</p>
+        {/* BLOCO 1: Identificação da Empresa & Logotipo */}
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-2xl border border-slate-400 dark:border-stone-800 p-4 shadow-xs text-black dark:text-white">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-400/60 dark:border-stone-800 pb-2">
+            <div className="flex items-center space-x-2 text-black dark:text-cyan-400">
+              <Building2 className="w-4 h-4 text-black dark:text-cyan-400" />
+              <h2 className="text-xs font-black uppercase tracking-wider">1. Identificação da Empresa & Logotipo</h2>
             </div>
+            <span className="text-[10px] font-black text-black dark:text-cyan-300 bg-white/80 dark:bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-slate-300 dark:border-cyan-800">
+              Auto-Preenchimento CNPJ Ativo
+            </span>
+          </div>
 
-            {/* Visual Logo Container */}
-            <div className="flex-1 flex flex-col items-center justify-center py-2">
-              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-xl bg-[#a7f3d0]/60 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-800 flex items-center justify-center p-2 overflow-hidden shadow-inner relative group">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            {/* Logotipo da Empresa */}
+            <div className="lg:col-span-4 flex flex-col items-center justify-center p-3 bg-white/70 dark:bg-stone-800/60 rounded-xl border border-slate-300 dark:border-stone-700">
+              <span className="text-[11px] font-black text-black dark:text-stone-300 mb-2 self-start">Logotipo da Empresa</span>
+              
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl bg-white dark:bg-stone-900 border-2 border-slate-300 dark:border-stone-700 flex items-center justify-center p-2 overflow-hidden shadow-inner relative group">
                 {formData.logoUrl ? (
                   <img 
                     src={formData.logoUrl} 
@@ -324,15 +336,14 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="text-center text-emerald-800 dark:text-emerald-300 p-2">
-                    <ImageIcon className="w-8 h-8 mx-auto opacity-40 mb-1" />
-                    <span className="text-[11px] font-semibold">Sem logotipo</span>
+                  <div className="text-center text-black/70 dark:text-stone-400 p-2">
+                    <ImageIcon className="w-8 h-8 mx-auto opacity-50 mb-1 text-black dark:text-stone-400" />
+                    <span className="text-[10px] font-bold">Sem logotipo</span>
                   </div>
                 )}
               </div>
 
-              {/* Upload & Reset Buttons */}
-              <div className="mt-2.5 flex items-center space-x-1.5">
+              <div className="mt-2.5 flex items-center space-x-1.5 w-full justify-center">
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -343,9 +354,9 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-stone-50 text-stone-700 dark:text-stone-200 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-stone-50 text-black dark:text-stone-200 border border-slate-300 dark:border-stone-700 rounded-xl text-xs font-black shadow-xs transition cursor-pointer"
                 >
-                  <UploadCloud className="w-3.5 h-3.5 text-cyan-600" />
+                  <UploadCloud className="w-3.5 h-3.5 text-black dark:text-cyan-400" />
                   <span>Selecionar Imagem</span>
                 </button>
 
@@ -353,40 +364,23 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                   type="button"
                   onClick={handleResetToDefaultLogo}
                   title="Restaurar logotipo padrão (Ensiladeira Claas)"
-                  className="p-1.5 bg-white dark:bg-stone-800 hover:bg-stone-50 text-stone-500 border border-stone-300 dark:border-stone-700 rounded-xl text-xs transition cursor-pointer"
+                  className="p-1.5 bg-white dark:bg-stone-800 hover:bg-stone-50 text-black dark:text-stone-400 border border-slate-300 dark:border-stone-700 rounded-xl text-xs transition cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
               </div>
-
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 text-center italic mt-1.5 max-w-xs">
-                Utilizado nas telas, relatórios e impressões do sistema.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: Dados Cadastrais (Col-12 / Col-8) */}
-          <div className="lg:col-span-8 bg-white dark:bg-stone-900 rounded-2xl border border-cyan-100 dark:border-stone-800 p-3.5 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2 text-cyan-700 dark:text-cyan-400">
-                <Building2 className="w-4 h-4" />
-                <h2 className="text-xs font-bold">Dados Cadastrais</h2>
-              </div>
-              <span className="text-[10px] font-semibold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-200 dark:border-cyan-800">
-                Auto-Preenchimento CNPJ Ativo
-              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              
-              {/* CNPJ / CPF with auto-mask and lookup button */}
+            {/* Campos Cadastrais */}
+            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* CNPJ / CPF */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300">
+                  <label className="block text-[11px] font-black text-black dark:text-stone-300">
                     CNPJ / CPF
                   </label>
                   {isLoadingCnpj && (
-                    <span className="text-[10px] text-cyan-600 flex items-center space-x-1">
+                    <span className="text-[10px] text-black font-bold flex items-center space-x-1">
                       <Loader2 className="w-3 h-3 animate-spin" />
                       <span>Consultando...</span>
                     </span>
@@ -399,17 +393,17 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                     onChange={(e) => handleCnpjCpfChange(e.target.value)}
                     placeholder="00.000.000/0000-00 ou 000.000.000-00"
                     maxLength={18}
-                    className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition pr-9"
+                    className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition pr-9"
                   />
                   <button
                     type="button"
                     onClick={() => handleSearchCnpj()}
                     disabled={isLoadingCnpj}
                     title="Buscar dados cadastrais deste CNPJ na Receita Federal"
-                    className="absolute right-1.5 top-1 p-1 text-stone-400 hover:text-cyan-700 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg transition"
+                    className="absolute right-1.5 top-1 p-1 text-black hover:bg-black/10 dark:text-stone-400 dark:hover:bg-stone-700 rounded-lg transition cursor-pointer"
                   >
                     {isLoadingCnpj ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-600" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
                     ) : (
                       <Search className="w-3.5 h-3.5" />
                     )}
@@ -417,9 +411,9 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 </div>
               </div>
 
-              {/* Inscrição Estadual with auto-mask */}
+              {/* Inscrição Estadual */}
               <div>
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                   Inscrição Estadual
                 </label>
                 <input
@@ -428,13 +422,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                   onChange={(e) => handleChange('stateRegistration', formatIE(e.target.value))}
                   placeholder="Isento ou nº IE (ex: 959.584.721.1)"
                   maxLength={18}
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                  className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
                 />
               </div>
 
               {/* Razão Social */}
               <div>
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                   Razão Social
                 </label>
                 <input
@@ -442,13 +436,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                   value={formData.corporateName || ''}
                   onChange={(e) => handleChange('corporateName', e.target.value)}
                   placeholder="Ex: Silagem Sao Paulo Ltda"
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                  className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
                 />
               </div>
 
               {/* Nome Fantasia */}
               <div>
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                   Nome Fantasia
                 </label>
                 <input
@@ -456,65 +450,48 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                   value={formData.tradeName || ''}
                   onChange={(e) => handleChange('tradeName', e.target.value)}
                   placeholder="Ex: Silagem Sao Paulo"
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                  className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
                 />
               </div>
 
-              {/* Telefone de Contato with auto-mask */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  Telefone de Contato
+              {/* Ramo / Setor de Atividade */}
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                  Setor / Ramo de Atividade
                 </label>
                 <input
                   type="text"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleChange('phone', formatPhone(e.target.value))}
-                  placeholder="Ex: (22) 22222-2888"
-                  maxLength={15}
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
-                />
-              </div>
-
-              {/* E-mail Comercial */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  E-mail Comercial
-                </label>
-                <input
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="Ex: contato@silagemsaopaulo.com.br"
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                  value={formData.activitySector || 'GESTÃO AGRÍCOLA & PRESTAÇÃO DE SERVIÇOS DE SILAGEM'}
+                  onChange={(e) => handleChange('activitySector', e.target.value)}
+                  placeholder="Ex: Gestão Agrícola & Produção de Silagem"
+                  className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
                 />
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* Card 3: Localização e Endereço */}
-        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-cyan-100 dark:border-stone-800 p-3.5 shadow-xs">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2 text-cyan-700 dark:text-cyan-400">
-              <MapPin className="w-4 h-4" />
-              <h2 className="text-xs font-bold">Localização e Endereço</h2>
+        {/* BLOCO 2: Localização & Endereço */}
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-2xl border border-slate-400 dark:border-stone-800 p-4 shadow-xs text-black dark:text-white">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-400/60 dark:border-stone-800 pb-2">
+            <div className="flex items-center space-x-2 text-black dark:text-cyan-400">
+              <MapPin className="w-4 h-4 text-black dark:text-cyan-400" />
+              <h2 className="text-xs font-black uppercase tracking-wider">2. Localização & Endereço</h2>
             </div>
-            <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <span className="text-[10px] font-black text-black dark:text-emerald-300 bg-white/80 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-slate-300 dark:border-emerald-800">
               Auto-Preenchimento CEP Ativo
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2.5">
-            
-            {/* CEP with auto-mask and lookup button (2 cols) */}
+            {/* CEP with auto-mask and lookup button */}
             <div className="md:col-span-2">
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300">
+                <label className="block text-[11px] font-black text-black dark:text-stone-300">
                   CEP
                 </label>
                 {isLoadingCep && (
-                  <span className="text-[10px] text-emerald-600 flex items-center space-x-1">
+                  <span className="text-[10px] text-black font-bold flex items-center space-x-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     <span>Buscando...</span>
                   </span>
@@ -527,17 +504,17 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                   onChange={(e) => handleCepChange(e.target.value)}
                   placeholder="00000-000"
                   maxLength={9}
-                  className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition pr-9"
+                  className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition pr-9"
                 />
                 <button
                   type="button"
                   onClick={() => handleSearchCep()}
                   disabled={isLoadingCep}
                   title="Buscar endereço deste CEP automaticamente"
-                  className="absolute right-1.5 top-1 p-1 text-stone-400 hover:text-cyan-700 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg transition"
+                  className="absolute right-1.5 top-1 p-1 text-black hover:bg-black/10 dark:text-stone-400 dark:hover:bg-stone-700 rounded-lg transition cursor-pointer"
                 >
                   {isLoadingCep ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
                   ) : (
                     <Search className="w-3.5 h-3.5" />
                   )}
@@ -545,9 +522,9 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
               </div>
             </div>
 
-            {/* Endereço (3 cols) */}
+            {/* Endereço */}
             <div className="md:col-span-3">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                 Endereço / Logradouro
               </label>
               <input
@@ -555,13 +532,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 value={formData.address || ''}
                 onChange={(e) => handleChange('address', e.target.value)}
                 placeholder="Ex: Rodovia PR 473 ou Av. Brasil"
-                className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
               />
             </div>
 
-            {/* Número (1 col) */}
+            {/* Número */}
             <div className="md:col-span-1">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                 Número
               </label>
               <input
@@ -569,13 +546,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 value={formData.number || ''}
                 onChange={(e) => handleChange('number', e.target.value)}
                 placeholder="Ex: sn, 1050"
-                className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
               />
             </div>
 
-            {/* Bairro (2 cols) */}
+            {/* Bairro */}
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                 Bairro
               </label>
               <input
@@ -583,13 +560,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 value={formData.neighborhood || ''}
                 onChange={(e) => handleChange('neighborhood', e.target.value)}
                 placeholder="Ex: Centro ou Zona Rural"
-                className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
               />
             </div>
 
-            {/* Cidade (3 cols) */}
+            {/* Cidade */}
             <div className="md:col-span-3">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                 Cidade
               </label>
               <input
@@ -597,13 +574,13 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 value={formData.city || ''}
                 onChange={(e) => handleChange('city', e.target.value)}
                 placeholder="Ex: Boa Esperança do Iguaçu"
-                className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
               />
             </div>
 
-            {/* Estado (UF) (1 col) */}
+            {/* Estado (UF) */}
             <div className="md:col-span-1">
-              <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
                 UF
               </label>
               <input
@@ -612,7 +589,159 @@ export const CompanySettingsView: React.FC<CompanySettingsViewProps> = ({
                 onChange={(e) => handleChange('state', e.target.value.toUpperCase())}
                 placeholder="PR"
                 maxLength={2}
-                className="w-full px-3 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-medium uppercase focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold uppercase focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* BLOCO 3: Contatos & Representante Responsável */}
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-2xl border border-slate-400 dark:border-stone-800 p-4 shadow-xs text-black dark:text-white">
+          <div className="flex items-center space-x-2 text-black dark:text-cyan-400 mb-3 border-b border-slate-400/60 dark:border-stone-800 pb-2">
+            <PhoneCall className="w-4 h-4 text-black dark:text-cyan-400" />
+            <h2 className="text-xs font-black uppercase tracking-wider">3. Contatos & Representante Responsável</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+            {/* Telefone de Contato */}
+            <div>
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Telefone Comercial / WhatsApp
+              </label>
+              <input
+                type="text"
+                value={formData.phone || ''}
+                onChange={(e) => handleChange('phone', formatPhone(e.target.value))}
+                placeholder="Ex: (22) 22222-2888"
+                maxLength={15}
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* E-mail Comercial */}
+            <div>
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                E-mail Comercial
+              </label>
+              <input
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => handleChange('email', e.target.value)}
+                placeholder="Ex: contato@silagemsaopaulo.com.br"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* Representante Responsável */}
+            <div>
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Representante Responsável
+              </label>
+              <input
+                type="text"
+                value={formData.representativeName || ''}
+                onChange={(e) => handleChange('representativeName', e.target.value)}
+                placeholder="Ex: Carlos Eduardo de Oliveira"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* CPF do Representante */}
+            <div>
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                CPF do Representante
+              </label>
+              <input
+                type="text"
+                value={formData.representativeCpf || ''}
+                onChange={(e) => handleChange('representativeCpf', formatCpfCnpj(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* BLOCO 4: Dados Bancários & PIX para Recebimento */}
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-2xl border border-slate-400 dark:border-stone-800 p-4 shadow-xs text-black dark:text-white">
+          <div className="flex items-center space-x-2 text-black dark:text-cyan-400 mb-3 border-b border-slate-400/60 dark:border-stone-800 pb-2">
+            <CreditCard className="w-4 h-4 text-black dark:text-cyan-400" />
+            <h2 className="text-xs font-black uppercase tracking-wider">4. Dados Bancários & PIX para Recebimento</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+            {/* Banco */}
+            <div className="md:col-span-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Banco
+              </label>
+              <input
+                type="text"
+                value={formData.bankName || ''}
+                onChange={(e) => handleChange('bankName', e.target.value)}
+                placeholder="Ex: Banco do Brasil (001)"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* Agência */}
+            <div className="md:col-span-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Agência
+              </label>
+              <input
+                type="text"
+                value={formData.bankAgency || ''}
+                onChange={(e) => handleChange('bankAgency', e.target.value)}
+                placeholder="Ex: 1234-5"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* Conta Corrente */}
+            <div className="md:col-span-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Conta Corrente
+              </label>
+              <input
+                type="text"
+                value={formData.bankAccount || ''}
+                onChange={(e) => handleChange('bankAccount', e.target.value)}
+                placeholder="Ex: 56789-0"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
+              />
+            </div>
+
+            {/* Tipo de Chave PIX */}
+            <div className="md:col-span-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Tipo Chave PIX
+              </label>
+              <select
+                value={formData.pixKeyType || 'cnpj'}
+                onChange={(e) => handleChange('pixKeyType', e.target.value)}
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition cursor-pointer"
+              >
+                <option value="cnpj">CNPJ</option>
+                <option value="cpf">CPF</option>
+                <option value="email">E-mail</option>
+                <option value="telefone">Telefone</option>
+                <option value="aleatoria">Chave Aleatória</option>
+              </select>
+            </div>
+
+            {/* Chave PIX */}
+            <div className="md:col-span-1">
+              <label className="block text-[11px] font-black text-black dark:text-stone-300 mb-1">
+                Chave PIX
+              </label>
+              <input
+                type="text"
+                value={formData.pixKey || ''}
+                onChange={(e) => handleChange('pixKey', e.target.value)}
+                placeholder="Ex: 57.872.222/0001-22"
+                className="w-full px-3 py-1.5 bg-white/90 dark:bg-stone-800/80 border border-slate-300 dark:border-stone-700 rounded-xl text-xs text-black dark:text-stone-100 font-bold focus:ring-2 focus:ring-cyan-500 focus:outline-hidden transition"
               />
             </div>
           </div>

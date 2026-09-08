@@ -181,10 +181,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => {
               setActiveTab('dashboard');
             }}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-rose-500 hover:bg-rose-50/20 transition cursor-pointer"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer"
+            style={{ color: '#7b1010' }}
           >
-            <LogOut className="w-4 h-4 text-rose-500" />
-            <span>Sair</span>
+            <LogOut className="w-4 h-4" style={{ color: '#7b1010' }} />
+            <span style={{ color: '#7b1010' }}>Sair</span>
           </button>
         </div>
 

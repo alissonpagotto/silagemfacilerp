@@ -484,23 +484,23 @@ export const FleetVehiclesView: React.FC<FleetVehiclesViewProps> = ({
 
       {/* Vehicles Table View */}
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 rounded-2xl border border-blue-200/80 dark:border-stone-800 overflow-hidden shadow-xs text-black dark:text-white">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-stone-50 dark:bg-stone-800/80 text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider border-b border-stone-200 dark:border-stone-800">
+              <thead className="bg-[#87AFE3] dark:bg-stone-900 text-xs font-black text-black dark:text-white uppercase tracking-wider border-b-2 border-blue-200/80 dark:border-stone-800">
                 <tr>
-                  <th className="py-3 px-4">Identificação / Placa / Série</th>
-                  <th className="py-3 px-4">Veículo & Composição</th>
-                  <th className="py-3 px-4">Propriedade & Titular</th>
-                  <th className="py-3 px-4">Pesos (Tara / Lotação / PBT)</th>
-                  <th className="py-3 px-4">Horímetro / KM</th>
-                  <th className="py-3 px-4">Motoristas</th>
-                  <th className="py-3 px-4">Custos</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Ações</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">CÓDIGO/FROTA & PLACA</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">TIPO & MODELO</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">PROPRIEDADE & TITULAR</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">PESOS (TARA/LOTAÇÃO/PBT)</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">HORÍMETRO/KM</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">OPERADOR ATUAL / MOTORISTAS</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">CUSTO DE MANUTENÇÃO & TOTAL</th>
+                  <th className="py-3 px-4 text-black dark:text-white font-black">STATUS</th>
+                  <th className="py-3 px-4 text-right text-black dark:text-white font-black">AÇÕES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60 font-medium">
+              <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800/60 font-medium bg-[#87AFE3] dark:bg-stone-900 text-black dark:text-white">
                 {filteredVehicles.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-14 text-center text-stone-400">
