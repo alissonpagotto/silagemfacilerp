@@ -24,7 +24,9 @@ import {
   Layers,
   FileCheck2,
   Tag,
-  Settings2
+  Settings2,
+  Users,
+  Hammer
 } from 'lucide-react';
 import { 
   MaintenanceLog, 
@@ -83,6 +85,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   // --- DADOS GERAIS ---
   const [osNumber, setOsNumber] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [completionDate, setCompletionDate] = useState('');
   const [machineryId, setMachineryId] = useState('');
   const [type, setType] = useState<MaintenanceLog['type']>('preventiva');
   const [serviceCategory, setServiceCategory] = useState<string>('Troca de Óleo & Filtros');
@@ -120,7 +123,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   const [partsCostManual, setPartsCostManual] = useState('');
   const [usePartsItemList, setUsePartsItemList] = useState(true);
 
-  // --- MÃO DE OBRA ---
+  // --- MÃO DE OBRA (LISTA DINÂMICA DE MECÂNICOS & AVULSO) ---
+  const [laborItems, setLaborItems] = useState<MaintenanceLaborItem[]>([]);
   const [laborCost, setLaborCost] = useState('');
 
   // --- INTEGRAÇÃO FISCAL (NF-e) ---
@@ -151,6 +155,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     if (editingLog) {
       setOsNumber(editingLog.osNumber || `OS-${editingLog.id.slice(-5).toUpperCase()}`);
       setDate(editingLog.date);
+      setCompletionDate(editingLog.completionDate || '');
       setMachineryId(editingLog.machineryId);
       setType(editingLog.type);
       setServiceCategory(editingLog.serviceCategory);
@@ -176,7 +181,16 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         setUsePartsItemList(false);
       }
 
-      setLaborCost(editingLog.laborCost ? String(editingLog.laborCost) : '');
+      // Mão de Obra
+      if (editingLog.laborItems && editingLog.laborItems.length > 0) {
+        setLaborItems(editingLog.laborItems);
+        const internalLaborSum = editingLog.laborItems.reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+        const diff = (editingLog.laborCost || 0) - internalLaborSum;
+        setLaborCost(diff > 0.01 ? String(Math.round(diff * 100) / 100) : '');
+      } else {
+        setLaborItems([]);
+        setLaborCost(editingLog.laborCost ? String(editingLog.laborCost) : '');
+      }
 
       // NF-e
       if (editingLog.nfeLink && (editingLog.nfeLink.nfeNumber || editingLog.nfeLink.nfeAccessKey)) {
@@ -209,6 +223,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       const year = new Date().getFullYear();
       setOsNumber(`OS-${year}-${randomNum}`);
       setDate(new Date().toISOString().split('T')[0]);
+      setCompletionDate('');
       if (machineries.length > 0) {
         setMachineryId(machineries[0].id);
         if (machineries[0].hourMeter) {
@@ -228,6 +243,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       setPartsItems([]);
       setPartsCostManual('');
       setUsePartsItemList(true);
+      setLaborItems([]);
       setLaborCost('');
       setNextServiceDue('');
       setNotes('');
@@ -283,6 +299,48 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     }
   };
 
+  // --- MÃO DE OBRA INTERNA: ADICIONAR, ATUALIZAR E REMOVER MECÂNICOS ---
+  const handleAddLaborItem = () => {
+    const newItem: MaintenanceLaborItem = {
+      id: `labor_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      employeeId: '',
+      mechanicName: '',
+      description: 'Mão de Obra / Manutenção',
+      executorType: 'mecanico_interno',
+      hours: 1,
+      hourlyRate: 0,
+      totalCost: 0,
+    };
+    setLaborItems(prev => [...prev, newItem]);
+  };
+
+  const handleUpdateLaborItem = (index: number, updates: Partial<MaintenanceLaborItem>) => {
+    setLaborItems(prev => {
+      const updated = [...prev];
+      const item = { ...updated[index], ...updates };
+
+      if (updates.employeeId !== undefined) {
+        const emp = employees?.find(e => e.id === updates.employeeId);
+        if (emp) {
+          item.mechanicName = emp.name;
+          if ((!item.hourlyRate || item.hourlyRate === 0) && emp.dailyRate) {
+            item.hourlyRate = Math.round((emp.dailyRate / 8) * 100) / 100;
+          }
+        }
+      }
+
+      const hours = typeof item.hours === 'number' ? item.hours : 0;
+      const rate = typeof item.hourlyRate === 'number' ? item.hourlyRate : 0;
+      item.totalCost = Math.round(hours * rate * 100) / 100;
+      updated[index] = item;
+      return updated;
+    });
+  };
+
+  const handleRemoveLaborItem = (index: number) => {
+    setLaborItems(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Adicionar item de peça à lista
   const handleAddPartItem = () => {
     const newItem: MaintenancePartItem = {
@@ -294,30 +352,51 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       unitCost: 0,
       totalCost: 0,
     };
-    setPartsItems([...partsItems, newItem]);
+    setPartsItems(prev => [...prev, newItem]);
   };
 
   const handleUpdatePartItem = (index: number, updates: Partial<MaintenancePartItem>) => {
-    const updated = [...partsItems];
-    const item = { ...updated[index], ...updates };
-    
-    // Se selecionou do almoxarifado interno, puxa nome, unidade e custo padrão
-    if (updates.inventoryItemId) {
-      const stockItem = inventory.find(i => i.id === updates.inventoryItemId);
-      if (stockItem) {
-        item.description = stockItem.name;
-        item.unit = stockItem.unit;
-        item.unitCost = stockItem.unitCost;
+    setPartsItems(prev => {
+      const updated = [...prev];
+      const item = { ...updated[index], ...updates };
+      
+      // Se mudou para recuperada externa: desvincula de qualquer item de estoque
+      if (updates.origin === 'recuperada_externa') {
+        item.inventoryItemId = undefined;
+        if (!item.quantity) item.quantity = 1;
       }
-    }
 
-    item.totalCost = (item.quantity || 0) * (item.unitCost || 0);
-    updated[index] = item;
-    setPartsItems(updated);
+      // Se selecionou do almoxarifado interno, puxa nome, unidade e custo padrão
+      if (updates.inventoryItemId) {
+        const stockItem = inventory?.find(i => i.id === updates.inventoryItemId);
+        if (stockItem) {
+          item.description = stockItem.name;
+          item.unit = stockItem.unit;
+          item.unitCost = stockItem.unitCost;
+        }
+      }
+
+      // Se for recuperada externa e atualizou externalServiceCost
+      if (item.origin === 'recuperada_externa') {
+        if (updates.externalServiceCost !== undefined) {
+          item.unitCost = updates.externalServiceCost;
+        }
+        const qty = item.quantity || 1;
+        const cost = item.externalServiceCost !== undefined ? item.externalServiceCost : (item.unitCost || 0);
+        item.totalCost = Math.round(qty * cost * 100) / 100;
+      } else {
+        const qty = item.quantity || 0;
+        const cost = item.unitCost || 0;
+        item.totalCost = Math.round(qty * cost * 100) / 100;
+      }
+
+      updated[index] = item;
+      return updated;
+    });
   };
 
   const handleRemovePartItem = (index: number) => {
-    setPartsItems(partsItems.filter((_, i) => i !== index));
+    setPartsItems(prev => prev.filter((_, i) => i !== index));
   };
 
   // Cálculo total de peças
@@ -325,12 +404,30 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     ? partsItems.reduce((acc, curr) => acc + (curr.totalCost || 0), 0)
     : parseFloat(partsCostManual) || 0;
 
-  const totalLaborCalculated = parseFloat(laborCost) || 0;
+  const totalStockPartsCost = partsItems
+    .filter(p => p.origin === 'almoxarifado_interno')
+    .reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+
+  const totalExternalPartsCost = partsItems
+    .filter(p => p.origin === 'externo_compra')
+    .reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+
+  const totalRecoveredExternalCost = partsItems
+    .filter(p => p.origin === 'recuperada_externa')
+    .reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+
+  // Mão de Obra
+  const totalInternalLaborCalculated = laborItems.reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+  const totalInternalHoursCalculated = laborItems.reduce((acc, curr) => acc + (curr.hours || 0), 0);
+  const additionalLabor = parseFloat(laborCost) || 0;
+  const totalLaborCalculated = totalInternalLaborCalculated + additionalLabor;
+
   const grandTotal = totalPartsCalculated + totalLaborCalculated;
 
-  // Itens que requerem compra externa
+  // Itens por categoria
   const externalPartsCount = partsItems.filter(p => p.origin === 'externo_compra').length;
   const internalPartsCount = partsItems.filter(p => p.origin === 'almoxarifado_interno').length;
+  const recoveredPartsCount = partsItems.filter(p => p.origin === 'recuperada_externa').length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,9 +444,9 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     // Determinar resumo de origem das peças
     let partsOriginSummary: MaintenanceLog['partsOriginSummary'] = 'sem_pecas';
     if (usePartsItemList && partsItems.length > 0) {
-      if (externalPartsCount > 0 && internalPartsCount > 0) {
+      if ((externalPartsCount > 0 || recoveredPartsCount > 0) && internalPartsCount > 0) {
         partsOriginSummary = 'misto';
-      } else if (externalPartsCount > 0) {
+      } else if (externalPartsCount > 0 || recoveredPartsCount > 0) {
         partsOriginSummary = 'externo';
       } else if (internalPartsCount > 0) {
         partsOriginSummary = 'almoxarifado';
@@ -358,10 +455,16 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       partsOriginSummary = 'externo';
     }
 
+    let finalMechanicName = workshopOrMechanic.trim();
+    if ((!finalMechanicName || finalMechanicName === 'Mecânica Interna / Própria') && laborItems.length > 0) {
+      finalMechanicName = laborItems.map(l => l.mechanicName).filter(Boolean).join(', ');
+    }
+
     const log: MaintenanceLog = {
       id: editingLog ? editingLog.id : `maint_${Date.now()}`,
       osNumber: osNumber.trim() || `OS-${Date.now().toString().slice(-6)}`,
       date,
+      completionDate: completionDate.trim() || undefined,
       machineryId,
       machineryPlateOrName: machName,
       type,
@@ -369,11 +472,12 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       location,
       locationDetails: locationDetails.trim() || undefined,
       executorType,
-      executorName: workshopOrMechanic.trim(),
-      workshopOrMechanic: workshopOrMechanic.trim() || 'Mecânica Interna',
+      executorName: finalMechanicName || workshopOrMechanic.trim() || 'Mecânica Interna',
+      workshopOrMechanic: finalMechanicName || workshopOrMechanic.trim() || 'Mecânica Interna',
       description: description.trim(),
       partsOriginSummary,
       partsItems: usePartsItemList ? partsItems : undefined,
+      laborItems: laborItems.length > 0 ? laborItems : undefined,
       partsCost: totalPartsCalculated,
       laborCost: totalLaborCalculated,
       totalCost: grandTotal,
@@ -395,7 +499,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         paymentTerm,
         paymentMethod,
         firstDueDate,
-        supplierName: financialSupplier.trim() || workshopOrMechanic.trim(),
+        supplierName: financialSupplier.trim() || finalMechanicName || workshopOrMechanic.trim(),
         notes: `OS ${osNumber} - ${machName}`,
       } : undefined,
     };
@@ -414,47 +518,47 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
       <div 
-        className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-stone-900 rounded-2xl border border-blue-200 dark:border-stone-800 w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30">
+        {/* Header Superior em Azul Escuro */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-blue-900/60 dark:border-stone-800 bg-blue-800 dark:bg-stone-900 text-white">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center">
-              <Wrench className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-blue-950/60 text-white flex items-center justify-center">
+              <Wrench className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+                <h3 className="text-base font-bold text-white font-['Outfit']">
                   {editingLog ? `Editar OS: ${editingLog.osNumber || editingLog.id}` : 'Nova Ordem de Serviço (OS)'}
                 </h3>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-500/40 text-blue-50 border border-blue-400/40">
                   {osNumber}
                 </span>
               </div>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
+              <p className="text-xs text-blue-100/90 dark:text-stone-400">
                 Manutenção na Roça, Estrada ou Oficina • Baixa de Estoque • NF-e • Contas a Pagar
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
+            className="p-2 text-blue-200 hover:text-white dark:text-stone-400 dark:hover:text-stone-200 rounded-lg hover:bg-blue-700/60 dark:hover:bg-stone-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Subtabs de Navegação do Formulário */}
-        <div className="flex items-center border-b border-stone-200 dark:border-stone-800 px-6 bg-white dark:bg-stone-900 overflow-x-auto gap-2">
+        <div className="flex items-center border-b border-blue-200 dark:border-stone-800 px-6 bg-blue-50/70 dark:bg-stone-900 overflow-x-auto gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('geral')}
             className={`py-3 px-3 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'geral'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-blue-700 text-blue-800 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-blue-950/70 hover:text-blue-950 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
             <Wrench className="w-3.5 h-3.5" />
@@ -466,12 +570,17 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             onClick={() => setActiveTab('local_execucao')}
             className={`py-3 px-3 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'local_execucao'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-blue-700 text-blue-800 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-blue-950/70 hover:text-blue-950 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
             <span>2. Local & Executante</span>
+            {laborItems.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-300 font-bold">
+                {laborItems.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -479,14 +588,14 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             onClick={() => setActiveTab('pecas')}
             className={`py-3 px-3 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'pecas'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-blue-700 text-blue-800 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-blue-950/70 hover:text-blue-950 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
             <Package className="w-3.5 h-3.5" />
             <span>3. Peças & Estoque</span>
             {partsItems.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-300 font-bold">
                 {partsItems.length}
               </span>
             )}
@@ -497,8 +606,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             onClick={() => setActiveTab('fiscal_financeiro')}
             className={`py-3 px-3 text-xs font-bold border-b-2 transition whitespace-nowrap flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'fiscal_financeiro'
-                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                ? 'border-blue-700 text-blue-800 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-blue-950/70 hover:text-blue-950 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
             <CreditCard className="w-3.5 h-3.5" />
@@ -517,149 +626,168 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           {/* ======================================================== */}
           {activeTab === 'geral' && (
             <div className="space-y-4 animate-in fade-in duration-150">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Número da OS */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Número da OS
-                  </label>
-                  <input
-                    type="text"
-                    value={osNumber}
-                    onChange={(e) => setOsNumber(e.target.value)}
-                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-mono font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600"
-                    placeholder="OS-2026-0001"
-                    required
-                  />
-                </div>
-
-                {/* Data */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Data da Abertura / Manutenção *
-                  </label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600"
-                    required
-                  />
-                </div>
-
-                {/* Veículo / Máquina */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Veículo / Máquina Agrícola *
-                  </label>
-                  <select
-                    value={machineryId}
-                    onChange={(e) => handleMachineryChange(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600 cursor-pointer"
-                    required
-                  >
-                    <option value="">Selecione a máquina...</option>
-                    {machineries.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.licensePlateOrSerial ? `[${m.licensePlateOrSerial}] ` : ''}
-                        {m.name || m.model} ({m.categoryType || 'Equipamento'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Tipo de Manutenção e Categoria */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Tipo de Manutenção
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { id: 'preventiva', label: 'Preventiva', color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40 border-sky-200' },
-                      { id: 'corretiva', label: 'Corretiva', color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200' },
-                      { id: 'revisao_periodica', label: 'Revisão', color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200' },
-                      { id: 'preditiva', label: 'Preditiva', color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200' },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setType(t.id as any)}
-                        className={`py-2 text-[11px] font-bold rounded-xl border text-center transition cursor-pointer ${
-                          type === t.id
-                            ? 'ring-2 ring-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-300'
-                            : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-50'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-stone-700 dark:text-stone-300">
-                      Categoria do Serviço
+              {/* Bloco 1: Identificação Básica */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/40 rounded-2xl border border-blue-200 dark:border-stone-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Número da OS */}
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Número da OS
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsCategoriesModalOpen(true)}
-                      className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold flex items-center space-x-1 hover:underline cursor-pointer"
-                      title="Gerenciar, incluir, editar ou excluir categorias de serviço"
-                    >
-                      <Tag className="w-3 h-3" />
-                      <span>Gerenciar Áreas</span>
-                    </button>
+                    <input
+                      type="text"
+                      value={osNumber}
+                      onChange={(e) => setOsNumber(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-mono font-bold text-blue-950 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      placeholder="OS-2026-0001"
+                      required
+                    />
                   </div>
-                  <div className="flex items-center space-x-1.5">
+
+                  {/* Data da Abertura / Manutenção */}
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Data da Abertura / Manutenção *
+                    </label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  {/* Previsão de Término / Conclusão (Data) */}
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Previsão de Término / Conclusão (Data)
+                    </label>
+                    <input
+                      type="date"
+                      value={completionDate}
+                      onChange={(e) => setCompletionDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    />
+                  </div>
+
+                  {/* Veículo / Máquina */}
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Veículo / Máquina Agrícola *
+                    </label>
                     <select
-                      value={serviceCategory}
-                      onChange={(e) => setServiceCategory(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+                      value={machineryId}
+                      onChange={(e) => handleMachineryChange(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
+                      required
                     >
-                      {categoriesList.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
+                      <option value="">Selecione a máquina...</option>
+                      {machineries.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.licensePlateOrSerial ? `[${m.licensePlateOrSerial}] ` : ''}
+                          {m.name || m.model} ({m.categoryType || 'Equipamento'})
                         </option>
                       ))}
-                      {!categoriesList.some(c => c.name === serviceCategory) && serviceCategory && serviceCategory !== 'Outro' && (
-                        <option value={serviceCategory}>{serviceCategory}</option>
-                      )}
-                      <option value="Outro">Outro (Personalizado)</option>
                     </select>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsCategoriesModalOpen(true)}
-                      className="p-2 border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl text-indigo-600 dark:text-indigo-400 transition cursor-pointer shrink-0"
-                      title="Incluir, editar ou excluir categorias"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>
 
-              {serviceCategory === 'Outro' && (
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Especifique a Categoria
-                  </label>
-                  <input
-                    type="text"
-                    value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value)}
-                    placeholder="Ex: Regulagem de Rotor de Craqueador"
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
-                  />
-                </div>
-              )}
+              {/* Bloco 2: Tipo de Manutenção e Categoria */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/40 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Tipo de Manutenção
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {[
+                        { id: 'preventiva', label: 'Preventiva', color: 'text-sky-700 bg-sky-50 dark:bg-sky-950/40 border-sky-200' },
+                        { id: 'corretiva', label: 'Corretiva', color: 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 border-rose-200' },
+                        { id: 'revisao_periodica', label: 'Revisão', color: 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200' },
+                        { id: 'preditiva', label: 'Preditiva', color: 'text-purple-700 bg-purple-50 dark:bg-purple-950/40 border-purple-200' },
+                        { id: 'reforma_entressafra', label: 'Reforma / Entressafra', color: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200' },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setType(t.id as any)}
+                          className={`py-2 text-[11px] font-bold rounded-xl border text-center transition cursor-pointer ${
+                            type === t.id
+                              ? 'ring-2 ring-blue-600 bg-blue-500 text-white border-blue-600 shadow-xs'
+                              : 'bg-white dark:bg-stone-800 border-blue-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-blue-100/50'
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Descrição do Problema / Diagnóstico */}
-              <div>
-                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-blue-900 dark:text-stone-300">
+                        Categoria do Serviço
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoriesModalOpen(true)}
+                        className="text-[11px] text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 font-bold flex items-center space-x-1 hover:underline cursor-pointer"
+                        title="Gerenciar, incluir, editar ou excluir categorias de serviço"
+                      >
+                        <Tag className="w-3 h-3" />
+                        <span>Gerenciar Áreas</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <select
+                        value={serviceCategory}
+                        onChange={(e) => setServiceCategory(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 cursor-pointer"
+                      >
+                        {categoriesList.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                        {!categoriesList.some(c => c.name === serviceCategory) && serviceCategory && serviceCategory !== 'Outro' && (
+                          <option value={serviceCategory}>{serviceCategory}</option>
+                        )}
+                        <option value="Outro">Outro (Personalizado)</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoriesModalOpen(true)}
+                        className="p-2 border border-blue-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-blue-100/60 dark:hover:bg-stone-800 rounded-xl text-blue-700 dark:text-blue-400 transition cursor-pointer shrink-0"
+                        title="Incluir, editar ou excluir categorias"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {serviceCategory === 'Outro' && (
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Especifique a Categoria
+                    </label>
+                    <input
+                      type="text"
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      placeholder="Ex: Regulagem de Rotor de Craqueador"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Bloco 3: Descrição do Problema / Diagnóstico */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/40 rounded-2xl border border-blue-200 dark:border-stone-800">
+                <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
                   Descrição do Diagnóstico / Serviço Executado *
                 </label>
                 <textarea
@@ -667,56 +795,58 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Ex: Troca de óleo da caixa de transmissão e substituição de 4 facas do rotor da ensiladeira que empenaram no talhão 3..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600"
+                  className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                   required
                 />
               </div>
 
-              {/* Horímetro / Odômetro e Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Horímetro / KM Atual
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={currentHourMeterOrKm}
-                    onChange={(e) => setCurrentHourMeterOrKm(e.target.value)}
-                    placeholder="Ex: 3450"
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
-                  />
-                </div>
+              {/* Bloco 4: Horímetro / Odômetro e Status */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/40 rounded-2xl border border-blue-200 dark:border-stone-800">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Horímetro / KM Atual
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={currentHourMeterOrKm}
+                      onChange={(e) => setCurrentHourMeterOrKm(e.target.value)}
+                      placeholder="Ex: 3450"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Próxima Revisão (Horas/KM)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={nextServiceDue}
-                    onChange={(e) => setNextServiceDue(e.target.value)}
-                    placeholder="Ex: 3700"
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Próxima Revisão (Horas/KM)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={nextServiceDue}
+                      onChange={(e) => setNextServiceDue(e.target.value)}
+                      placeholder="Ex: 3700"
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Status da Ordem de Serviço
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-600 cursor-pointer"
-                  >
-                    <option value="concluida">✓ Concluída (Liberado p/ Operação)</option>
-                    <option value="em_andamento">⏳ Em Andamento (Na Oficina/Campo)</option>
-                    <option value="aguardando_pecas">📦 Aguardando Peças / Cotação</option>
-                    <option value="agendada">📅 Agendada (Preventiva Futura)</option>
-                    <option value="cancelada">✕ Cancelada</option>
-                  </select>
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Status da Ordem de Serviço
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 cursor-pointer"
+                    >
+                      <option value="concluida">✓ Concluída (Liberado p/ Operação)</option>
+                      <option value="em_andamento">⏳ Em Andamento (Na Oficina/Campo)</option>
+                      <option value="aguardando_pecas">📦 Aguardando Peças / Cotação</option>
+                      <option value="agendada">📅 Agendada (Preventiva Futura)</option>
+                      <option value="cancelada">✕ Cancelada</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -728,10 +858,10 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           {activeTab === 'local_execucao' && (
             <div className="space-y-6 animate-in fade-in duration-150">
               {/* Seletor do Local da Manutenção */}
-              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-3">
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-3">
                 <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
+                  <MapPin className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                  <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider">
                     1. Local Onde a Manutenção Ocorreu / Está Ocorrendo
                   </h4>
                 </div>
@@ -757,7 +887,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       title: 'Oficina Interna',
                       subtitle: 'Nosso Barracão / Base',
                       icon: Building2,
-                      color: 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300',
+                      color: 'border-blue-500 bg-blue-100/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300',
                     },
                     {
                       id: 'oficina_externa',
@@ -773,8 +903,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       onClick={() => setLocation(loc.id as any)}
                       className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
                         location === loc.id
-                          ? `${loc.color} ring-2 ring-indigo-600 font-bold`
-                          : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300'
+                          ? `${loc.color} ring-2 ring-blue-600 font-bold shadow-xs`
+                          : 'bg-white dark:bg-stone-800 border-blue-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-blue-100/40'
                       }`}
                     >
                       <span className="text-xs font-bold block">{loc.title}</span>
@@ -784,7 +914,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                  <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                     Complemento / Ponto de Referência do Local
                   </label>
                   <input
@@ -800,135 +930,232 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         ? 'Ex: Box 2 do Barracão Principal'
                         : 'Ex: Oficina Diesel Power - Toledo/PR'
                     }
-                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100"
+                    className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
 
               {/* Seletor Dinâmico de Responsável pela Execução */}
-              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-4">
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-4">
                 <div className="flex items-center space-x-2">
-                  <UserCheck className="w-4 h-4 text-indigo-600" />
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
-                    2. Responsável pela Execução do Serviço (Executante)
+                  <UserCheck className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                  <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider">
+                    2. Modalidade de Execução do Serviço
                   </h4>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Bloco Interno */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
-                      Opções de Equipe Interna
-                    </span>
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => handleExecutorTypeChange('equipe_propria')}
-                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                          executorType === 'equipe_propria'
-                            ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-600'
-                            : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-xs font-bold">Equipe Própria / Motorista / Operador</div>
-                          <div className="text-[11px] text-stone-500">O próprio operador realizou o reparo no campo</div>
-                        </div>
-                        {executorType === 'equipe_propria' && <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 ml-2" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleExecutorTypeChange('mecanico_interno')}
-                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                          executorType === 'mecanico_interno'
-                            ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-600'
-                            : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-xs font-bold">Mecânico Interno da Empresa</div>
-                          <div className="text-[11px] text-stone-500">Mecânico contratado da nossa oficina/barracão</div>
-                        </div>
-                        {executorType === 'mecanico_interno' && <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 ml-2" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Bloco Externo */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
-                      Opções de Terceirizados / Externos
-                    </span>
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={() => handleExecutorTypeChange('mecanico_campo')}
-                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                          executorType === 'mecanico_campo'
-                            ? 'border-amber-600 bg-amber-50/70 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 ring-2 ring-amber-600'
-                            : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-xs font-bold">Mecânico Terceiro em Campo</div>
-                          <div className="text-[11px] text-stone-500">Socorro mecânico que veio até a lavoura/estrada</div>
-                        </div>
-                        {executorType === 'mecanico_campo' && <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 ml-2" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleExecutorTypeChange('mecanica_terceirizada')}
-                        className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                          executorType === 'mecanica_terceirizada'
-                            ? 'border-amber-600 bg-amber-50/70 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 ring-2 ring-amber-600'
-                            : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-xs font-bold">Oficina Mecânica Terceirizada</div>
-                          <div className="text-[11px] text-stone-500">Veículo transportado até a concessionária/oficina</div>
-                        </div>
-                        {executorType === 'mecanica_terceirizada' && <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 ml-2" />}
-                      </button>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'equipe_propria', label: 'Equipe Própria / Operador', desc: 'Reparo direto pelo operador ou equipe' },
+                    { id: 'mecanico_interno', label: 'Mecânica Interna', desc: 'Mecânicos da nossa oficina / barracão' },
+                    { id: 'mecanico_campo', label: 'Mecânico Socorro no Campo', desc: 'Profissional terceiro que atendeu na roça' },
+                    { id: 'mecanica_terceirizada', label: 'Oficina / Concessionária', desc: 'Veículo levado para oficina externa' },
+                  ].map((ex) => (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      onClick={() => handleExecutorTypeChange(ex.id as any)}
+                      className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                        executorType === ex.id
+                          ? 'border-blue-600 bg-blue-100 text-blue-950 dark:bg-blue-950/60 dark:text-blue-200 ring-2 ring-blue-600 shadow-xs'
+                          : 'bg-white dark:bg-stone-800 border-blue-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-blue-100/40'
+                      }`}
+                    >
+                      <div className="text-xs font-bold flex items-center justify-between">
+                        <span>{ex.label}</span>
+                        {executorType === ex.id && <CheckCircle2 className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400 ml-1 shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-stone-500 mt-1 leading-tight">{ex.desc}</div>
+                    </button>
+                  ))}
                 </div>
 
-                {/* Nome do Mecânico / Oficina / Prestador */}
-                <div className="pt-2">
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Nome do Mecânico / Oficina / Operador Responsável *
-                  </label>
-                  <div className="flex gap-2">
+                {/* Nome da Oficina / Prestador Externo se aplicável */}
+                {(executorType === 'mecanico_campo' || executorType === 'mecanica_terceirizada') && (
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Nome da Oficina Externa / Prestador Socorro Terceiro *
+                    </label>
                     <input
                       type="text"
                       value={workshopOrMechanic}
                       onChange={(e) => setWorkshopOrMechanic(e.target.value)}
-                      placeholder="Ex: João Silva (Mecânico), Borracharia do Alemão, Oficina Rododiesel..."
-                      className="flex-1 px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100"
-                      required
+                      placeholder="Ex: Auto Elétrica São Paulo, Borracharia do Alemão, Concessionária John Deere..."
+                      className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                     />
+                  </div>
+                )}
+              </div>
 
-                    {employees.length > 0 && (
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            const emp = employees.find(em => em.id === e.target.value);
-                            if (emp) {
-                              setWorkshopOrMechanic(`${emp.name} (${emp.role || 'Funcionário'})`);
-                            }
-                          }
-                        }}
-                        className="px-3 py-2 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 cursor-pointer"
+              {/* LISTA DINÂMICA: MÃO DE OBRA INTERNA (MECÂNICOS DA EQUIPE) */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                    <div>
+                      <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider">
+                        3. Mão de Obra Interna (Mecânicos da Equipe)
+                      </h4>
+                      <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                        Adicione os mecânicos e registre as horas trabalhadas e o valor/hora para apuração detalhada de custo.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddLaborItem}
+                    className="inline-flex items-center space-x-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Adicionar Mecânico/Mão de Obra</span>
+                  </button>
+                </div>
+
+                {/* Lista dinâmica ou estado vazio */}
+                {laborItems.length === 0 ? (
+                  <div className="p-5 text-center border-2 border-dashed border-blue-200 dark:border-stone-800 bg-white dark:bg-stone-800/30 rounded-xl space-y-2">
+                    <Users className="w-7 h-7 mx-auto text-blue-400" />
+                    <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
+                      Nenhum mecânico adicionado individualmente nesta OS.
+                    </p>
+                    <p className="text-[11px] text-stone-400">
+                      Clique no botão abaixo para adicionar funcionários, horas dedicadas e valor/hora.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleAddLaborItem}
+                      className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition cursor-pointer shadow-xs"
+                    >
+                      + Adicionar Mecânico/Mão de Obra
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {laborItems.map((item, index) => (
+                      <div
+                        key={item.id || index}
+                        className="p-3.5 bg-white dark:bg-stone-800 rounded-xl border border-blue-200 dark:border-stone-700 space-y-3 shadow-xs"
                       >
-                        <option value="">+ Selecionar da Equipe...</option>
-                        {employees.map(emp => (
-                          <option key={emp.id} value={emp.id}>{emp.name} - {emp.role}</option>
-                        ))}
-                      </select>
-                    )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-blue-900 dark:text-stone-400 uppercase tracking-wider font-mono flex items-center space-x-1">
+                            <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center text-[10px]">
+                              {index + 1}
+                            </span>
+                            <span>Mecânico / Executante</span>
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLaborItem(index)}
+                            className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-stone-700 transition cursor-pointer"
+                            title="Remover mecânico"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                          {/* Selecionar Funcionário */}
+                          <div className="sm:col-span-5">
+                            <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                              Funcionário (Mecânico) *
+                            </label>
+                            <select
+                              value={item.employeeId || ''}
+                              onChange={(e) => handleUpdateLaborItem(index, { employeeId: e.target.value })}
+                              className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-blue-200 dark:border-stone-700 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600 cursor-pointer"
+                            >
+                              <option value="">Selecione o mecânico/funcionário...</option>
+                              {employees?.map((emp) => (
+                                <option key={emp.id} value={emp.id}>
+                                  {emp.name} ({emp.role || 'Mecânico'})
+                                </option>
+                              ))}
+                            </select>
+
+                            {/* Campo de texto alternativo para nome customizado */}
+                            {(!item.employeeId || !employees?.some(e => e.id === item.employeeId)) && (
+                              <input
+                                type="text"
+                                value={item.mechanicName || ''}
+                                onChange={(e) => handleUpdateLaborItem(index, { mechanicName: e.target.value })}
+                                placeholder="Ou digite o nome do mecânico..."
+                                className="w-full mt-1 px-2.5 py-1 bg-white dark:bg-stone-900 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100"
+                              />
+                            )}
+                          </div>
+
+                          {/* Quantidade de Horas Trabalhadas */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                              Horas Trabalhadas (h)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={item.hours !== undefined ? item.hours : 1}
+                              onChange={(e) => handleUpdateLaborItem(index, { hours: parseFloat(e.target.value) || 0 })}
+                              placeholder="Ex: 8.0"
+                              className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-blue-200 dark:border-stone-700 rounded-lg text-xs font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
+                            />
+                          </div>
+
+                          {/* Valor da Hora (R$) */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                              Valor da Hora (R$)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={item.hourlyRate !== undefined ? item.hourlyRate : ''}
+                              onChange={(e) => handleUpdateLaborItem(index, { hourlyRate: parseFloat(e.target.value) || 0 })}
+                              placeholder="0,00"
+                              className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-blue-200 dark:border-stone-700 rounded-lg text-xs font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
+                            />
+                          </div>
+
+                          {/* Subtotal Calculado */}
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                              Subtotal Mão de Obra
+                            </label>
+                            <div className="px-2.5 py-1.5 bg-blue-100/70 dark:bg-blue-950/60 rounded-lg text-xs font-black text-blue-900 dark:text-blue-300 font-mono flex items-center justify-between">
+                              <span>{formatCurrencyBRL(item.totalCost || 0)}</span>
+                              <span className="text-[10px] font-normal text-stone-500">
+                                ({item.hours || 0}h × {formatCurrencyBRL(item.hourlyRate || 0)})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Card de Consolidação da Mão de Obra Interna */}
+                <div className="p-3.5 bg-blue-100/80 dark:bg-blue-950/40 rounded-xl border border-blue-300 dark:border-blue-900/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-blue-950 dark:text-blue-200 block">
+                        Total de Mão de Obra Interna Consolidada
+                      </span>
+                      <span className="text-[11px] text-blue-800 dark:text-blue-300">
+                        {laborItems.length} mecânico(s) cadastrado(s) • Total de {totalInternalHoursCalculated} horas de trabalho
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xl font-black text-blue-950 dark:text-blue-100 font-['Outfit']">
+                      {formatCurrencyBRL(totalInternalLaborCalculated)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -942,11 +1169,11 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             <div className="space-y-5 animate-in fade-in duration-150">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
-                    Peças & Insumos Utilizados na OS
+                  <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider flex items-center space-x-2">
+                    <span>Peças, Insumos & Serviços de Recuperação</span>
                   </h4>
                   <p className="text-xs text-stone-500">
-                    Defina se a peça saiu do almoxarifado interno (baixa de estoque) ou foi comprada externamente.
+                    Registre peças do estoque interno, compras novas ou peças enviadas para recuperação externa (torno, retífica, solda).
                   </p>
                 </div>
 
@@ -954,28 +1181,28 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddPartItem}
-                    className="inline-flex items-center space-x-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Adicionar Peça</span>
+                    <span>Adicionar Peça / Serviço</span>
                   </button>
                 </div>
               </div>
 
               {/* Tabela / Lista de Peças */}
               {partsItems.length === 0 ? (
-                <div className="p-6 text-center border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl space-y-3">
-                  <Package className="w-8 h-8 mx-auto text-stone-400" />
-                  <p className="text-xs text-stone-500 font-medium">
-                    Nenhuma peça adicionada individualmente nesta OS.
+                <div className="p-6 text-center border-2 border-dashed border-blue-200 dark:border-stone-800 bg-blue-50/40 dark:bg-stone-800/20 rounded-2xl space-y-3">
+                  <Package className="w-8 h-8 mx-auto text-blue-400" />
+                  <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
+                    Nenhuma peça ou serviço externo adicionado nesta OS.
                   </p>
                   <div className="flex justify-center gap-3">
                     <button
                       type="button"
                       onClick={handleAddPartItem}
-                      className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold hover:bg-indigo-100 transition cursor-pointer"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition cursor-pointer shadow-xs"
                     >
-                      + Adicionar Peça / Insumo
+                      + Adicionar Peça / Insumo / Recuperação
                     </button>
                   </div>
                 </div>
@@ -984,107 +1211,212 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   {partsItems.map((item, index) => (
                     <div 
                       key={item.id || index}
-                      className="p-3.5 bg-stone-50/80 dark:bg-stone-800/40 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-3"
+                      className={`p-3.5 rounded-2xl border space-y-3 shadow-xs transition ${
+                        item.origin === 'recuperada_externa'
+                          ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/50'
+                          : item.origin === 'externo_compra'
+                          ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50'
+                          : 'bg-blue-50/70 dark:bg-stone-800/40 border-blue-200 dark:border-stone-800'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider font-mono">
-                          Item #{index + 1}
-                        </span>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[11px] font-bold text-blue-900 dark:text-stone-300 uppercase tracking-wider font-mono">
+                            Item #{index + 1}
+                          </span>
+                          {item.origin === 'recuperada_externa' && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                              Serviço Terceiro / Recuperação
+                            </span>
+                          )}
+                        </div>
 
                         <div className="flex items-center space-x-2">
-                          {/* Seletor de Origem */}
-                          <div className="flex items-center bg-white dark:bg-stone-800 rounded-lg p-0.5 border border-stone-200 dark:border-stone-700">
+                          {/* Seletor de Origem com as 3 opções */}
+                          <div className="flex items-center bg-white dark:bg-stone-800 rounded-xl p-0.5 border border-blue-200 dark:border-stone-700 shadow-2xs">
                             <button
                               type="button"
                               onClick={() => handleUpdatePartItem(index, { origin: 'almoxarifado_interno' })}
-                              className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition cursor-pointer ${
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition cursor-pointer flex items-center space-x-1 ${
                                 item.origin === 'almoxarifado_interno'
-                                  ? 'bg-sky-600 text-white shadow-xs'
-                                  : 'text-stone-500 hover:text-stone-800'
+                                  ? 'bg-blue-600 text-white shadow-xs'
+                                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
                               }`}
                             >
-                              📦 Almoxarifado Interno
+                              <span>📦 Almoxarifado</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleUpdatePartItem(index, { origin: 'externo_compra' })}
-                              className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition cursor-pointer ${
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition cursor-pointer flex items-center space-x-1 ${
                                 item.origin === 'externo_compra'
                                   ? 'bg-amber-600 text-white shadow-xs'
-                                  : 'text-stone-500 hover:text-stone-800'
+                                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
                               }`}
                             >
-                              🛒 Compra Externa / Nota
+                              <span>🛒 Compra Nova</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdatePartItem(index, { origin: 'recuperada_externa' })}
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition cursor-pointer flex items-center space-x-1 ${
+                                item.origin === 'recuperada_externa'
+                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                              }`}
+                            >
+                              <span>🔧 Recuperada / Torno</span>
                             </button>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => handleRemovePartItem(index)}
-                            className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition cursor-pointer"
+                            className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-stone-700 transition cursor-pointer"
+                            title="Remover item"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                        {/* Se for almoxarifado interno, mostra dropdown de itens do estoque */}
-                        {item.origin === 'almoxarifado_interno' ? (
-                          <div className="sm:col-span-6">
-                            <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
-                              Item do Estoque (Almoxarifado)
-                            </label>
-                            <select
-                              value={item.inventoryItemId || ''}
-                              onChange={(e) => handleUpdatePartItem(index, { inventoryItemId: e.target.value })}
-                              className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100"
-                            >
-                              <option value="">Selecione do estoque ou digite abaixo...</option>
-                              {inventory.map(inv => (
-                                <option key={inv.id} value={inv.id}>
-                                  {inv.name} (Saldo: {inv.quantity} {inv.unit} | {formatCurrencyBRL(inv.unitCost)})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ) : (
-                          <div className="sm:col-span-6">
-                            <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
-                              Fornecedor / Loja de Peças
-                            </label>
-                            <select
-                              value={item.supplierName || ''}
-                              onChange={(e) => handleUpdatePartItem(index, { supplierName: e.target.value })}
-                              className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100"
-                            >
-                              <option value="">Selecione o Fornecedor...</option>
-                              {suppliers.map(sup => (
-                                <option key={sup.id} value={sup.name}>{sup.name} ({sup.category})</option>
-                              ))}
-                              <option value="Loja de Peças da Cidade">Loja de Peças Local</option>
-                              <option value="Concessionária Autorizada">Concessionária Autorizada</option>
-                            </select>
-                          </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                        {/* 1. SE FOR ALMOXARIFADO INTERNO */}
+                        {item.origin === 'almoxarifado_interno' && (
+                          <>
+                            <div className="sm:col-span-6">
+                              <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                                Item do Estoque (Almoxarifado)
+                              </label>
+                              <select
+                                value={item.inventoryItemId || ''}
+                                onChange={(e) => handleUpdatePartItem(index, { inventoryItemId: e.target.value })}
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
+                              >
+                                <option value="">Selecione do estoque ou digite a descrição ao lado...</option>
+                                {inventory.map(inv => (
+                                  <option key={inv.id} value={inv.id}>
+                                    {inv.name} (Saldo: {inv.quantity} {inv.unit} | {formatCurrencyBRL(inv.unitCost)})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-6">
+                              <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                                Descrição da Peça / Código
+                              </label>
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleUpdatePartItem(index, { description: e.target.value })}
+                                placeholder="Ex: Filtro de Combustível S10 / Faca 4230..."
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-blue-600"
+                                required
+                              />
+                            </div>
+                          </>
                         )}
 
-                        <div className="sm:col-span-6">
-                          <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
-                            Descrição da Peça / Código
-                          </label>
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => handleUpdatePartItem(index, { description: e.target.value })}
-                            placeholder="Ex: Filtro de Combustível S10 / Faca 4230..."
-                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold"
-                            required
-                          />
-                        </div>
+                        {/* 2. SE FOR COMPRA NOVA EXTERNA */}
+                        {item.origin === 'externo_compra' && (
+                          <>
+                            <div className="sm:col-span-6">
+                              <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                                Fornecedor / Loja de Peças
+                              </label>
+                              <div className="flex gap-1.5">
+                                <select
+                                  value={item.supplierName || ''}
+                                  onChange={(e) => handleUpdatePartItem(index, { supplierName: e.target.value })}
+                                  className="flex-1 px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
+                                >
+                                  <option value="">Selecione o Fornecedor...</option>
+                                  {suppliers.map(sup => (
+                                    <option key={sup.id} value={sup.name}>{sup.name} ({sup.category})</option>
+                                  ))}
+                                  <option value="Loja de Peças da Cidade">Loja de Peças Local</option>
+                                  <option value="Concessionária Autorizada">Concessionária Autorizada</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  placeholder="Ou digite..."
+                                  value={item.supplierName || ''}
+                                  onChange={(e) => handleUpdatePartItem(index, { supplierName: e.target.value })}
+                                  className="w-28 px-2 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="sm:col-span-6">
+                              <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                                Descrição da Peça Comprada / Código
+                              </label>
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleUpdatePartItem(index, { description: e.target.value })}
+                                placeholder="Ex: Rolamento Cônico 30210, Correia Dentada..."
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-blue-600"
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* 3. SE FOR RECUPERADA / SERVIÇO EXTERNO (TORNO, RETÍFICA, SOLDA) */}
+                        {item.origin === 'recuperada_externa' && (
+                          <>
+                            <div className="sm:col-span-4">
+                              <label className="block text-[10px] font-bold text-purple-900 dark:text-purple-300 mb-0.5 flex items-center space-x-1">
+                                <Hammer className="w-3 h-3 text-purple-600" />
+                                <span>Prestador / Torno / Retífica Terceira *</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={item.serviceProvider || item.supplierName || ''}
+                                onChange={(e) => handleUpdatePartItem(index, { 
+                                  serviceProvider: e.target.value,
+                                  supplierName: e.target.value
+                                })}
+                                placeholder="Ex: Torneadora Central, Retífica União, Soldas Especiais..."
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-purple-600"
+                                required
+                              />
+                            </div>
+
+                            <div className="sm:col-span-4">
+                              <label className="block text-[10px] font-bold text-purple-900 dark:text-purple-300 mb-0.5">
+                                Peça / Componente em Recuperação *
+                              </label>
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleUpdatePartItem(index, { description: e.target.value })}
+                                placeholder="Ex: Cilindro Hidráulico de Elevação, Eixo Traseiro, Cardan..."
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-purple-600"
+                                required
+                              />
+                            </div>
+
+                            <div className="sm:col-span-4">
+                              <label className="block text-[10px] font-bold text-purple-900 dark:text-purple-300 mb-0.5">
+                                Descrição do Serviço Executado
+                              </label>
+                              <input
+                                type="text"
+                                value={item.serviceDescription || ''}
+                                onChange={(e) => handleUpdatePartItem(index, { serviceDescription: e.target.value })}
+                                placeholder="Ex: Enchimento e usinagem de colo de eixo, embuchamento em bronze..."
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-purple-600"
+                              />
+                            </div>
+                          </>
+                        )}
 
                         {/* Qtd, Unidade, Preço Unitário, Total */}
                         <div className="sm:col-span-3">
-                          <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
+                          <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
                             Qtd
                           </label>
                           <input
@@ -1093,20 +1425,21 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                             min="0.01"
                             value={item.quantity}
                             onChange={(e) => handleUpdatePartItem(index, { quantity: parseFloat(e.target.value) || 0 })}
-                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-blue-600"
                           />
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
+                          <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
                             Unidade
                           </label>
                           <select
                             value={item.unit}
                             onChange={(e) => handleUpdatePartItem(index, { unit: e.target.value })}
-                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-blue-600"
                           >
-                            <option value="un">un (Unidade)</option>
+                            <option value="un">un (Unidade / Serviço)</option>
+                            <option value="serv">serv (Serviço)</option>
                             <option value="L">L (Litros)</option>
                             <option value="kg">kg (Quilos)</option>
                             <option value="cx">cx (Caixa)</option>
@@ -1116,8 +1449,8 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
-                            Valor Unitário (R$)
+                          <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
+                            {item.origin === 'recuperada_externa' ? 'Custo do Serviço (R$)' : 'Valor Unitário (R$)'}
                           </label>
                           <input
                             type="number"
@@ -1125,16 +1458,24 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                             value={item.unitCost || ''}
                             onChange={(e) => handleUpdatePartItem(index, { unitCost: parseFloat(e.target.value) || 0 })}
                             placeholder="0,00"
-                            className="w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold"
+                            className={`w-full px-2.5 py-1.5 bg-white dark:bg-stone-800 border rounded-lg text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 ${
+                              item.origin === 'recuperada_externa'
+                                ? 'border-purple-300 dark:border-purple-800 focus:ring-purple-600 font-bold'
+                                : 'border-blue-200 dark:border-stone-700 focus:ring-blue-600'
+                            }`}
                           />
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="block text-[10px] font-bold text-stone-500 mb-0.5">
+                          <label className="block text-[10px] font-bold text-blue-900 dark:text-stone-400 mb-0.5">
                             Subtotal
                           </label>
-                          <div className="px-2.5 py-1.5 bg-stone-100 dark:bg-stone-800/80 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-400 font-mono">
-                            {formatCurrencyBRL(item.totalCost || 0)}
+                          <div className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center justify-between ${
+                            item.origin === 'recuperada_externa'
+                              ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300'
+                              : 'bg-blue-100/60 dark:bg-stone-800/80 text-blue-900 dark:text-blue-400'
+                          }`}>
+                            <span>{formatCurrencyBRL(item.totalCost || 0)}</span>
                           </div>
                         </div>
                       </div>
@@ -1143,54 +1484,90 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 </div>
               )}
 
-              {/* Mão de Obra */}
-              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Valor da Mão de Obra (R$)
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={laborCost}
-                      onChange={(e) => setLaborCost(e.target.value)}
-                      placeholder="0,00"
-                      className="w-full pl-9 pr-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100"
-                    />
+              {/* Bloco de Mão de Obra e Consolidação Financeira Geral */}
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
+                      Mão de Obra Avulsa / Terceira Adicional (R$)
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 dark:text-stone-400" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={laborCost}
+                        onChange={(e) => setLaborCost(e.target.value)}
+                        placeholder="0,00"
+                        className="w-full pl-9 pr-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
+                      />
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      {laborItems.length > 0 
+                        ? `Aba 2 já possui R$ ${totalInternalLaborCalculated.toFixed(2)} de mão de obra interna consolidada (${laborItems.length} mecânico(s)). Preencha aqui apenas se houver custo avulso extra.`
+                        : 'Deixe R$ 0,00 se a mão de obra foi detalhada na Aba 2 ou sem custo extra.'}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-stone-500 mt-1">
-                    Deixe R$ 0,00 se foi executado por funcionário próprio sem custo avulso de oficina.
-                  </p>
-                </div>
 
-                <div className="flex flex-col justify-center bg-white dark:bg-stone-800 p-3 rounded-xl border border-stone-200 dark:border-stone-700">
-                  <div className="text-xs text-stone-500">Resumo de Custo Total da OS:</div>
-                  <div className="flex items-baseline space-x-2 mt-1">
-                    <span className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-['Outfit']">
-                      {formatCurrencyBRL(grandTotal)}
-                    </span>
-                    <span className="text-[11px] text-stone-500">
-                      (Peças: {formatCurrencyBRL(totalPartsCalculated)} + M. Obra: {formatCurrencyBRL(totalLaborCalculated)})
-                    </span>
+                  {/* Resumo Consolidado de Custos da OS */}
+                  <div className="bg-white dark:bg-stone-800 p-3.5 rounded-xl border border-blue-200 dark:border-stone-700 space-y-1.5 shadow-2xs">
+                    <div className="text-xs font-bold text-blue-950 dark:text-stone-300 flex items-center justify-between">
+                      <span>Custo Total Consolidado da OS:</span>
+                      <span className="text-lg font-black text-blue-700 dark:text-blue-400 font-['Outfit']">
+                        {formatCurrencyBRL(grandTotal)}
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-blue-100 dark:border-stone-700/60 grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-stone-500 block">Peças Novas / Estoque:</span>
+                        <span className="font-bold text-stone-800 dark:text-stone-200 font-mono">
+                          {formatCurrencyBRL(
+                            partsItems
+                              .filter(p => p.origin !== 'recuperada_externa')
+                              .reduce((acc, p) => acc + (p.totalCost || 0), 0)
+                          )}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-purple-700 dark:text-purple-400 font-medium block">Recuperação / Torno:</span>
+                        <span className="font-bold text-purple-900 dark:text-purple-300 font-mono">
+                          {formatCurrencyBRL(
+                            partsItems
+                              .filter(p => p.origin === 'recuperada_externa')
+                              .reduce((acc, p) => acc + (p.totalCost || 0), 0)
+                          )}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-blue-800 dark:text-blue-400 font-medium block">M. Obra Interna (Aba 2):</span>
+                        <span className="font-bold text-blue-950 dark:text-blue-200 font-mono">
+                          {formatCurrencyBRL(totalInternalLaborCalculated)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-stone-500 block">M. Obra Extra / Avulsa:</span>
+                        <span className="font-bold text-stone-800 dark:text-stone-200 font-mono">
+                          {formatCurrencyBRL(parseFloat(laborCost) || 0)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Checkbox de Baixa no Estoque */}
+              {/* Checkbox de Baixa no Estoque (Apenas para peças internas do almoxarifado) */}
               {internalPartsCount > 0 && (
-                <div className="flex items-center space-x-3 p-3.5 bg-sky-50 dark:bg-sky-950/30 rounded-xl border border-sky-200 dark:border-sky-900/50">
+                <div className="flex items-center space-x-3 p-3.5 bg-blue-100/70 dark:bg-blue-950/30 rounded-xl border border-blue-300 dark:border-blue-900/50">
                   <input
                     type="checkbox"
                     id="deductStock"
                     checked={deductStock}
                     onChange={(e) => setDeductStock(e.target.checked)}
-                    className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500 cursor-pointer"
-                  >
-                  </input>
-                  <label htmlFor="deductStock" className="text-xs font-bold text-sky-900 dark:text-sky-200 cursor-pointer">
-                    Dar baixa automática nas {internalPartsCount} peça(s) no Almoxarifado Interno ao salvar esta OS.
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                  <label htmlFor="deductStock" className="text-xs font-bold text-blue-900 dark:text-blue-200 cursor-pointer">
+                    Dar baixa automática nas {internalPartsCount} peça(s) no Almoxarifado Interno ao salvar esta OS. (Itens terceiros/recuperados não afetam o saldo).
                   </label>
                 </div>
               )}
@@ -1204,11 +1581,11 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             <div className="space-y-6 animate-in fade-in duration-150">
               
               {/* FLUXO B: VÍNCULO DE NF-E */}
-              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-3">
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-indigo-600" />
-                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
+                    <FileText className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                    <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider">
                       Integração Fiscal: Vincular Nota Fiscal (NF-e)
                     </h4>
                   </div>
@@ -1218,9 +1595,9 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       type="checkbox"
                       checked={hasNfe}
                       onChange={(e) => setHasNfe(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                    <span className="text-xs font-bold text-blue-900 dark:text-stone-300">
                       Possui NF-e Vinculada
                     </span>
                   </label>
@@ -1229,7 +1606,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 {hasNfe && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Número da NF-e
                       </label>
                       <input
@@ -1237,12 +1614,12 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         value={nfeNumber}
                         onChange={(e) => setNfeNumber(e.target.value)}
                         placeholder="Ex: 000.045.892"
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-mono font-bold text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs font-mono font-bold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Série
                       </label>
                       <input
@@ -1250,24 +1627,24 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         value={nfeSeries}
                         onChange={(e) => setNfeSeries(e.target.value)}
                         placeholder="Ex: 1"
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Data de Emissão da Nota
                       </label>
                       <input
                         type="date"
                         value={nfeIssueDate}
                         onChange={(e) => setNfeIssueDate(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Chave de Acesso (44 dígitos)
                       </label>
                       <input
@@ -1276,12 +1653,12 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         value={nfeAccessKey}
                         onChange={(e) => setNfeAccessKey(e.target.value)}
                         placeholder="41260800000000000000550010000458921000458920"
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-mono text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs font-mono text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Fornecedor / Razão Social
                       </label>
                       <input
@@ -1289,7 +1666,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         value={nfeSupplierName}
                         onChange={(e) => setNfeSupplierName(e.target.value)}
                         placeholder="Ex: TratorPeças do Iguaçu Ltda"
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
                   </div>
@@ -1297,11 +1674,11 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               </div>
 
               {/* INTEGRAÇÃO FINANCEIRA: CONTAS A PAGAR */}
-              <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-800 space-y-4">
+              <div className="p-4 bg-blue-50/70 dark:bg-stone-800/50 rounded-2xl border border-blue-200 dark:border-stone-800 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <CreditCard className="w-4 h-4 text-emerald-600" />
-                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">
+                    <CreditCard className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+                    <h4 className="text-xs font-bold text-blue-900 dark:text-stone-100 uppercase tracking-wider">
                       Integração Financeira: Gerar Lançamento no Contas a Pagar
                     </h4>
                   </div>
@@ -1311,9 +1688,9 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       type="checkbox"
                       checked={createExpense}
                       onChange={(e) => setCreateExpense(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
-                    <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                    <span className="text-xs font-bold text-blue-900 dark:text-stone-300">
                       Lançar no Financeiro
                     </span>
                   </label>
@@ -1323,13 +1700,13 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     {/* Condição de Pagamento */}
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Condição / Prazo de Pagamento
                       </label>
                       <select
                         value={paymentTerm}
                         onChange={(e) => setPaymentTerm(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-bold text-stone-900 dark:text-stone-100 cursor-pointer"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs font-bold text-stone-900 dark:text-stone-100 cursor-pointer focus:ring-2 focus:ring-blue-600"
                       >
                         <option value="a_vista">À Vista (Hoje)</option>
                         <option value="15_dias">15 Dias</option>
@@ -1343,13 +1720,13 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
                     {/* Forma de Pagamento */}
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Forma de Pagamento
                       </label>
                       <select
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-bold text-stone-900 dark:text-stone-100 cursor-pointer"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs font-bold text-stone-900 dark:text-stone-100 cursor-pointer focus:ring-2 focus:ring-blue-600"
                       >
                         <option value="boleto">Boleto Bancário</option>
                         <option value="pix">PIX / Transferência</option>
@@ -1361,20 +1738,20 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
                     {/* Data do 1º Vencimento */}
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         1º Vencimento
                       </label>
                       <input
                         type="date"
                         value={firstDueDate}
                         onChange={(e) => setFirstDueDate(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-semibold"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-stone-100 font-semibold focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
 
                     {/* Fornecedor para o Financeiro */}
                     <div className="sm:col-span-3">
-                      <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1">
+                      <label className="block text-[11px] font-bold text-blue-900 dark:text-stone-400 mb-1">
                         Credor / Fornecedor do Pagamento
                       </label>
                       <input
@@ -1382,7 +1759,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         value={financialSupplier || workshopOrMechanic}
                         onChange={(e) => setFinancialSupplier(e.target.value)}
                         placeholder="Nome da Oficina ou Fornecedor de Peças"
-                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-stone-100"
+                        className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
                   </div>
@@ -1433,7 +1810,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
               {/* Observações Internas */}
               <div>
-                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
+                <label className="block text-xs font-bold text-blue-900 dark:text-stone-300 mb-1">
                   Observações Gerais / Histórico
                 </label>
                 <textarea
@@ -1441,17 +1818,17 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ex: Peça substituída com garantia de 90 dias da concessionária..."
                   rows={2}
-                  className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100"
+                  className="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-blue-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-blue-600"
                 />
               </div>
             </div>
           )}
 
           {/* Footer Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-stone-200 dark:border-stone-800">
-            <div className="flex items-center space-x-2 text-xs text-stone-500">
-              <span>Total da OS:</span>
-              <span className="text-base font-black text-stone-900 dark:text-stone-100 font-['Outfit']">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-blue-200 dark:border-stone-800">
+            <div className="flex items-center space-x-2 text-xs text-blue-900 dark:text-stone-400">
+              <span className="font-bold">Total da OS:</span>
+              <span className="text-base font-black text-blue-950 dark:text-stone-100 font-['Outfit']">
                 {formatCurrencyBRL(grandTotal)}
               </span>
             </div>
@@ -1460,13 +1837,13 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-bold transition cursor-pointer"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-blue-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-blue-100/50 dark:hover:bg-stone-800 text-xs font-bold transition cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition active:scale-95 cursor-pointer"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-900/20 transition active:scale-95 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>Salvar Ordem de Serviço</span>

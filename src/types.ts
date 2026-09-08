@@ -480,7 +480,7 @@ export type MaintenanceExecutorType =
 export interface MaintenancePartItem {
   id: string;
   description: string;
-  origin: 'almoxarifado_interno' | 'externo_compra';
+  origin: 'almoxarifado_interno' | 'externo_compra' | 'recuperada_externa';
   inventoryItemId?: string;
   quantity: number;
   unit: string;
@@ -488,14 +488,18 @@ export interface MaintenancePartItem {
   totalCost: number;
   supplierId?: string;
   supplierName?: string;
+  serviceProvider?: string;
   invoiceNumber?: string;
   requiresPurchase?: boolean;
+  serviceDescription?: string;
+  externalServiceCost?: number;
 }
 
 export interface MaintenanceLaborItem {
   id: string;
-  description: string;
-  executorType: MaintenanceExecutorType;
+  description?: string;
+  employeeId?: string;
+  executorType?: MaintenanceExecutorType;
   mechanicName?: string;
   hours?: number;
   hourlyRate?: number;
@@ -548,9 +552,10 @@ export interface MaintenanceLog {
   id: string;
   osNumber?: string; // Ex: OS-2026-0012
   date: string; // YYYY-MM-DD
+  completionDate?: string; // Previsão de Término / Conclusão (Data)
   machineryId: string;
   machineryPlateOrName: string;
-  type: 'preventiva' | 'corretiva' | 'preditiva' | 'revisao_periodica';
+  type: 'preventiva' | 'corretiva' | 'preditiva' | 'revisao_periodica' | 'reforma_entressafra';
   serviceCategory: 
     | 'Troca de Óleo & Filtros'
     | 'Facas & Contra-Faca (Ensiladeira)'

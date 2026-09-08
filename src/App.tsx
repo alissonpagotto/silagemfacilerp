@@ -450,7 +450,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#2e65aa] text-stone-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] selection:bg-sky-200 selection:text-sky-900" style={{ backgroundColor: '#2e65aa' }}>
+    <div className="min-h-screen bg-blue-50/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-200 selection:text-blue-900">
       
       {/* Left Fixed Sidebar */}
       <Sidebar
@@ -470,7 +470,10 @@ export default function App() {
       )}
 
       {/* Main Body Area with left padding for desktop sidebar */}
-      <div className="lg:pl-64 flex flex-col flex-1 min-h-screen bg-[#2e65aa]" style={{ backgroundColor: '#2e65aa' }}>
+      <div 
+        style={{ backgroundColor: '#16438e' }}
+        className="lg:pl-64 flex flex-col flex-1 min-h-screen bg-[#16438e] dark:bg-stone-950"
+      >
         
         {/* Top Bar with Trial Notice and Horizontal Pill Carousel */}
         <TopBar
@@ -487,7 +490,6 @@ export default function App() {
         <main 
           id="crm-main-content"
           className="flex-1 p-3 sm:p-4 lg:p-5 max-w-7xl w-full mx-auto"
-          style={{ backgroundColor: '#2e65aa' }}
         >
           
           {/* TAB 1: Main Dashboard (Matching Screenshot) */}

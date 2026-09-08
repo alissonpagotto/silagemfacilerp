@@ -97,6 +97,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
   const [clientName, setClientName] = useState('');
   const [farmName, setFarmName] = useState('');
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [completionDate, setCompletionDate] = useState('');
+  const [maintenanceType, setMaintenanceType] = useState<
+    'preventiva' | 'corretiva' | 'revisao_periodica' | 'preditiva' | 'reforma_entressafra'
+  >('preventiva');
+  const [maintenanceMachineryId, setMaintenanceMachineryId] = useState('');
+  const [maintenanceHourMeter, setMaintenanceHourMeter] = useState('');
   const [status, setStatus] = useState<'agendado' | 'em_andamento' | 'concluido' | 'cancelado'>('agendado');
 
   // 2. Área e Unidades (Corte e Colheita)
@@ -354,6 +360,12 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       setFuelEntries(editRecord.fuelEntries || []);
       setMealExpenses(editRecord.mealExpenses || []);
 
+      setCompletionDate(editRecord.completionDate || '');
+      setMaintenanceMachineryId(editRecord.machineryId || '');
+      if (editRecord.startDate) {
+        setServiceDate(editRecord.startDate);
+      }
+
       setObservacoes(editRecord.notes || '');
       setSavedOrder(editRecord || null);
       setSaveSuccessMessage(null);
@@ -407,6 +419,11 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       setFretePrancha('');
       setFuelEntries([]);
       setMealExpenses([]);
+
+      setCompletionDate('');
+      setMaintenanceType('preventiva');
+      setMaintenanceMachineryId('');
+      setMaintenanceHourMeter('');
 
       setObservacoes('');
       setSavedOrder(null);
@@ -990,6 +1007,8 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       serviceTab: activeTab,
       status,
       startDate: serviceDate,
+      completionDate: completionDate || undefined,
+      machineryId: activeTab === 'maquina' && maintenanceMachineryId ? maintenanceMachineryId : editRecord?.machineryId,
 
       // Área
       areaUnit: unidadeArea,
@@ -1823,7 +1842,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
             )}
 
             {/* 1. DADOS DE IDENTIFICAÇÃO E CLIENTE */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 sm:p-3.5 shadow-sm space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-2.5">
                 
                 {/* Número do Serviço */}
@@ -1908,7 +1927,127 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Datas da Operação / Manutenção */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Data da Abertura / Manutenção *
+                  </label>
+                  <input
+                    type="date"
+                    value={serviceDate}
+                    onChange={(e) => setServiceDate(e.target.value)}
+                    className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Previsão de Término / Conclusão (Data)
+                  </label>
+                  <input
+                    type="date"
+                    value={completionDate}
+                    onChange={(e) => setCompletionDate(e.target.value)}
+                    className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-900 border border-slate-400 dark:border-slate-500 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 shadow-2xs transition-colors"
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* BLOCO VISUAL: ABA 1. DIAGNÓSTICO & VEÍCULO (MANUTENÇÃO DE FROTAS) */}
+            {activeTab === 'maquina' && (
+              <div className="bg-blue-50/70 dark:bg-slate-800/40 border border-blue-200 dark:border-slate-700 rounded-xl p-3 sm:p-4 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-blue-200 dark:border-slate-700 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-blue-600 text-white rounded-lg shadow-xs">
+                      <Wrench className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-bold text-blue-950 dark:text-white uppercase tracking-wider">
+                        Aba 1. Diagnóstico & Veículo (Manutenção de Frotas)
+                      </h4>
+                      <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                        Gestão técnica de frota, manutenção preventiva, corretiva e reformas de entressafra
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Veículo e Horímetro */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-8">
+                    <label className="block text-[11px] font-bold text-blue-900 dark:text-slate-300 uppercase tracking-wider mb-1">
+                      Veículo / Máquina Agrícola *
+                    </label>
+                    <select
+                      value={maintenanceMachineryId}
+                      onChange={(e) => {
+                        const mId = e.target.value;
+                        setMaintenanceMachineryId(mId);
+                        const mach = machineries.find((m) => m.id === mId);
+                        if (mach) {
+                          if (mach.hourMeter) setMaintenanceHourMeter(String(mach.hourMeter));
+                          else if (mach.currentKm) setMaintenanceHourMeter(String(mach.currentKm));
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
+                    >
+                      <option value="">Selecione o equipamento / máquina da frota...</option>
+                      {machineries.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.licensePlateOrSerial ? `[${m.licensePlateOrSerial}] ` : ''}
+                          {m.name || m.model} ({m.categoryType || 'Equipamento'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-bold text-blue-900 dark:text-slate-300 uppercase tracking-wider mb-1">
+                      Horímetro / KM Atual
+                    </label>
+                    <input
+                      type="number"
+                      value={maintenanceHourMeter}
+                      onChange={(e) => setMaintenanceHourMeter(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Botões de Tipo de Manutenção */}
+                <div>
+                  <label className="block text-[11px] font-bold text-blue-900 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Tipo de Manutenção
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {[
+                      { id: 'preventiva', label: 'Preventiva' },
+                      { id: 'corretiva', label: 'Corretiva' },
+                      { id: 'revisao_periodica', label: 'Revisão' },
+                      { id: 'preditiva', label: 'Preditiva' },
+                      { id: 'reforma_entressafra', label: 'Reforma / Entressafra' },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setMaintenanceType(t.id as any)}
+                        className={`py-2 px-3 text-xs font-bold rounded-xl border text-center transition cursor-pointer ${
+                          maintenanceType === t.id
+                            ? 'ring-2 ring-blue-600 bg-blue-500 text-white border-blue-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-blue-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-100/50'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 2. ÁREA E UNIDADES (CORTE E COLHEITA) */}
             {(activeTab === 'corte' || activeTab === 'colheita') && (

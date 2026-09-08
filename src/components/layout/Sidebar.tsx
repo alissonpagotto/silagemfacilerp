@@ -72,20 +72,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside 
         id="main-sidebar"
         className={`
-          no-print fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 flex flex-col justify-between transition-transform duration-300 ease-in-out
+          no-print fixed inset-y-0 left-0 z-40 w-64 bg-blue-700 dark:bg-stone-900 border-r border-blue-800/60 dark:border-stone-800 flex flex-col justify-between transition-transform duration-300 ease-in-out
           ${isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Top Section: Logo & Brand */}
-        <div 
-          className="flex flex-col flex-1 overflow-y-auto"
-          style={{ backgroundColor: '#2e65aa' }}
-        >
+        <div className="flex flex-col flex-1 overflow-y-auto bg-blue-700 dark:bg-stone-900 scrollbar-none">
           
           {/* Brand Header */}
-          <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800 flex items-center space-x-3 cursor-pointer" onClick={() => handleSelect('dashboard')}>
+          <div className="p-4 sm:p-5 border-b border-blue-600/40 dark:border-stone-800 flex items-center space-x-3 cursor-pointer" onClick={() => handleSelect('dashboard')}>
             {companyProfile?.logoUrl ? (
-              <div className="w-10 h-10 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-emerald-950/60 border border-white/20 dark:border-emerald-700 p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
                 <img 
                   src={companyProfile.logoUrl} 
                   alt="Logo" 
@@ -94,32 +91,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               </div>
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-blue-500 dark:bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-blue-900/30 shrink-0">
                 <Sprout className="w-6 h-6 stroke-[2.5]" />
               </div>
             )}
             <div className="min-w-0">
-              <h2 className="text-base font-extrabold text-black truncate tracking-tight font-['Outfit']">
-                {companyProfile?.tradeName || 'Silagem Teste 02'}
+              <h2 className="text-base font-extrabold text-white truncate tracking-tight font-['Outfit']">
+                {companyProfile?.tradeName || 'Silagem Fácil'}
               </h2>
-              <p className="text-[10px] font-black text-black/85 tracking-wider uppercase">
+              <p className="text-[10px] font-black text-blue-100/80 dark:text-stone-400 tracking-wider uppercase">
                 GESTÃO AGRÍCOLA
               </p>
             </div>
           </div>
 
           {/* Navigation Section Header with Organize Button */}
-          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-black text-black uppercase tracking-wider">
-            <span>MENU PRINCIPAL</span>
+          <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-black text-black dark:text-stone-400 uppercase tracking-wider">
+            <span style={{ color: '#000000' }} className="text-black">MENU PRINCIPAL</span>
             <button
               type="button"
               id="btn-sidebar-organize-menu"
               onClick={() => setIsReorderModalOpen(true)}
-              className="inline-flex items-center space-x-1 text-[10px] font-bold text-black hover:text-black hover:bg-black/10 px-1.5 py-0.5 rounded-md transition cursor-pointer"
+              className="inline-flex items-center space-x-1 text-[10px] font-bold text-black dark:text-stone-300 hover:text-white hover:bg-blue-600/30 px-1.5 py-0.5 rounded-md transition cursor-pointer"
               title="Personalizar ordem do menu"
             >
-              <ArrowUpDown className="w-3 h-3 text-black" />
-              <span>Organizar</span>
+              <ArrowUpDown style={{ color: '#000000' }} className="w-3 h-3 text-black dark:text-stone-300" />
+              <span style={{ color: '#000000' }} className="text-black">Organizar</span>
             </button>
           </div>
 
@@ -138,14 +135,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer group
                     ${
                       isActive
-                        ? 'bg-sky-600 text-white font-semibold shadow-xs shadow-sky-600/25'
-                        : 'text-black hover:bg-white/15 hover:text-black'
+                        ? 'bg-blue-500 text-white font-bold shadow-sm shadow-blue-900/30 dark:bg-sky-600 dark:text-white'
+                        : 'text-black dark:text-stone-300 hover:bg-blue-600/30 dark:hover:bg-stone-800 hover:text-white dark:hover:text-white'
                     }
                   `}
                 >
                   <div className="flex items-center space-x-3 truncate">
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-black'}`} />
-                    <span className="truncate">{item.label}</span>
+                    <Icon 
+                      style={!isActive ? { color: '#000000' } : undefined}
+                      className={`w-4 h-4 shrink-0 transition ${isActive ? 'text-white' : 'text-black dark:text-stone-400 group-hover:text-white'}`} 
+                    />
+                    <span 
+                      style={!isActive ? { color: '#000000' } : undefined}
+                      className={`truncate ${isActive ? 'text-white' : 'text-black'}`}
+                    >
+                      {item.label}
+                    </span>
                   </div>
 
                   {isActive && (
@@ -153,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
 
                   {!isActive && item.hasSubmenu && (
-                    <ChevronRight className="w-3.5 h-3.5 text-black shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-black/70 dark:text-stone-500 group-hover:text-white shrink-0" />
                   )}
                 </button>
               );
@@ -163,17 +168,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom Section: Organize Shortcut & Logout */}
-        <div 
-          className="p-3 border-t border-white/20 space-y-1"
-          style={{ backgroundColor: '#2e65aa' }}
-        >
+        <div className="p-3 border-t border-blue-600/40 dark:border-stone-800 space-y-1 bg-blue-700 dark:bg-stone-900">
           <button
             type="button"
             onClick={() => setIsReorderModalOpen(true)}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold text-black hover:bg-white/15 hover:text-black transition cursor-pointer"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold text-black dark:text-stone-300 hover:bg-blue-600/30 hover:text-white dark:hover:bg-stone-800 dark:hover:text-white transition cursor-pointer"
           >
-            <SlidersHorizontal className="w-4 h-4 text-black" />
-            <span>Organizar Ordem do Menu</span>
+            <SlidersHorizontal style={{ color: '#000000' }} className="w-4 h-4 text-black dark:text-stone-300" />
+            <span style={{ color: '#000000' }} className="text-black">Organizar Ordem do Menu</span>
           </button>
 
           <button
@@ -181,11 +183,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => {
               setActiveTab('dashboard');
             }}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer"
-            style={{ color: '#7b1010' }}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#8b2323] hover:bg-rose-600/20 hover:text-white dark:text-rose-400 dark:hover:bg-rose-950/30 transition cursor-pointer"
           >
-            <LogOut className="w-4 h-4" style={{ color: '#7b1010' }} />
-            <span style={{ color: '#7b1010' }}>Sair</span>
+            <LogOut 
+              style={{ color: '#b10e0e' }} 
+              className="w-4 h-4 text-[#b10e0e] [&>path:nth-of-type(2)]:stroke-[#cb2b2b] [&>path:nth-of-type(2)]:text-[#cb2b2b]" 
+            />
+            <span style={{ color: '#8b2323' }} className="text-[#8b2323]">Sair</span>
           </button>
         </div>
 

@@ -85,7 +85,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     .filter((s): s is typeof ALL_SHORTCUTS[number] => Boolean(s));
 
   return (
-    <div id="top-bar-container" className="no-print sticky top-0 z-30 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 shadow-xs">
+    <div id="top-bar-container" className="no-print sticky top-0 z-30 bg-blue-800 dark:bg-stone-900 border-b border-blue-900/60 dark:border-stone-800 shadow-xs">
       
       {/* Top Banner: Período de Teste matching screenshot */}
       <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/50 px-4 py-1.5 flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
@@ -108,15 +108,12 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Horizontal Carousel & Controls Bar */}
-      <div 
-        className="px-3 sm:px-4 py-1.5 flex items-center justify-between gap-1.5"
-        style={{ backgroundColor: '#2e65aa' }}
-      >
+      <div className="px-3 sm:px-4 py-1.5 flex items-center justify-between gap-1.5 bg-blue-800 dark:bg-stone-900">
         
         {/* Mobile menu trigger */}
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+          className="lg:hidden p-2 rounded-lg text-blue-100 dark:text-stone-300 hover:bg-blue-700/60 dark:hover:bg-stone-800 transition"
           aria-label="Abrir Menu"
         >
           <Menu className="w-5 h-5" />
@@ -128,7 +125,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {/* Scroll Left Button */}
           <button
             onClick={scrollLeft}
-            className="p-1 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition shrink-0 cursor-pointer"
+            className="p-1 rounded-full text-blue-200 hover:text-white dark:text-stone-400 dark:hover:text-stone-200 hover:bg-blue-700/60 dark:hover:bg-stone-800 transition shrink-0 cursor-pointer"
             aria-label="Rolar para esquerda"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -147,9 +144,9 @@ export const TopBar: React.FC<TopBarProps> = ({
               onClick={() => setIsCustomizeModalOpen(true)}
               title="Personalizar atalhos rápidos"
               aria-label="Personalizar atalhos da barra superior"
-              className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition shrink-0 cursor-pointer flex items-center justify-center active:scale-95 shadow-xs"
+              className="px-2.5 py-1.5 rounded-lg border border-blue-600/60 dark:border-stone-700 bg-blue-900/60 dark:bg-stone-800 hover:bg-blue-700 dark:hover:bg-stone-700 text-blue-100 hover:text-white dark:text-stone-300 transition shrink-0 cursor-pointer flex items-center justify-center active:scale-95 shadow-xs"
             >
-              <Pencil className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
 
             {/* Nav Pills */}
@@ -166,8 +163,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                     inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition shrink-0 cursor-pointer border
                     ${
                       isSelected
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                        : 'bg-white dark:bg-stone-800/80 text-stone-700 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
+                        ? 'bg-blue-500 text-white border-blue-400 font-bold shadow-xs dark:bg-sky-600 dark:border-sky-600'
+                        : 'bg-blue-900/50 hover:bg-blue-700/70 text-blue-100 hover:text-white border-blue-700/60 dark:bg-stone-800/80 dark:text-stone-200 dark:border-stone-700 dark:hover:bg-stone-700 hover:border-blue-500 dark:hover:border-stone-600'
                     }
                   `}
                 >
@@ -181,7 +178,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {/* Scroll Right Button */}
           <button
             onClick={scrollRight}
-            className="p-1 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition shrink-0 cursor-pointer"
+            className="p-1 rounded-full text-blue-200 hover:text-white dark:text-stone-400 dark:hover:text-stone-200 hover:bg-blue-700/60 dark:hover:bg-stone-800 transition shrink-0 cursor-pointer"
             aria-label="Rolar para direita"
           >
             <ChevronRight className="w-4 h-4" />
@@ -190,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Right Tools: Firebase, Notifications & Theme */}
-        <div className="flex items-center space-x-2 shrink-0 pl-2 border-l border-stone-200 dark:border-stone-800">
+        <div className="flex items-center space-x-2 shrink-0 pl-2 border-l border-blue-700/60 dark:border-stone-800">
           
           {/* Firebase Cloud Sync & Auth status */}
           <FirebaseStatusControl />
@@ -199,9 +196,9 @@ export const TopBar: React.FC<TopBarProps> = ({
           <button
             onClick={() => setActiveTab('funcionarios')}
             title="Notificações e Avisos de CNH"
-            className="relative p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
+            className="relative p-2 rounded-lg text-blue-100 hover:text-white hover:bg-blue-700/60 dark:text-stone-300 dark:hover:bg-stone-800 transition cursor-pointer"
           >
-            <Bell className="w-4 h-4" style={{ color: '#0a0909' }} />
+            <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
           </button>
 
@@ -212,12 +209,12 @@ export const TopBar: React.FC<TopBarProps> = ({
             onClick={() => setIsDarkMode(prev => !prev)}
             title={isDarkMode ? 'Mudar para modo claro (Light)' : 'Mudar para modo escuro (Dark)'}
             aria-label="Alternar tema claro e escuro"
-            className="p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer flex items-center justify-center active:scale-95"
+            className="p-2 rounded-lg text-blue-100 hover:text-white hover:bg-blue-700/60 dark:text-stone-300 dark:hover:bg-stone-800 transition cursor-pointer flex items-center justify-center active:scale-95"
           >
             {isDarkMode ? (
-              <Sun className="w-4 h-4 fill-amber-400/20" style={{ color: '#0d0c0c' }} />
+              <Sun className="w-4 h-4 fill-amber-400/20 text-amber-300" />
             ) : (
-              <Moon className="w-4 h-4 fill-stone-600/10" style={{ color: '#0d0c0c' }} />
+              <Moon className="w-4 h-4 text-blue-100 hover:text-white" />
             )}
           </button>
 

@@ -22,7 +22,8 @@ import {
   CreditCard,
   Building2,
   Truck,
-  Tag
+  Tag,
+  Hammer
 } from 'lucide-react';
 import { MaintenanceLog, Machinery, CompanyProfile, MaintenancePurchaseRequest, MaintenanceCategoryDefinition } from '../../types';
 import { formatCurrencyBRL, formatDateBR, getStoredMaintenanceCategories, saveStoredMaintenanceCategories } from '../../lib/storage';
@@ -64,6 +65,9 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
   const [viewingLog, setViewingLog] = useState<MaintenanceLog | null>(null);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
 
+  /* CARD REFORMA & ENTRESSAFRA: FILTRO DE CLIQUE (OPCIONAL) */
+  const [filterReformaOnly, setFilterReformaOnly] = useState(false);
+
   // Filtered maintenance logs
   const filteredLogs = useMemo(() => {
     return maintenanceLogs.filter((log) => {
@@ -80,15 +84,42 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
       const matchLocation = selectedLocation === 'todos' || log.location === selectedLocation;
       const matchOrigin = selectedPartsOrigin === 'todos' || log.partsOriginSummary === selectedPartsOrigin;
 
-      return matchSearch && matchVehicle && matchStatus && matchCategory && matchLocation && matchOrigin;
+      /* CARD REFORMA & ENTRESSAFRA: FILTRAGEM AO CLICAR NO CARD */
+      const isReformaOrEntressafra = 
+        (log.type && (log.type.toLowerCase().includes('reforma') || log.type.toLowerCase().includes('entressafra'))) ||
+        (log.serviceCategory && (log.serviceCategory.toLowerCase().includes('reforma') || log.serviceCategory.toLowerCase().includes('entressafra'))) ||
+        (log.description && (log.description.toLowerCase().includes('reforma') || log.description.toLowerCase().includes('entressafra')));
+
+      const matchReforma = !filterReformaOnly || isReformaOrEntressafra;
+
+      return matchSearch && matchVehicle && matchStatus && matchCategory && matchLocation && matchOrigin && matchReforma;
     });
-  }, [maintenanceLogs, searchTerm, selectedVehicle, selectedStatus, selectedCategory, selectedLocation, selectedPartsOrigin]);
+  }, [maintenanceLogs, searchTerm, selectedVehicle, selectedStatus, selectedCategory, selectedLocation, selectedPartsOrigin, filterReformaOnly]);
 
   // Statistics
   const totalCost = filteredLogs.reduce((acc, curr) => acc + curr.totalCost, 0);
   const totalParts = filteredLogs.reduce((acc, curr) => acc + curr.partsCost, 0);
   const totalLabor = filteredLogs.reduce((acc, curr) => acc + curr.laborCost, 0);
   const pendingCount = filteredLogs.filter(m => m.status === 'em_andamento' || m.status === 'agendada' || m.status === 'aguardando_pecas').length;
+
+  /* CARD REFORMA & ENTRESSAFRA: CÁLCULOS TÉCNICOS */
+  const reformaLogs = useMemo(() => {
+    return maintenanceLogs.filter((log) => {
+      const matchVehicle = selectedVehicle === 'todos' || log.machineryId === selectedVehicle;
+      const matchLocation = selectedLocation === 'todos' || log.location === selectedLocation;
+      const isReforma = 
+        (log.type && (log.type.toLowerCase().includes('reforma') || log.type.toLowerCase().includes('entressafra'))) ||
+        (log.serviceCategory && (log.serviceCategory.toLowerCase().includes('reforma') || log.serviceCategory.toLowerCase().includes('entressafra'))) ||
+        (log.description && (log.description.toLowerCase().includes('reforma') || log.description.toLowerCase().includes('entressafra')));
+      return matchVehicle && matchLocation && isReforma;
+    });
+  }, [maintenanceLogs, selectedVehicle, selectedLocation]);
+
+  const totalReforma = useMemo(() => {
+    return reformaLogs.reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
+  }, [reformaLogs]);
+
+  const reformaCount = reformaLogs.length;
 
   // Local Badges Helper
   const getLocationBadge = (loc?: MaintenanceLog['location']) => {
@@ -204,12 +235,15 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <Wrench className="w-5 h-5 text-indigo-600" />
+            <Wrench style={{ color: '#823028' }} className="w-5 h-5 text-[#823028]" />
             <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
               Gestão de Manutenções & Ordens de Serviço (OS)
             </h2>
           </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          <p 
+            style={{ color: '#000000' }} 
+            className="text-xs text-[#000000] dark:text-stone-400 mt-0.5"
+          >
             Controle de revisões preventivas, quebras na roça/estrada, baixa de estoque, cotações e faturamento NF-e
           </p>
         </div>
@@ -241,7 +275,7 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
@@ -279,6 +313,37 @@ export const FleetMaintenanceView: React.FC<FleetMaintenanceViewProps> = ({
             {formatCurrencyBRL(totalLabor)}
           </div>
           <p className="text-xs text-stone-500 mt-0.5">Oficinas terceiras e mecânica</p>
+        </div>
+
+        {/* CARD REFORMA & ENTRESSAFRA */}
+        <div 
+          onClick={() => setFilterReformaOnly(prev => !prev)}
+          className={`p-4 rounded-xl bg-white dark:bg-stone-900 border shadow-xs transition cursor-pointer select-none ${
+            filterReformaOnly
+              ? 'border-purple-500 ring-2 ring-purple-600/30 dark:ring-purple-500/40 bg-purple-50/20 dark:bg-purple-950/20'
+              : 'border-stone-200 dark:border-stone-800 hover:border-purple-300 dark:hover:border-purple-700'
+          }`}
+          title={filterReformaOnly ? "Clique para desativar filtro de Reforma / Entressafra" : "Clique para filtrar manutenções de Reforma / Entressafra"}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+              REFORMA & ENTRESSAFRA
+            </span>
+            <Hammer className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div className="text-2xl font-black text-purple-700 dark:text-purple-400 mt-1 font-['Outfit']">
+            {formatCurrencyBRL(totalReforma)}
+          </div>
+          <div className="flex items-center justify-between mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              {reformaCount} {reformaCount === 1 ? 'máquina em reforma' : 'máquinas em reforma'}
+            </p>
+            {filterReformaOnly && (
+              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-950/60 px-1.5 py-0.5 rounded-md">
+                Filtrando
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs">
