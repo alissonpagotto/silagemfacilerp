@@ -88,10 +88,12 @@ import { OrderModal } from './components/crm/OrderModal';
 import { OrdersList } from './components/crm/OrdersList';
 
 import { FinancialSummary } from './components/financial/FinancialSummary';
+import { NfeModule } from './components/nfe/NfeModule';
 import { FleetModule } from './components/fleet/FleetModule';
 import { EmployeesModule } from './components/employees/EmployeesModule';
 import { RHModule } from './components/rh/RHModule';
 import { ServicesModule } from './components/services/ServicesModule';
+import { VendaModule } from './components/vendas/VendaModule';
 import { InventoryModule } from './components/inventory/InventoryModule';
 import { SuppliersModule } from './components/suppliers/SuppliersModule';
 import { ReportsModule } from './components/reports/ReportsModule';
@@ -529,6 +531,19 @@ export default function App() {
             />
           )}
 
+          {/* TAB: Venda (Vendas Agrícolas, Fornecimento de Silagem e Contratos) */}
+          {(activeTab === 'venda' || activeTab === 'vendas') && (
+            <VendaModule
+              services={services}
+              machineries={machineries}
+              employees={employees}
+              clients={clients}
+              companyProfile={companyProfile}
+              onSaveServices={setServices}
+              onSaveClients={setClients}
+            />
+          )}
+
           {/* TAB: Estoque & Insumos */}
           {activeTab === 'estoque' && (
             <InventoryModule
@@ -537,8 +552,8 @@ export default function App() {
             />
           )}
 
-          {/* TAB: Financeiro (Consolidado, Despesas, Contas, A Pagar, A Receber, Acertos, NF-e Importar, NF-e Notas, Exportar) */}
-          {(activeTab === 'financeiro' || activeTab === 'despesas' || activeTab === 'nfe_importar' || activeTab === 'nfe_notas') && (
+          {/* TAB: Financeiro (Consolidado, Despesas, Contas, A Pagar, A Receber, Acertos, Exportar) */}
+          {(activeTab === 'financeiro' || activeTab === 'despesas') && (
             <FinancialSummary
               expenses={expenses}
               orders={orders}
@@ -552,15 +567,7 @@ export default function App() {
               fleetTeams={fleetTeams}
               machineries={machineries}
               companyProfile={companyProfile}
-              initialSubTab={
-                activeTab === 'despesas' 
-                  ? 'despesas' 
-                  : activeTab === 'nfe_importar' 
-                  ? 'nfe_importar' 
-                  : activeTab === 'nfe_notas' 
-                  ? 'nfe_notas' 
-                  : undefined
-              }
+              initialSubTab={activeTab === 'despesas' ? 'despesas' : undefined}
               onSaveBankAccounts={handleSaveBankAccounts}
               onSaveSettlements={handleSaveSettlements}
               onToggleExpenseStatus={handleToggleExpenseStatus}
@@ -576,25 +583,36 @@ export default function App() {
               onViewReceipt={(exp) => setViewingReceiptExpense(exp)}
               onDuplicateExpense={handleDuplicateExpense}
               onOpenAiParser={() => setIsAiParserOpen(true)}
-              onAddExpenseFromNfe={(newExp) => {
-                const created: Expense = {
-                  id: `exp_nfe_${Date.now()}`,
-                  description: newExp.description || 'Despesa Importada via NF-e',
-                  amount: newExp.amount || 0,
-                  categoryId: newExp.categoryId || 'cat_combustivel',
-                  categoryName: categories.find(c => c.id === newExp.categoryId)?.name || 'Combustível & Arla (Diesel)',
-                  categoryColor: categories.find(c => c.id === newExp.categoryId)?.color || '#d97706',
-                  dueDate: newExp.dueDate || new Date().toISOString().split('T')[0],
-                  status: newExp.status || 'pago',
-                  paymentMethod: newExp.paymentMethod || 'boleto',
-                  supplier: newExp.supplier || 'Fornecedor NF-e',
-                  invoiceNumber: newExp.invoiceNumber || 'NF-e',
-                  notes: newExp.notes,
-                  createdAt: new Date().toISOString(),
-                };
-                handleSaveExpense(created);
-              }}
             />
+          )}
+
+          {/* TAB: Fiscal (NF-e, Notas Fiscais Eletrônicas, Importação XML) */}
+          {(activeTab === 'fiscal' || activeTab === 'nfe_importar' || activeTab === 'nfe_notas') && (
+            <div id="fiscal-module-container" className="space-y-6">
+              <NfeModule
+                expenses={expenses}
+                companyProfile={companyProfile}
+                viewMode="import"
+                onAddExpenseFromNfe={(newExp) => {
+                  const created: Expense = {
+                    id: `exp_nfe_${Date.now()}`,
+                    description: newExp.description || 'Despesa Importada via NF-e',
+                    amount: newExp.amount || 0,
+                    categoryId: newExp.categoryId || 'cat_combustivel',
+                    categoryName: categories.find(c => c.id === newExp.categoryId)?.name || 'Combustível & Arla (Diesel)',
+                    categoryColor: categories.find(c => c.id === newExp.categoryId)?.color || '#d97706',
+                    dueDate: newExp.dueDate || new Date().toISOString().split('T')[0],
+                    status: newExp.status || 'pago',
+                    paymentMethod: newExp.paymentMethod || 'boleto',
+                    supplier: newExp.supplier || 'Fornecedor NF-e',
+                    invoiceNumber: newExp.invoiceNumber || 'NF-e',
+                    notes: newExp.notes,
+                    createdAt: new Date().toISOString(),
+                  };
+                  handleSaveExpense(created);
+                }}
+              />
+            </div>
           )}
 
           {/* TAB: RH (Recursos Humanos: Dashboard, Funcionários, Folha, Férias, Afastamentos, Adiantamentos) */}

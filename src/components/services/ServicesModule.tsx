@@ -5,7 +5,6 @@ import {
   Tractor,
   Wrench,
   FileText,
-  ShoppingCart,
   Search,
   Plus,
   ChevronDown,
@@ -22,7 +21,7 @@ import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
 import { useConfirm } from '../../context/ConfirmContext';
 import { ServiceFormModal, ServiceTabType } from './ServiceFormModal';
 
-export type ServiceTab = 'corte' | 'colheita' | 'trator' | 'maquina' | 'orcamento' | 'venda';
+export type ServiceTab = 'corte' | 'colheita' | 'trator' | 'maquina' | 'orcamento';
 
 interface ServicesModuleProps {
   services?: ServiceOrder[];
@@ -57,14 +56,13 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
   const [editRecord, setEditRecord] = useState<ServiceOrder | null>(null);
 
   // Tabs Definition na ordem exata requerida:
-  // Corte | Colheita | Serviço de Trator | Serviço de Máquina | Orçamento | Venda
+  // Corte | Colheita | Serviço de Trator | Serviço de Máquina | Orçamento
   const tabs = [
     { id: 'corte' as ServiceTab, label: 'Corte', icon: Scissors },
     { id: 'colheita' as ServiceTab, label: 'Colheita', icon: Wheat },
     { id: 'trator' as ServiceTab, label: 'Serviço de Trator', icon: Tractor },
     { id: 'maquina' as ServiceTab, label: 'Serviço de Máquina', icon: Wrench },
     { id: 'orcamento' as ServiceTab, label: 'Orçamento', icon: FileText },
-    { id: 'venda' as ServiceTab, label: 'Venda', icon: ShoppingCart },
   ];
 
   // Configurações Dinâmicas por Aba
@@ -99,18 +97,12 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
           serviceTypeName: 'Serviço de Máquina',
         };
       case 'orcamento':
+      default:
         return {
           dateColumn: 'DATA DO ORÇAMENTO',
           quantityColumn: 'QUANTIDADE',
           newButtonLabel: '+ Novo Orçamento',
           serviceTypeName: 'Orçamento Agrícola',
-        };
-      case 'venda':
-        return {
-          dateColumn: 'DATA DA VENDA',
-          quantityColumn: 'TONELADAS',
-          newButtonLabel: '+ Nova Venda',
-          serviceTypeName: 'Venda de Silagem',
         };
     }
   }, [activeTab]);
@@ -131,8 +123,6 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
         matchesTab = typeStr.includes('máquina') || typeStr.includes('maquina');
       } else if (activeTab === 'orcamento') {
         matchesTab = typeStr.includes('orçamento') || typeStr.includes('orcamento');
-      } else if (activeTab === 'venda') {
-        matchesTab = typeStr.includes('venda');
       }
 
       if (!matchesTab) return false;
@@ -214,7 +204,7 @@ export const ServicesModule: React.FC<ServicesModuleProps> = ({
             Serviços
           </h1>
           <p className="text-sm text-blue-100 font-medium mt-1">
-            Gestão de cortes, colheitas, serviços e vendas agrícolas.
+            Gestão de cortes, colheitas, serviços e orçamentos agrícolas.
           </p>
         </div>
 

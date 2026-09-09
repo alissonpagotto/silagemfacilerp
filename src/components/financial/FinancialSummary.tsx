@@ -18,8 +18,6 @@ import {
   Download,
   Landmark,
   Scale,
-  UploadCloud,
-  FileText,
   PlusCircle,
   Sparkles
 } from 'lucide-react';
@@ -46,7 +44,6 @@ import { FinancialExportTab } from './FinancialExportTab';
 import { ExpenseStats } from '../expenses/ExpenseStats';
 import { ExpenseCharts } from '../expenses/ExpenseCharts';
 import { ExpenseList } from '../expenses/ExpenseList';
-import { NfeModule } from '../nfe/NfeModule';
 
 export type FinancialTabType = 
   | 'consolidado' 
@@ -55,8 +52,6 @@ export type FinancialTabType =
   | 'a_pagar' 
   | 'a_receber' 
   | 'acertos' 
-  | 'nfe_importar'
-  | 'nfe_notas'
   | 'exportar';
 
 interface FinancialSummaryProps {
@@ -340,20 +335,6 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         >
           <Truck className="w-3.5 h-3.5" />
           <span>Acertos Terceiros</span>
-        </button>
-
-        {/* Aba NF-e Notas */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('nfe_notas')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'nfe_notas' || activeTab === 'nfe_importar'
-              ? 'bg-sky-600 text-white shadow-xs'
-              : 'text-black dark:text-stone-300 hover:bg-black/10 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>NF-e Notas</span>
         </button>
 
         {/* Aba Exportar */}
@@ -782,15 +763,6 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <ThirdPartySettlementsTab
           settlements={settlements}
           onSaveSettlements={onSaveSettlements}
-        />
-      )}
-
-      {/* ABA: NF-e Notas */}
-      {(activeTab === 'nfe_notas' || activeTab === 'nfe_importar') && (
-        <NfeModule
-          expenses={expenses}
-          viewMode="import"
-          onAddExpenseFromNfe={onAddExpenseFromNfe}
         />
       )}
 

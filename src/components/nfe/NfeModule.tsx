@@ -15,7 +15,7 @@ import {
   Package,
   X
 } from 'lucide-react';
-import { Expense } from '../../types';
+import { Expense, CompanyProfile } from '../../types';
 import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
 import { formatCpfCnpj } from '../../lib/formatters';
 
@@ -47,12 +47,14 @@ interface ParsedNfeData {
 
 interface NfeModuleProps {
   expenses: Expense[];
+  companyProfile?: CompanyProfile;
   onAddExpenseFromNfe: (expense: Partial<Expense>) => void;
   viewMode?: 'import' | 'list';
 }
 
 export const NfeModule: React.FC<NfeModuleProps> = ({
   expenses,
+  companyProfile,
   onAddExpenseFromNfe,
   viewMode = 'import',
 }) => {
@@ -407,6 +409,18 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
             {parsedData ? (
               <div className="space-y-4 animate-in fade-in">
+                {parsedData.recipientCnpj && companyProfile?.cnpjCpf && (
+                  parsedData.recipientCnpj.replace(/\D/g, '') !== companyProfile.cnpjCpf.replace(/\D/g, '')
+                ) && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start space-x-2 text-amber-800 dark:text-amber-300">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <strong className="block mb-0.5">Atenção: Nota emitida para outro CNPJ</strong>
+                      O destinatário na nota ({formatCpfCnpj(parsedData.recipientCnpj)}) diverge do CNPJ cadastrado no sistema ({formatCpfCnpj(companyProfile.cnpjCpf)}). A importação pode prosseguir normalmente.
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 space-y-2.5 text-xs sm:text-sm">
                   {parsedData.accessKey && (
                     <div className="flex flex-col space-y-0.5 border-b border-stone-200 dark:border-stone-700 pb-2">

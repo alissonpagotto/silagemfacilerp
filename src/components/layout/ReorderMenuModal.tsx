@@ -17,6 +17,8 @@ import {
   Truck, 
   Car, 
   Settings,
+  ReceiptText,
+  ShoppingCart,
   LucideIcon
 } from 'lucide-react';
 
@@ -30,8 +32,10 @@ export interface MenuItemDef {
 export const ALL_MENU_ITEMS: MenuItemDef[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'servicos', label: 'Serviços', icon: Tractor },
+  { id: 'venda', label: 'Venda', icon: ShoppingCart },
   { id: 'estoque', label: 'Estoque', icon: Package },
   { id: 'financeiro', label: 'Financeiro', icon: TrendingUp },
+  { id: 'fiscal', label: 'Fiscal', icon: ReceiptText },
   { id: 'rh', label: 'RH', icon: HeartHandshake },
   { id: 'relatorios', label: 'Relatórios', icon: FileSpreadsheet },
   { id: 'clientes', label: 'Clientes', icon: Users },
@@ -62,6 +66,22 @@ export const ReorderMenuModal: React.FC<ReorderMenuModalProps> = ({
     if (isOpen) {
       // Ensure all ALL_MENU_ITEMS exist in order
       const validOrder = currentOrder.filter(id => ALL_MENU_ITEMS.some(m => m.id === id));
+      if (!validOrder.includes('venda')) {
+        const servIndex = validOrder.indexOf('servicos');
+        if (servIndex !== -1) {
+          validOrder.splice(servIndex + 1, 0, 'venda');
+        } else {
+          validOrder.push('venda');
+        }
+      }
+      if (!validOrder.includes('fiscal')) {
+        const finIndex = validOrder.indexOf('financeiro');
+        if (finIndex !== -1) {
+          validOrder.splice(finIndex + 1, 0, 'fiscal');
+        } else {
+          validOrder.push('fiscal');
+        }
+      }
       const missing = ALL_MENU_ITEMS.filter(m => !validOrder.includes(m.id)).map(m => m.id);
       setOrder([...validOrder, ...missing]);
     }

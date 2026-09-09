@@ -1003,7 +1003,7 @@ export const ServiceFormModal: React.FC<ServiceFormModalProps> = ({
       clientId,
       clientName,
       farmName,
-      serviceType: activeTab === 'corte' ? 'Corte de Silagem' : activeTab === 'colheita' ? 'Colheita' : activeTab === 'trator' ? 'Serviço de Trator' : 'Serviço de Máquina',
+      serviceType: activeTab === 'corte' ? 'Corte de Silagem' : activeTab === 'colheita' ? 'Colheita' : activeTab === 'trator' ? 'Serviço de Trator' : activeTab === 'orcamento' ? 'Orçamento Agrícola' : activeTab === 'venda' ? 'Venda de Silagem' : 'Serviço de Máquina',
       serviceTab: activeTab,
       status,
       startDate: serviceDate,

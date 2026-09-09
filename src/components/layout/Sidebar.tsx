@@ -38,6 +38,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Verify valid items
           const valid = parsed.filter(id => ALL_MENU_ITEMS.some(m => m.id === id));
+          if (!valid.includes('venda')) {
+            const servIndex = valid.indexOf('servicos');
+            if (servIndex !== -1) {
+              valid.splice(servIndex + 1, 0, 'venda');
+            } else {
+              valid.push('venda');
+            }
+          }
+          if (!valid.includes('fiscal')) {
+            const finIndex = valid.indexOf('financeiro');
+            if (finIndex !== -1) {
+              valid.splice(finIndex + 1, 0, 'fiscal');
+            } else {
+              valid.push('fiscal');
+            }
+          }
           const missing = ALL_MENU_ITEMS.filter(m => !valid.includes(m.id)).map(m => m.id);
           return [...valid, ...missing];
         }
@@ -124,7 +140,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <nav className="p-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = 
+                activeTab === item.id ||
+                (item.id === 'venda' && (activeTab === 'venda' || activeTab === 'vendas')) ||
+                (item.id === 'fiscal' && (activeTab === 'nfe_notas' || activeTab === 'nfe_importar')) ||
+                (item.id === 'financeiro' && activeTab === 'despesas') ||
+                (item.id === 'frotas' && ['veiculos', 'manutencoes', 'combustivel', 'motoristas', 'equipe', 'rodizio', 'rodizio_pneus'].includes(activeTab)) ||
+                (item.id === 'rh' && activeTab === 'funcionarios');
 
               return (
                 <button
