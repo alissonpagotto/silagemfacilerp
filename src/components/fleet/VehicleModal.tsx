@@ -629,7 +629,7 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
                     placeholder="Ex: AAA0002 ou ABC-1234"
                     className="w-full px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-sm font-bold uppercase focus:outline-none focus:ring-2 focus:ring-cyan-600 shadow-xs"
                   />
-                  <p className="text-[10px] text-stone-400 mt-1">Opcional para máquinas agrícolas</p>
+                  <p className="text-[10px] text-black mt-1">Opcional para máquinas agrícolas</p>
                 </div>
 
                 {/* Nº DE SÉRIE - Totalmente Editável (especial para tratores e ensiladeiras) */}

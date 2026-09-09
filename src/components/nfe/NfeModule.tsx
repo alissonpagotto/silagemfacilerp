@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   UploadCloud, 
   FileText, 
@@ -10,10 +10,40 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
-  Plus
+  Plus,
+  Hash,
+  Package,
+  X
 } from 'lucide-react';
 import { Expense } from '../../types';
 import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
+import { formatCpfCnpj } from '../../lib/formatters';
+
+interface ParsedNfeItem {
+  code: string;
+  description: string;
+  ncm: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+interface ParsedNfeData {
+  accessKey?: string;
+  invoiceNumber: string;
+  series?: string;
+  supplier: string;
+  supplierCnpj?: string;
+  recipient?: string;
+  recipientCnpj?: string;
+  totalAmount: number;
+  productsAmount?: number;
+  issueDate: string;
+  itemsSummary: string;
+  suggestedCategory: string;
+  items?: ParsedNfeItem[];
+}
 
 interface NfeModuleProps {
   expenses: Expense[];
@@ -28,68 +58,188 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'import' | 'list'>(viewMode);
   const [xmlContent, setXmlContent] = useState('');
-  const [parsedData, setParsedData] = useState<{
-    invoiceNumber: string;
-    supplier: string;
-    totalAmount: number;
-    issueDate: string;
-    itemsSummary: string;
-    suggestedCategory: string;
-  } | null>(null);
+  const [parsedData, setParsedData] = useState<ParsedNfeData | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // XML Parser simulation & extractor
-  const handleProcessXml = (text: string) => {
-    setXmlContent(text);
-    if (!text.trim()) return;
+  // XML Parser robusto para NF-e SEFAZ Brasil usando DOMParser
+  const parseXmlNFe = (xmlText: string): ParsedNfeData => {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
 
-    // Simple regex parser for common Brazilian NF-e XML tags
-    let invoiceNumber = 'NF-e ' + Math.floor(10000 + Math.random() * 90000);
-    const nNFMatch = text.match(/<nNF>(\d+)<\/nNF>/);
-    if (nNFMatch) invoiceNumber = `NF-e ${nNFMatch[1]}`;
+    // Verifica erros de sintaxe XML
+    const parseErrors = xmlDoc.getElementsByTagName('parsererror');
+    if (parseErrors.length > 0) {
+      throw new Error('O arquivo selecionado contém sintaxe XML inválida ou corrompida.');
+    }
 
-    let supplier = 'Fornecedor Identificado no XML';
-    const xNomeMatch = text.match(/<emit>[\s\S]*?<xNome>([^<]+)<\/xNome>/);
-    if (xNomeMatch) supplier = xNomeMatch[1];
+    // Helper imune a namespaces SEFAZ (<nfe:emit> ou <emit xmlns="...">)
+    const getTag = (parent: Element | Document, tagName: string): string => {
+      const el = parent.getElementsByTagName(tagName)[0];
+      return el?.textContent?.trim() || '';
+    };
 
-    let totalAmount = 1450.00;
-    const vNFMatch = text.match(/<vNF>([\d.]+)<\/vNF>/);
-    if (vNFMatch) totalAmount = parseFloat(vNFMatch[1]);
+    const infNFe = xmlDoc.getElementsByTagName('infNFe')[0];
+    if (!infNFe) {
+      throw new Error('Estrutura de NF-e não localizada (<infNFe>). Certifique-se de carregar um XML de Nota Fiscal Eletrônica padrão SEFAZ.');
+    }
 
-    let issueDate = new Date().toISOString().split('T')[0];
-    const dEmiMatch = text.match(/<dhEmi>([^<T]+)/);
-    if (dEmiMatch) issueDate = dEmiMatch[1];
+    // 1. Chave de Acesso
+    let accessKey = getTag(xmlDoc, 'chNFe');
+    if (!accessKey) {
+      const idAttr = infNFe.getAttribute('Id') || '';
+      accessKey = idAttr.replace(/^NFe/, '');
+    }
 
-    // Detect category keywords
+    // 2. Número e Série da NF-e
+    const ide = xmlDoc.getElementsByTagName('ide')[0];
+    const nNF = ide ? getTag(ide, 'nNF') : getTag(xmlDoc, 'nNF');
+    const serie = ide ? getTag(ide, 'serie') : '';
+    const invoiceNumber = nNF ? `NF-e ${nNF}` : `NF-e ${(accessKey ? accessKey.slice(25, 34) : 'S/N')}`;
+
+    // 3. Data de Emissão (dhEmi ou dEmi)
+    let issueDate = ide ? (getTag(ide, 'dhEmi') || getTag(ide, 'dEmi')) : '';
+    if (issueDate.includes('T')) {
+      issueDate = issueDate.split('T')[0];
+    }
+    if (!issueDate) {
+      issueDate = new Date().toISOString().split('T')[0];
+    }
+
+    // 4. Emitente (Fornecedor)
+    const emit = xmlDoc.getElementsByTagName('emit')[0];
+    const supplierName = emit ? (getTag(emit, 'xNome') || getTag(emit, 'xFant')) : 'Fornecedor Identificado no XML';
+    const supplierCnpj = emit ? (getTag(emit, 'CNPJ') || getTag(emit, 'CPF')) : '';
+
+    // 5. Destinatário
+    const dest = xmlDoc.getElementsByTagName('dest')[0];
+    const recipientName = dest ? getTag(dest, 'xNome') : '';
+    const recipientCnpj = dest ? (getTag(dest, 'CNPJ') || getTag(dest, 'CPF')) : '';
+
+    // 6. Totais
+    const total = xmlDoc.getElementsByTagName('total')[0] || xmlDoc;
+    const vNFStr = getTag(total, 'vNF');
+    const vProdStr = getTag(total, 'vProd');
+    const totalAmount = parseFloat(vNFStr) || parseFloat(vProdStr) || 0;
+    const productsAmount = parseFloat(vProdStr) || totalAmount;
+
+    // 7. Itens da Nota Fiscal (<det>)
+    const detElements = Array.from(xmlDoc.getElementsByTagName('det'));
+    const items: ParsedNfeItem[] = detElements.map((det) => {
+      const prod = det.getElementsByTagName('prod')[0] || det;
+      return {
+        code: getTag(prod, 'cProd'),
+        description: getTag(prod, 'xProd'),
+        ncm: getTag(prod, 'NCM'),
+        quantity: parseFloat(getTag(prod, 'qCom')) || 1,
+        unit: getTag(prod, 'uCom') || 'UN',
+        unitPrice: parseFloat(getTag(prod, 'vUnCom')) || 0,
+        totalPrice: parseFloat(getTag(prod, 'vProd')) || 0,
+      };
+    });
+
+    // 8. Sugestão automática de categoria
+    const allText = (supplierName + ' ' + items.map(i => i.description).join(' ')).toLowerCase();
     let suggestedCategory = 'cat_insumos';
-    const lower = text.toLowerCase();
-    if (lower.includes('diesel') || lower.includes('combustivel') || lower.includes('combustível')) {
+    if (allText.includes('diesel') || allText.includes('combustivel') || allText.includes('combustível') || allText.includes('s10') || allText.includes('arla')) {
       suggestedCategory = 'cat_combustivel';
-    } else if (lower.includes('peca') || lower.includes('peça') || lower.includes('faca') || lower.includes('oleo') || lower.includes('óleo')) {
+    } else if (allText.includes('peca') || allText.includes('peça') || allText.includes('faca') || allText.includes('filtro') || allText.includes('oleo') || allText.includes('óleo') || allText.includes('correia')) {
       suggestedCategory = 'cat_manutencao';
-    } else if (lower.includes('lona') || lower.includes('filme') || lower.includes('plastico') || lower.includes('plástico')) {
+    } else if (allText.includes('lona') || allText.includes('filme') || allText.includes('plastico') || allText.includes('plástico') || allText.includes('inoculante')) {
       suggestedCategory = 'cat_lona_embalagem';
     }
 
-    setParsedData({
+    return {
+      accessKey,
       invoiceNumber,
-      supplier,
+      series: serie,
+      supplier: supplierName,
+      supplierCnpj,
+      recipient: recipientName,
+      recipientCnpj,
       totalAmount,
+      productsAmount,
       issueDate,
-      itemsSummary: 'Itens importados via XML da Nota Fiscal Eletrônica',
+      itemsSummary: items.length > 0 ? `${items.length} produto(s) listado(s)` : 'Sem detalhamento de itens',
       suggestedCategory,
-    });
+      items
+    };
   };
 
+  const handleProcessXml = (text: string) => {
+    setXmlContent(text);
+    setErrorMessage('');
+    if (!text.trim()) {
+      setParsedData(null);
+      return;
+    }
+
+    try {
+      const result = parseXmlNFe(text);
+      setParsedData(result);
+    } catch (err: any) {
+      setParsedData(null);
+      setErrorMessage(err.message || 'Falha ao processar o arquivo XML da NF-e.');
+    }
+  };
+
+  const readFileContent = (file: File) => {
+    setErrorMessage('');
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.xml') && file.type !== 'text/xml' && file.type !== 'application/xml') {
+      setErrorMessage('Por favor, selecione um arquivo com extensão .xml válido.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        handleProcessXml(text);
+      } else {
+        setErrorMessage('Não foi possível ler o conteúdo do arquivo XML.');
+      }
+    };
+    reader.onerror = () => {
+      setErrorMessage('Erro na leitura do arquivo pelo navegador.');
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  // Upload via botão/input
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        handleProcessXml(text);
-      };
-      reader.readAsText(file);
+      readFileContent(file);
+    }
+    // Reseta o input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
+  };
+
+  // Drag and Drop Handlers
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      readFileContent(files[0]);
     }
   };
 
@@ -97,7 +247,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     if (!parsedData) return;
 
     onAddExpenseFromNfe({
-      description: `Compra NF-e ${parsedData.invoiceNumber} - ${parsedData.supplier}`,
+      description: `Compra ${parsedData.invoiceNumber} - ${parsedData.supplier}`,
       amount: parsedData.totalAmount,
       categoryId: parsedData.suggestedCategory,
       dueDate: parsedData.issueDate,
@@ -105,12 +255,13 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       invoiceNumber: parsedData.invoiceNumber,
       status: 'pago',
       paymentMethod: 'boleto',
-      notes: 'Lançamento automático gerado via importação de NF-e XML.',
+      notes: `Lançamento automático via NF-e XML. Chave: ${parsedData.accessKey || 'N/A'}. ${parsedData.itemsSummary}.`,
     });
 
     setSuccessMessage(`Nota Fiscal ${parsedData.invoiceNumber} importada e convertida em despesa com sucesso!`);
     setParsedData(null);
     setXmlContent('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
@@ -120,12 +271,12 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     <div id="nfe-module" className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 dark:border-stone-800 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/15 dark:border-stone-800 pb-3">
         <div>
-          <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 tracking-tight font-['Outfit']">
+          <h2 className="text-base font-black text-black dark:text-white tracking-tight font-['Outfit']">
             NF-e & Notas Fiscais Eletrônicas
           </h2>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+          <p className="text-xs font-bold text-black dark:text-white mt-0.5">
             Importação de arquivos XML de compras de diesel, lonas, inoculantes e manutenção de maquinários
           </p>
         </div>
@@ -134,20 +285,20 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
         <div className="flex items-center space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
           <button
             onClick={() => setActiveSubTab('import')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'import'
                 ? 'bg-white dark:bg-stone-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                : 'text-stone-800 dark:text-stone-300 hover:text-black'
             }`}
           >
             Importar XML
           </button>
           <button
             onClick={() => setActiveSubTab('list')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               activeSubTab === 'list'
                 ? 'bg-white dark:bg-stone-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                : 'text-stone-800 dark:text-stone-300 hover:text-black'
             }`}
           >
             Notas Lançadas ({nfeExpenses.length})
@@ -156,9 +307,25 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       </div>
 
       {successMessage && (
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center space-x-3 text-emerald-800 dark:text-emerald-200 text-sm font-semibold">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center space-x-3 text-emerald-800 dark:text-emerald-200 text-sm font-semibold animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
           <span>{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between text-rose-800 dark:text-rose-200 text-sm font-semibold animate-in fade-in">
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setErrorMessage('')} 
+            className="text-rose-500 hover:text-rose-700 p-1 rounded-md"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -172,19 +339,32 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               <span>Carregar Arquivo XML da NF-e</span>
             </h3>
 
-            <label className="border-2 border-dashed border-stone-300 dark:border-stone-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition bg-stone-50/50 dark:bg-stone-800/30">
-              <div className="w-12 h-12 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 flex items-center justify-center mb-3">
+            <label 
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition select-none ${
+                isDragging
+                  ? 'border-sky-500 bg-sky-50/80 dark:bg-sky-950/50 scale-[1.01] shadow-lg ring-2 ring-sky-300'
+                  : 'border-stone-300 dark:border-stone-700 hover:border-sky-500 dark:hover:border-sky-500 bg-stone-50/50 dark:bg-stone-800/30'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition ${
+                isDragging ? 'bg-sky-600 text-white animate-bounce' : 'bg-sky-100 dark:bg-sky-950 text-sky-600'
+              }`}>
                 <FileCode className="w-6 h-6" />
               </div>
               <span className="text-sm font-bold text-stone-800 dark:text-stone-200">
-                Clique para selecionar o arquivo XML ou arraste aqui
+                {isDragging ? 'Solte o arquivo XML aqui...' : 'Clique para selecionar o arquivo XML ou arraste aqui'}
               </span>
               <span className="text-xs text-stone-500 mt-1">
                 Suporta formato padrão SEFAZ Brasil (.xml)
               </span>
               <input
+                ref={fileInputRef}
                 type="file"
-                accept=".xml,text/xml"
+                accept=".xml,text/xml,application/xml"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -208,13 +388,13 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             <button
               type="button"
               onClick={() => {
-                const sampleXml = `<nfeProc><NFe><infNFe><emit><xNome>Distribuidora de Diesel Sul Ltda</xNome></emit><ide><nNF>48291</nNF><dhEmi>2026-08-29</dhEmi></ide><total><ICMSTot><vNF>3840.00</vNF></ICMSTot></total></infNFe></NFe></nfeProc>`;
+                const sampleXml = `<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe35260812345678000195550010000482911837492810"><ide><nNF>48291</nNF><serie>1</serie><dhEmi>2026-08-29T14:20:00-03:00</dhEmi></ide><emit><CNPJ>12345678000195</CNPJ><xNome>Distribuidora de Diesel Sul Ltda</xNome><xFant>Diesel Sul</xFant></emit><dest><CNPJ>98765432000110</CNPJ><xNome>Agropecuária Silagem Fácil</xNome></dest><det nItem="1"><prod><cProd>001</cProd><xProd>ÓLEO DIESEL S10 COMUM</xProd><NCM>27101921</NCM><qCom>800.0000</qCom><uCom>LT</uCom><vUnCom>4.80</vUnCom><vProd>3840.00</vProd></prod></det><total><ICMSTot><vProd>3840.00</vProd><vNF>3840.00</vNF></ICMSTot></total></infNFe></NFe></nfeProc>`;
                 handleProcessXml(sampleXml);
               }}
-              className="text-xs text-sky-600 hover:text-sky-700 font-semibold flex items-center space-x-1"
+              className="text-xs text-sky-600 hover:text-sky-700 font-semibold flex items-center space-x-1 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Preencher com exemplo de NF-e Diesel</span>
+              <span>Preencher com exemplo de NF-e Diesel SEFAZ</span>
             </button>
           </div>
 
@@ -226,20 +406,63 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             </h3>
 
             {parsedData ? (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in">
                 <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 space-y-2.5 text-xs sm:text-sm">
+                  {parsedData.accessKey && (
+                    <div className="flex flex-col space-y-0.5 border-b border-stone-200 dark:border-stone-700 pb-2">
+                      <span className="text-[11px] text-stone-500 flex items-center space-x-1">
+                        <Hash className="w-3 h-3 text-stone-400" />
+                        <span>Chave de Acesso da NF-e:</span>
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400 break-all select-all">
+                        {parsedData.accessKey}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between">
                     <span className="text-stone-500">Número da NF-e:</span>
-                    <span className="font-bold text-stone-900 dark:text-stone-100 font-mono">{parsedData.invoiceNumber}</span>
+                    <span className="font-bold text-stone-900 dark:text-stone-100 font-mono">
+                      {parsedData.invoiceNumber} {parsedData.series ? `(Série ${parsedData.series})` : ''}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-stone-500">Emitente / Fornecedor:</span>
-                    <span className="font-bold text-stone-900 dark:text-stone-100">{parsedData.supplier}</span>
+                    <div className="text-right">
+                      <span className="font-bold text-stone-900 dark:text-stone-100 block">{parsedData.supplier}</span>
+                      {parsedData.supplierCnpj && (
+                        <span className="text-[11px] text-stone-500 font-mono">
+                          {formatCpfCnpj(parsedData.supplierCnpj)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-stone-500">Data de Emissão:</span>
                     <span className="font-bold text-stone-900 dark:text-stone-100">{formatDateBR(parsedData.issueDate)}</span>
                   </div>
+
+                  {parsedData.items && parsedData.items.length > 0 && (
+                    <div className="pt-2 border-t border-stone-200 dark:border-stone-700">
+                      <div className="flex items-center space-x-1 text-xs font-bold text-stone-700 dark:text-stone-300 mb-2">
+                        <Package className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Itens Identificados ({parsedData.items.length}):</span>
+                      </div>
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                        {parsedData.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-[11px] p-1.5 bg-white dark:bg-stone-800 rounded border border-stone-200 dark:border-stone-700">
+                            <span className="font-medium text-stone-800 dark:text-stone-200 truncate mr-2 max-w-[200px]" title={item.description}>
+                              {item.description}
+                            </span>
+                            <span className="text-stone-500 whitespace-nowrap">
+                              {item.quantity} {item.unit} x {formatCurrencyBRL(item.unitPrice)} = <strong className="text-stone-900 dark:text-stone-100">{formatCurrencyBRL(item.totalPrice)}</strong>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-between border-t border-stone-200 dark:border-stone-700 pt-2 text-base font-black">
                     <span className="text-stone-800 dark:text-stone-200">Valor Total:</span>
                     <span className="text-emerald-600 dark:text-emerald-400">{formatCurrencyBRL(parsedData.totalAmount)}</span>
@@ -247,6 +470,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleConfirmImport}
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
                 >
@@ -258,7 +482,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               <div className="h-64 flex flex-col items-center justify-center text-center text-stone-400">
                 <FileText className="w-12 h-12 stroke-1 mb-2" />
                 <p className="text-xs">Nenhum arquivo XML carregado no momento.</p>
-                <p className="text-[11px] text-stone-500 mt-1">Carregue um XML ao lado para ver a prévia dos itens.</p>
+                <p className="text-[11px] text-stone-500 mt-1">Carregue um XML ao lado para ver a prévia dos dados e produtos.</p>
               </div>
             )}
 

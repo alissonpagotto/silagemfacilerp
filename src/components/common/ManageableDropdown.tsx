@@ -88,7 +88,7 @@ export const ManageableDropdown: React.FC<ManageableDropdownProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-3 py-1.5 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg text-stone-900 dark:text-stone-100 text-xs sm:text-sm font-medium focus:outline-none focus:ring-1 focus:ring-[#00897b] transition cursor-pointer text-left"
       >
-        <span className="truncate">{value || placeholder}</span>
+        <span className="truncate">{value === 'mecanico_especialista' ? 'Mecanico Especialista' : (value || placeholder)}</span>
         <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -97,7 +97,10 @@ export const ManageableDropdown: React.FC<ManageableDropdownProps> = ({
         <div className="absolute left-0 top-full mt-1 w-full min-w-[200px] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           <div className="max-h-48 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800/60 no-scrollbar">
             {options.map((opt) => {
-              const isSelected = opt === value;
+              const isSelected = 
+                opt === value || 
+                (opt === 'Mecanico Especialista' && value === 'mecanico_especialista') ||
+                (opt.toLowerCase() === value.toLowerCase());
               return (
                 <div
                   key={opt}

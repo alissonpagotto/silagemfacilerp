@@ -342,26 +342,12 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
           <span>Acertos Terceiros</span>
         </button>
 
-        {/* Aba NF-e Importar */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('nfe_importar')}
-          className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'nfe_importar'
-              ? 'bg-sky-600 text-white shadow-xs'
-              : 'text-black dark:text-stone-300 hover:bg-black/10 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white'
-          }`}
-        >
-          <UploadCloud className="w-3.5 h-3.5" />
-          <span>NF-e Importar</span>
-        </button>
-
         {/* Aba NF-e Notas */}
         <button
           type="button"
           onClick={() => setActiveTab('nfe_notas')}
           className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
-            activeTab === 'nfe_notas'
+            activeTab === 'nfe_notas' || activeTab === 'nfe_importar'
               ? 'bg-sky-600 text-white shadow-xs'
               : 'text-black dark:text-stone-300 hover:bg-black/10 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white'
           }`}
@@ -705,10 +691,10 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+              <h2 className="text-xl font-bold text-black dark:text-stone-100 font-['Outfit']">
                 Controle de Despesas
               </h2>
-              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
+              <p className="text-xs sm:text-sm font-semibold text-black dark:text-stone-300">
                 Gerencie todos os custos e despesas operacionais
               </p>
             </div>
@@ -799,20 +785,11 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
         />
       )}
 
-      {/* ABA: NF-e Importar */}
-      {activeTab === 'nfe_importar' && (
+      {/* ABA: NF-e Notas */}
+      {(activeTab === 'nfe_notas' || activeTab === 'nfe_importar') && (
         <NfeModule
           expenses={expenses}
           viewMode="import"
-          onAddExpenseFromNfe={onAddExpenseFromNfe}
-        />
-      )}
-
-      {/* ABA: NF-e Notas */}
-      {activeTab === 'nfe_notas' && (
-        <NfeModule
-          expenses={expenses}
-          viewMode="list"
           onAddExpenseFromNfe={onAddExpenseFromNfe}
         />
       )}

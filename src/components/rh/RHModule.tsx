@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Users, 
   FileText, 
@@ -62,11 +62,18 @@ export const RHModule: React.FC<RHModuleProps> = ({
   const [activeTab, setActiveTab] = useState<RHTabType>(initialSubTab || 'dashboard');
   const [currentMonthRef, setCurrentMonthRef] = useState<string>('09/2026');
 
+  // Ordenação automática e permanente de A a Z dos colaboradores para o RH
+  const sortedEmployees = useMemo(() => {
+    return [...employees].sort((a, b) => 
+      (a.name || (a as any).nome_funcionario || '').localeCompare(b.name || (b as any).nome_funcionario || '', 'pt-BR')
+    );
+  }, [employees]);
+
   // Payslip Modal State
   const [viewingPayslip, setViewingPayslip] = useState<PayrollRecord | null>(null);
 
   const selectedPayslipEmployee = viewingPayslip 
-    ? employees.find(e => e.id === viewingPayslip.employeeId)
+    ? sortedEmployees.find(e => e.id === viewingPayslip.employeeId)
     : undefined;
 
   const handleOpenNewPayroll = () => {
@@ -203,7 +210,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
       {/* Renderização do Conteúdo de Cada Aba */}
       {activeTab === 'dashboard' && (
         <RHDashboardTab
-          employees={employees}
+          employees={sortedEmployees}
           payrolls={payrolls}
           vacations={vacations}
           leaves={leaves}
@@ -222,14 +229,14 @@ export const RHModule: React.FC<RHModuleProps> = ({
 
       {activeTab === 'funcionarios' && (
         <EmployeesModule
-          employees={employees}
+          employees={sortedEmployees}
           onSaveEmployees={onSaveEmployees}
         />
       )}
 
       {activeTab === 'folha' && (
         <PayrollTab
-          employees={employees}
+          employees={sortedEmployees}
           payrolls={payrolls}
           advances={advances}
           currentMonthRef={currentMonthRef}
@@ -241,7 +248,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
 
       {activeTab === 'ferias' && (
         <VacationsTab
-          employees={employees}
+          employees={sortedEmployees}
           vacations={vacations}
           onSaveVacations={onSaveVacations}
         />
@@ -249,7 +256,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
 
       {activeTab === 'afastamentos' && (
         <LeavesTab
-          employees={employees}
+          employees={sortedEmployees}
           leaves={leaves}
           onSaveLeaves={onSaveLeaves}
         />
@@ -257,7 +264,7 @@ export const RHModule: React.FC<RHModuleProps> = ({
 
       {activeTab === 'adiantamentos' && (
         <AdvancesTab
-          employees={employees}
+          employees={sortedEmployees}
           advances={advances}
           currentMonthRef={currentMonthRef}
           onSaveAdvances={onSaveAdvances}

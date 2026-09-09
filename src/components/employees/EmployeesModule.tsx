@@ -27,7 +27,7 @@ import {
   FileCheck,
   Paperclip
 } from 'lucide-react';
-import { Employee, CompanyProfile, EmployeeAttachment } from '../../types';
+import { Employee, CompanyProfile, EmployeeAttachment, Cargo, EmployeeRole, EmployeeRegistrationType } from '../../types';
 import { formatDateBR, checkCnhStatus, formatCurrencyBRL, getStoredCompanyProfile } from '../../lib/storage';
 import { formatPhone, formatCpfCnpj, parseCurrencyInput, formatCurrencyInputDisplay } from '../../lib/formatters';
 import { ManageableDropdown } from '../common/ManageableDropdown';
@@ -50,7 +50,8 @@ const DEFAULT_REG_TYPES = [
   'Auxiliar',
   'Operador de Máquinas',
   'Diarista / Safrista',
-  'Prestador de Serviço'
+  'Prestador de Serviço',
+  'Mecanico Especialista'
 ];
 
 const DEFAULT_ROLES = [
@@ -58,7 +59,8 @@ const DEFAULT_ROLES = [
   'Operador de forrageira',
   'Operador de trator',
   'Auxiliar',
-  'Administrador'
+  'Administrador',
+  'Mecanico Especialista'
 ];
 
 const DEFAULT_CONTRACT_TYPES = [
@@ -95,7 +97,18 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
   const [regTypeOptions, setRegTypeOptions] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.REG_TYPES);
-      return saved ? JSON.parse(saved) : DEFAULT_REG_TYPES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          if (!parsed.includes('Mecanico Especialista')) {
+            const updated = [...parsed, 'Mecanico Especialista'];
+            localStorage.setItem(STORAGE_KEYS.REG_TYPES, JSON.stringify(updated));
+            return updated;
+          }
+          return parsed;
+        }
+      }
+      return DEFAULT_REG_TYPES;
     } catch {
       return DEFAULT_REG_TYPES;
     }
@@ -104,7 +117,18 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
   const [roleOptions, setRoleOptions] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ROLES);
-      return saved ? JSON.parse(saved) : DEFAULT_ROLES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          if (!parsed.includes('Mecanico Especialista')) {
+            const updated = [...parsed, 'Mecanico Especialista'];
+            localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(updated));
+            return updated;
+          }
+          return parsed;
+        }
+      }
+      return DEFAULT_ROLES;
     } catch {
       return DEFAULT_ROLES;
     }
@@ -135,9 +159,9 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
   };
 
   // Form State
-  const [registrationType, setRegistrationType] = useState<string>('Funcionário');
+  const [registrationType, setRegistrationType] = useState<EmployeeRegistrationType | string>('Funcionário');
   const [name, setName] = useState<string>('');
-  const [role, setRole] = useState<string>('Auxiliar');
+  const [role, setRole] = useState<EmployeeRole | string>('Auxiliar');
   const [cpf, setCpf] = useState<string>('');
   const [rg, setRg] = useState<string>('');
   const [birthDate, setBirthDate] = useState<string>('');
@@ -178,14 +202,29 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
 
   const cnhReport = checkCnhStatus(employees);
 
-  const filteredEmployees = employees.filter(emp =>
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (emp.cpf && emp.cpf.includes(searchTerm)) ||
-    (emp.rg && emp.rg.includes(searchTerm)) ||
-    (emp.pis && emp.pis.includes(searchTerm)) ||
-    (emp.cnhNumber && emp.cnhNumber.includes(searchTerm))
-  );
+  // Lista de colaboradores filtrada e rigorosamente ordenada de A a Z pelo nome
+  const filteredEmployees = useMemo(() => {
+    return [...employees]
+      .filter(emp =>
+        (emp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (emp.role || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (emp.cpf && emp.cpf.includes(searchTerm)) ||
+        (emp.rg && emp.rg.includes(searchTerm)) ||
+        (emp.pis && emp.pis.includes(searchTerm)) ||
+        (emp.cnhNumber && emp.cnhNumber.includes(searchTerm))
+      )
+      .sort((a, b) => 
+        (a.name || (a as any).nome_funcionario || '').localeCompare(b.name || (b as any).nome_funcionario || '', 'pt-BR')
+      );
+  }, [employees, searchTerm]);
+
+  // 1. ORDENAÇÃO AUTOMÁTICA DA TABELA (ORDEM ALFABÉTICA A-Z):
+  // Garante que a lista de colaboradores seja exibida SEMPRE em ordem alfabética
+  const listaOrdenada = useMemo(() => {
+    return [...filteredEmployees].sort((a, b) => 
+      (a.name || (a as any).nome_funcionario || '').localeCompare(b.name || (b as any).nome_funcionario || '', 'pt-BR')
+    );
+  }, [filteredEmployees]);
 
   const handleOpenNew = () => {
     setEditingEmployee(null);
@@ -226,9 +265,11 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
 
   const handleOpenEdit = (emp: Employee) => {
     setEditingEmployee(emp);
-    setRegistrationType(emp.registrationType || 'Funcionário');
+    const resolvedRegType = emp.registrationType === 'mecanico_especialista' ? 'Mecanico Especialista' : (emp.registrationType || 'Funcionário');
+    const resolvedRole = emp.role === 'mecanico_especialista' ? 'Mecanico Especialista' : (emp.role || 'Operador de Ensiladeira');
+    setRegistrationType(resolvedRegType);
     setName(emp.name || '');
-    setRole(emp.role || 'Operador de Ensiladeira');
+    setRole(resolvedRole);
     setCpf(emp.cpf || '');
     setRg(emp.rg || '');
     setBirthDate(emp.birthDate || '');
@@ -301,11 +342,16 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
     const parsedPerAlq = parseCurrencyInput(commissionPerAlqueire);
     const parsedPerHa = parseCurrencyInput(commissionPerHectare);
 
+    const rawRole = role.trim();
+    const finalRole = (rawRole === 'mecanico_especialista' ? 'Mecanico Especialista' : rawRole) || 'Operador';
+    const rawRegType = registrationType.trim();
+    const finalRegType = (rawRegType === 'mecanico_especialista' ? 'Mecanico Especialista' : rawRegType) || 'Funcionário';
+
     const snapshot: Partial<Employee> = {
       id: editingEmployee?.id || `emp_temp_${Date.now()}`,
       name: name.trim() || 'Nome do Colaborador',
-      registrationType: registrationType.trim() || 'Funcionário',
-      role: role.trim() || 'Operador',
+      registrationType: finalRegType,
+      role: finalRole,
       cpf: cpf.trim() || undefined,
       rg: rg.trim() || undefined,
       birthDate: birthDate || undefined,
@@ -413,7 +459,12 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
-    const finalRole = role.trim() || 'Operador de Ensiladeira';
+    const rawRole = role.trim();
+    const finalRole = (rawRole === 'mecanico_especialista' ? 'Mecanico Especialista' : rawRole) || 'Operador de Ensiladeira';
+    
+    const rawRegType = registrationType.trim();
+    const finalRegType = (rawRegType === 'mecanico_especialista' ? 'Mecanico Especialista' : rawRegType) || 'Funcionário';
+
     const parsedSalary = parseCurrencyInput(baseSalary);
     const parsedPerHour = parseCurrencyInput(commissionPerHour);
     const parsedPerAlq = parseCurrencyInput(commissionPerAlqueire);
@@ -421,7 +472,7 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
 
     const employeeData: Partial<Employee> = {
       name: name.trim(),
-      registrationType: registrationType.trim() || 'Funcionário',
+      registrationType: finalRegType,
       role: finalRole,
       cpf: cpf.trim() || undefined,
       rg: rg.trim() || undefined,
@@ -791,7 +842,7 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {filteredEmployees.map((emp) => (
+              {listaOrdenada.map((emp) => (
                 <tr key={emp.id} className="hover:bg-slate-50 transition">
                   <td className="py-3.5 px-4">
                     <div className="flex items-center space-x-2">
@@ -995,6 +1046,7 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                   <div className="sm:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <ManageableDropdown
+                        id="employee-registration-type-dropdown"
                         label="Tipo de Cadastro"
                         value={registrationType}
                         onChange={setRegistrationType}
@@ -1088,6 +1140,7 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <ManageableDropdown
+                      id="employee-role-dropdown"
                       label="Cargo / Função"
                       value={role}
                       onChange={setRole}

@@ -207,11 +207,37 @@ export interface EmployeeAttachment {
   size?: number;
 }
 
+export type EmployeeRole = 
+  | 'Operador de Ensiladeira'
+  | 'Operador de forrageira'
+  | 'Operador de trator'
+  | 'Tratorista'
+  | 'Motorista de Caminhão'
+  | 'Motorista'
+  | 'Auxiliar'
+  | 'Administrador'
+  | 'Mecanico Especialista'
+  | 'mecanico_especialista'
+  | 'Mecânico'
+  | string;
+
+export type Cargo = EmployeeRole;
+
+export type EmployeeRegistrationType = 
+  | 'Funcionário' 
+  | 'Prestador de Serviço' 
+  | 'Operador de Máquinas' 
+  | 'Motorista' 
+  | 'Diarista / Safrista' 
+  | 'Mecanico Especialista' 
+  | 'mecanico_especialista' 
+  | string;
+
 export interface Employee {
   id: string;
   name: string;
-  registrationType?: 'Funcionário' | 'Prestador de Serviço' | 'Operador de Máquinas' | 'Motorista' | 'Diarista / Safrista' | string;
-  role: string; // 'Operador de Ensiladeira', 'Tratorista', 'Motorista de Caminhão', 'Mecânico', etc.
+  registrationType?: EmployeeRegistrationType;
+  role: EmployeeRole; // 'Operador de Ensiladeira', 'Tratorista', 'Motorista de Caminhão', 'Mecânico', 'Mecanico Especialista', etc.
   cpf?: string;
   rg?: string; // Número do RG
   birthDate?: string; // Data de Nascimento
