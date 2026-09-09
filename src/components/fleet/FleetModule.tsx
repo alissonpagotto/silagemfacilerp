@@ -683,6 +683,7 @@ export const FleetModule: React.FC<FleetModuleProps> = ({
         onSave={handleSaveMaintenance}
         editingLog={editingMaintenanceLog}
         machineries={machineries}
+        employees={employees}
         inventory={inventory}
         suppliers={suppliers}
         companyProfile={companyProfile}

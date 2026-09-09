@@ -504,6 +504,8 @@ export interface MaintenanceLaborItem {
   hours?: number;
   hourlyRate?: number;
   totalCost: number;
+  date?: string; // Data em que as horas foram trabalhadas
+  dataLancamento?: string; // Data do lançamento das horas
 }
 
 export interface MaintenanceNfeLink {
