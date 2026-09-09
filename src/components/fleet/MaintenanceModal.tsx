@@ -734,7 +734,7 @@ export const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-2">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-2 bg-[#0a8bc1]">
           
           {/* ======================================================== */}
           {/* ABA 1 UNIFICADA: DIAGNÓSTICO, EQUIPE & LOCAL (2 COLUNAS) */}

@@ -940,7 +940,7 @@ export const EmployeesModule: React.FC<EmployeesModuleProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1 no-scrollbar">
+            <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1 no-scrollbar bg-[#0a8bc1]">
               
               {/* SECTION 1: DADOS BÁSICOS & FOTO */}
               <div className="space-y-3">

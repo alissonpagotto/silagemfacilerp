@@ -328,24 +328,24 @@ export const AdvancesTab: React.FC<AdvancesTabProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden my-auto">
             
-            <div className="flex items-center justify-between px-5 py-3.5 bg-stone-50 dark:bg-stone-800/80 border-b border-stone-200 dark:border-stone-800">
-              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-[#1f2ec5] border-b border-stone-200 dark:border-stone-800">
+              <h3 className="text-sm font-bold text-[#010101] leading-[35px]">
                 {editingAdvance ? 'Editar Adiantamento / Vale' : 'Lançar Adiantamento / Vale'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 transition"
+                className="p-1 text-white/80 hover:text-white rounded-lg hover:bg-white/10 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveModal} className="p-5 space-y-4 text-xs">
+            <form onSubmit={handleSaveModal} className="p-5 space-y-4 text-xs bg-[#0a8bc1]">
               
               {/* Colaborador */}
               <div>
-                <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">
+                <label className="block font-bold text-[#0d0d0c] mb-1">
                   Colaborador / Funcionário *
                 </label>
                 <select
@@ -440,7 +440,7 @@ export const AdvancesTab: React.FC<AdvancesTabProps> = ({
 
               {/* Status */}
               <div>
-                <label className="block font-semibold text-stone-600 dark:text-stone-400 mb-0.5">
+                <label className="block font-semibold text-[#030303] mb-0.5">
                   Situação do Desconto
                 </label>
                 <div className="flex items-center space-x-3 mt-1">
@@ -472,13 +472,13 @@ export const AdvancesTab: React.FC<AdvancesTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-bold hover:bg-stone-100 dark:hover:bg-stone-800"
+                  className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-[#e31919] hover:bg-[#cc1616] text-[#070707] font-bold transition shadow-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-[#009688] hover:bg-[#00796b] text-white font-bold transition shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-[#14d677] hover:bg-[#11be69] text-[#ffffff] font-bold transition shadow-xs"
                 >
                   Salvar Vale
                 </button>
