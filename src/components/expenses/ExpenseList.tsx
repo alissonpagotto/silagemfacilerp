@@ -430,19 +430,19 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
         <table className="w-full text-left text-xs text-black dark:text-stone-200">
           <thead className="bg-blue-100/70 dark:bg-stone-800 text-black dark:text-stone-300 font-black border-b border-blue-200/80 dark:border-stone-700 uppercase tracking-wider text-[10px]">
             <tr>
-              <th className="py-2 px-3.5">Descrição & Fornecedor</th>
-              <th className="py-2 px-3.5">Categoria</th>
-              <th className="py-2 px-3.5">Vencimento</th>
-              <th className="py-2 px-3.5">Centro / Máquina</th>
-              <th className="py-2 px-3.5">Valor</th>
-              <th className="py-2 px-3.5">Status</th>
-              <th className="py-2 px-3.5 text-right">Ações</th>
+              <th className="py-1.5 px-3">Descrição & Fornecedor</th>
+              <th className="py-1.5 px-3">Categoria</th>
+              <th className="py-1.5 px-3">Vencimento</th>
+              <th className="py-1.5 px-3">Centro / Máquina</th>
+              <th className="py-1.5 px-3">Valor</th>
+              <th className="py-1.5 px-3">Status</th>
+              <th className="py-1.5 px-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 font-medium bg-[#87AFE3] dark:bg-stone-900">
             {filteredExpenses.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-black/75 dark:text-stone-400">
+                <td colSpan={7} className="py-8 text-center text-black/75 dark:text-stone-400">
                   Nenhum lançamento encontrado com os filtros atuais.
                 </td>
               </tr>
@@ -451,11 +451,11 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
                 <tr key={exp.id} className="hover:bg-blue-200/40 dark:hover:bg-stone-800/60 transition-colors">
                   
                   {/* Description & Supplier */}
-                  <td className="py-3.5 px-4 max-w-xs">
-                    <div className="font-bold text-black dark:text-white line-clamp-1">{exp.description}</div>
-                    <div className="text-[11px] text-black/80 dark:text-stone-400 flex flex-wrap items-center gap-1.5 mt-0.5">
+                  <td className="py-1.5 px-3 max-w-xs">
+                    <div className="font-bold text-black dark:text-white line-clamp-1 leading-snug">{exp.description}</div>
+                    <div className="text-[10px] text-black/80 dark:text-stone-400 flex flex-wrap items-center gap-1 mt-0.5">
                       {exp.employeeName && (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold ${
                           exp.employeeName.startsWith('Equipe') || exp.teamName
                             ? 'text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800'
                             : exp.employeeName.startsWith('Todos')
@@ -477,12 +477,12 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
                   </td>
 
                   {/* Category */}
-                  <td className="py-3.5 px-4">
+                  <td className="py-1.5 px-3">
                     <span
-                      className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/70 dark:bg-stone-800/80 text-black dark:text-white border border-black/10 dark:border-stone-700"
+                      className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/70 dark:bg-stone-800/80 text-black dark:text-white border border-black/10 dark:border-stone-700"
                     >
                       <span
-                        className="w-2 h-2 rounded-full"
+                        className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: exp.categoryColor }}
                       />
                       <span>{exp.categoryName}</span>
@@ -490,44 +490,44 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
                   </td>
 
                   {/* Due Date & Payment Date */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="font-bold text-black dark:text-white">{formatDateBR(exp.dueDate)}</div>
+                  <td className="py-1.5 px-3 whitespace-nowrap">
+                    <div className="font-bold text-black dark:text-white leading-snug">{formatDateBR(exp.dueDate)}</div>
                     {exp.paymentDate && exp.status === 'pago' && (
-                      <div className="text-[10px] text-black dark:text-emerald-400 font-bold">
-                        Pago em: {formatDateBR(exp.paymentDate)}
+                      <div className="text-[9px] text-black dark:text-emerald-400 font-bold">
+                        Pago: {formatDateBR(exp.paymentDate)}
                       </div>
                     )}
                   </td>
 
                   {/* Cost Center / Machinery */}
-                  <td className="py-3.5 px-4">
+                  <td className="py-1.5 px-3">
                     {exp.machineryName ? (
-                      <div className="flex items-center space-x-1 text-[11px] text-black dark:text-blue-300 font-bold">
-                        <Tractor className="w-3.5 h-3.5 text-black dark:text-blue-400 shrink-0" />
+                      <div className="flex items-center space-x-1 text-[10px] text-black dark:text-blue-300 font-bold">
+                        <Tractor className="w-3 h-3 text-black dark:text-blue-400 shrink-0" />
                         <span className="truncate max-w-[140px]">{exp.machineryName}</span>
                       </div>
                     ) : exp.costCenterName ? (
-                      <div className="flex items-center space-x-1 text-[11px] text-black/85 dark:text-stone-300 font-medium">
-                        <Building2 className="w-3 h-3 text-black/60 dark:text-stone-400 shrink-0" />
+                      <div className="flex items-center space-x-1 text-[10px] text-black/85 dark:text-stone-300 font-medium">
+                        <Building2 className="w-2.5 h-2.5 text-black/60 dark:text-stone-400 shrink-0" />
                         <span className="truncate max-w-[140px]">{exp.costCenterName}</span>
                       </div>
                     ) : (
-                      <span className="text-black/60 dark:text-stone-500 text-[11px]">-</span>
+                      <span className="text-black/60 dark:text-stone-500 text-[10px]">-</span>
                     )}
                   </td>
 
                   {/* Amount */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="font-black text-black dark:text-white text-sm font-['Outfit']">
+                  <td className="py-1.5 px-3 whitespace-nowrap">
+                    <div className="font-black text-black dark:text-white text-xs font-['Outfit']">
                       {formatCurrencyBRL(exp.amount)}
                     </div>
-                    <div className="text-[10px] text-black/75 dark:text-stone-400 uppercase font-black">
+                    <div className="text-[9px] text-black/75 dark:text-stone-400 uppercase font-black">
                       {exp.paymentMethod.replace('_', ' ')}
                     </div>
                   </td>
 
                   {/* Status with quick toggle */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  <td className="py-1.5 px-3 whitespace-nowrap">
                     <button
                       onClick={() =>
                         onToggleStatus(
@@ -543,36 +543,36 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
                   </td>
 
                   {/* Actions */}
-                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                  <td className="py-1.5 px-3 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end space-x-1">
                       
                       {/* Receipt icon */}
                       {exp.receiptUrl && (
                         <button
                           onClick={() => onViewReceipt(exp)}
-                          className="p-1.5 text-emerald-800 dark:text-emerald-400 hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-lg transition"
+                          className="p-1 text-emerald-800 dark:text-emerald-400 hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-md transition"
                           title="Ver Comprovante / NF"
                         >
-                          <Paperclip className="w-4 h-4" />
+                          <Paperclip className="w-3.5 h-3.5" />
                         </button>
                       )}
 
                       {/* Duplicate */}
                       <button
                         onClick={() => onDuplicateExpense(exp)}
-                        className="p-1.5 text-black/70 dark:text-stone-400 hover:text-black dark:hover:text-white hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-lg transition"
+                        className="p-1 text-black/70 dark:text-stone-400 hover:text-black dark:hover:text-white hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-md transition"
                         title="Duplicar Despesa"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3 h-3" />
                       </button>
 
                       {/* Edit */}
                       <button
                         onClick={() => onEditExpense(exp)}
-                        className="p-1.5 text-black dark:text-sky-400 hover:text-black dark:hover:text-white hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-lg transition"
+                        className="p-1 text-black dark:text-sky-400 hover:text-black dark:hover:text-white hover:bg-blue-200/60 dark:hover:bg-stone-800 rounded-md transition"
                         title="Editar"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
 
                       {/* Delete */}

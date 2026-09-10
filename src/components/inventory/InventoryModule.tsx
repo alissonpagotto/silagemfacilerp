@@ -97,10 +97,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
   };
 
   return (
-    <div id="inventory-module" className="space-y-6">
+    <div id="inventory-module" className="space-y-2.5">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 dark:border-stone-800 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 dark:border-stone-800 pb-2">
         <div>
           <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 tracking-tight font-['Outfit']">
             Controle de Estoque & Insumos de Silagem
@@ -112,86 +112,86 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition active:scale-95 cursor-pointer"
+          className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-bold rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-xs transition active:scale-95 cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>Cadastrar Item no Estoque</span>
         </button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-lg p-2.5 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
+            <span className="text-[10px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Valor Total em Estoque
             </span>
-            <div className="text-2xl font-black text-black dark:text-white font-['Outfit'] mt-1">
+            <div className="text-lg sm:text-xl font-black text-black dark:text-white font-['Outfit'] mt-0.5">
               {formatCurrencyBRL(totalInventoryValue)}
             </div>
-            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">{inventory.length} produtos cadastrados</p>
+            <p className="text-[10px] font-bold text-black/80 dark:text-stone-400 mt-0.5">{inventory.length} produtos cadastrados</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-sky-950 text-blue-900 dark:text-sky-300 flex items-center justify-center">
-            <Package className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-sky-950 text-blue-900 dark:text-sky-300 flex items-center justify-center">
+            <Package className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-lg p-2.5 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
+            <span className="text-[10px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Alertas de Estoque Mínimo
             </span>
-            <div className="text-2xl font-black text-amber-950 dark:text-amber-300 font-['Outfit'] mt-1">
+            <div className="text-lg sm:text-xl font-black text-amber-950 dark:text-amber-300 font-['Outfit'] mt-0.5">
               {lowStockCount}
             </div>
-            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Itens em nível crítico</p>
+            <p className="text-[10px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Itens em nível crítico</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl p-4 flex items-center justify-between text-black dark:text-white">
+        <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-lg p-2.5 flex items-center justify-between text-black dark:text-white">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-black dark:text-stone-300">
+            <span className="text-[10px] font-black uppercase tracking-wider text-black dark:text-stone-300">
               Diesel em Tanque
             </span>
-            <div className="text-2xl font-black text-black dark:text-white font-['Outfit'] mt-1">
+            <div className="text-lg sm:text-xl font-black text-black dark:text-white font-['Outfit'] mt-0.5">
               {inventory.find(i => i.category === 'combustivel')?.quantity || 0} L
             </div>
-            <p className="text-[11px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Óleo diesel S10 disponível</p>
+            <p className="text-[10px] font-bold text-black/80 dark:text-stone-400 mt-0.5">Óleo diesel S10 disponível</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-stone-800 text-amber-900 dark:text-amber-300 flex items-center justify-center">
-            <Fuel className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-stone-800 text-amber-900 dark:text-amber-300 flex items-center justify-center">
+            <Fuel className="w-4 h-4" />
           </div>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           placeholder="Buscar produto no estoque por nome ou categoria..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+          className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 outline-none"
         />
       </div>
 
       {/* Inventory Table */}
-      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs text-black dark:text-white">
+      <div className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl overflow-hidden shadow-2xs text-black dark:text-white">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-[#87AFE3] dark:bg-stone-900 border-b-2 border-blue-200/80 dark:border-stone-800 text-black dark:text-white uppercase text-xs font-black tracking-wider">
               <tr>
-                <th className="py-3 px-4 text-black dark:text-white font-black">ITEM & LOCAL</th>
-                <th className="py-3 px-4 text-black dark:text-white font-black">CATEGORIA</th>
-                <th className="py-3 px-4 text-black dark:text-white font-black">QUANTIDADE</th>
-                <th className="py-3 px-4 text-black dark:text-white font-black">ESTOQUE MÍNIMO</th>
-                <th className="py-3 px-4 text-black dark:text-white font-black">CUSTO UNITÁRIO</th>
-                <th className="py-3 px-4 text-black dark:text-white font-black">VALOR TOTAL</th>
-                <th className="py-3 px-4 text-right text-black dark:text-white font-black">AÇÕES</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">ITEM & LOCAL</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">CATEGORIA</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">QUANTIDADE</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">ESTOQUE MÍNIMO</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">CUSTO UNITÁRIO</th>
+                <th className="py-1.5 px-3 text-black dark:text-white font-black">VALOR TOTAL</th>
+                <th className="py-1.5 px-3 text-right text-black dark:text-white font-black">AÇÕES</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 bg-[#87AFE3] dark:bg-stone-900 text-black dark:text-white">
@@ -201,48 +201,48 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
 
                 return (
                   <tr key={item.id} className="hover:bg-blue-300/30 dark:hover:bg-stone-800/40 transition">
-                    <td className="py-3.5 px-4">
+                    <td className="py-1.5 px-3">
                       <div className="font-black text-black dark:text-stone-100">{item.name}</div>
-                      <span className="text-[11px] font-bold text-black/70 dark:text-stone-400">{item.location || 'Geral'}</span>
+                      <span className="text-[10px] font-bold text-black/70 dark:text-stone-400">{item.location || 'Geral'}</span>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-1.5 capitalize font-black text-black dark:text-stone-200">
+                    <td className="py-1.5 px-3">
+                      <div className="flex items-center space-x-1 capitalize font-black text-black dark:text-stone-200">
                         {getCategoryIcon(item.category)}
                         <span>{item.category.replace('_', ' ')}</span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4">
+                    <td className="py-1.5 px-3">
                       <span className={`font-black ${isLow ? 'text-rose-950 dark:text-rose-400' : 'text-black dark:text-stone-100'}`}>
                         {item.quantity} {item.unit}
                       </span>
                       {isLow && (
-                        <span className="block text-[10px] font-black text-rose-900 dark:text-rose-400">
+                        <span className="block text-[9px] font-black text-rose-900 dark:text-rose-400">
                           Estoque Baixo!
                         </span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 font-bold text-black/80 dark:text-stone-300">
+                    <td className="py-1.5 px-3 font-bold text-black/80 dark:text-stone-300">
                       {item.minQuantity} {item.unit}
                     </td>
 
-                    <td className="py-3.5 px-4 font-black text-black dark:text-stone-300 font-mono">
+                    <td className="py-1.5 px-3 font-black text-black dark:text-stone-300 font-mono">
                       {formatCurrencyBRL(item.unitCost)}
                     </td>
 
-                    <td className="py-3.5 px-4 font-black text-black dark:text-stone-100 font-mono">
+                    <td className="py-1.5 px-3 font-black text-black dark:text-stone-100 font-mono">
                       {formatCurrencyBRL(itemTotal)}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-1.5 px-3 text-right">
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-1.5 text-black/70 hover:text-rose-900 dark:text-stone-400 dark:hover:text-rose-400 rounded-lg transition"
+                        className="p-1 text-black/70 hover:text-rose-900 dark:text-stone-400 dark:hover:text-rose-400 rounded-md transition cursor-pointer"
                         title="Excluir"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>

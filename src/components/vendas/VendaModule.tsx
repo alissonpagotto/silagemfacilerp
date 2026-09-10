@@ -156,21 +156,21 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
   return (
     <div 
       id="venda-module-root"
-      className="w-full min-h-screen bg-[#2e65aa] text-black antialiased p-4 sm:p-6 lg:p-8 space-y-6 rounded-2xl shadow-md"
+      className="w-full min-h-screen bg-[#2e65aa] text-black antialiased p-3 sm:p-4 lg:p-5 space-y-2.5 rounded-2xl shadow-md"
       style={{ backgroundColor: '#2e65aa' }}
     >
       {/* 1. CABEÇALHO */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/20 pb-2">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/10 rounded-xl text-white">
-              <ShoppingCart className="w-6 h-6" />
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-white/10 rounded-lg text-white">
+              <ShoppingCart className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
                 Venda
               </h1>
-              <p className="text-sm text-blue-100 font-medium">
+              <p className="text-xs text-blue-100 font-medium">
                 Gestão e controle de vendas agrícolas, fornecimento de silagem e contratos.
               </p>
             </div>
@@ -183,95 +183,95 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
             id="btn-nova-venda"
             type="button"
             onClick={handleOpenNew}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white text-sm font-bold rounded-lg shadow-md transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 text-white text-xs font-bold rounded-lg shadow-sm transition-colors duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>+ Nova Venda</span>
           </button>
         </div>
       </header>
 
       {/* 2. CARDS DE INDICADORES (KPIS) */}
-      <section aria-label="Indicadores de Vendas" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl p-4 text-white">
+      <section aria-label="Indicadores de Vendas" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-lg p-2.5 text-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-150 text-blue-100">Total Faturado</span>
-            <DollarSign className="w-4 h-4 text-emerald-300" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Faturado</span>
+            <DollarSign className="w-3.5 h-3.5 text-emerald-300" />
           </div>
-          <div className="text-2xl font-black mt-2">
+          <div className="text-lg sm:text-xl font-black mt-1">
             {formatCurrencyBRL(metrics.totalRevenue)}
           </div>
-          <span className="text-xs text-blue-100 font-medium">Todas as vendas registradas</span>
+          <span className="text-[10px] text-blue-100 font-medium">Todas as vendas registradas</span>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl p-4 text-white">
+        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-lg p-2.5 text-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-100">Volume Total</span>
-            <Scale className="w-4 h-4 text-amber-300" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Volume Total</span>
+            <Scale className="w-3.5 h-3.5 text-amber-300" />
           </div>
-          <div className="text-2xl font-black mt-2">
-            {metrics.totalTons.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} <span className="text-sm font-bold">Ton</span>
+          <div className="text-lg sm:text-xl font-black mt-1">
+            {metrics.totalTons.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} <span className="text-xs font-bold">Ton</span>
           </div>
-          <span className="text-xs text-blue-100 font-medium">Silagem comercializada</span>
+          <span className="text-[10px] text-blue-100 font-medium">Silagem comercializada</span>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl p-4 text-white">
+        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-lg p-2.5 text-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-100">Contratos / Pedidos</span>
-            <FileCheck2 className="w-4 h-4 text-sky-300" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Contratos / Pedidos</span>
+            <FileCheck2 className="w-3.5 h-3.5 text-sky-300" />
           </div>
-          <div className="text-2xl font-black mt-2">
-            {metrics.totalCount} <span className="text-sm font-semibold text-blue-200">({metrics.completedCount} concluídos)</span>
+          <div className="text-lg sm:text-xl font-black mt-1">
+            {metrics.totalCount} <span className="text-xs font-semibold text-blue-200">({metrics.completedCount} concl.)</span>
           </div>
-          <span className="text-xs text-blue-100 font-medium">Volume de operações</span>
+          <span className="text-[10px] text-blue-100 font-medium">Volume de operações</span>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-xl p-4 text-white">
+        <div className="bg-white/10 backdrop-blur-xs border border-white/20 rounded-lg p-2.5 text-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-100">Ticket Médio</span>
-            <TrendingUp className="w-4 h-4 text-indigo-300" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Ticket Médio</span>
+            <TrendingUp className="w-3.5 h-3.5 text-indigo-300" />
           </div>
-          <div className="text-2xl font-black mt-2">
+          <div className="text-lg sm:text-xl font-black mt-1">
             {formatCurrencyBRL(metrics.averageTicket)}
           </div>
-          <span className="text-xs text-blue-100 font-medium">Média por venda</span>
+          <span className="text-[10px] text-blue-100 font-medium">Média por venda</span>
         </div>
       </section>
 
       {/* 3. BARRA DE FILTROS */}
       <section 
         aria-label="Filtros de Vendas"
-        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full"
+        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full"
       >
         {/* Campo de Busca */}
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
-            <Search className="w-4 h-4" />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+            <Search className="w-3.5 h-3.5" />
           </div>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar cliente, fazenda ou nº da venda..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-black font-semibold placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-xs"
+            className="w-full pl-9 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm text-black font-semibold placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-2xs"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-black cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-500 hover:text-black cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         {/* Dropdown de Status */}
-        <div className="relative sm:w-48">
+        <div className="relative sm:w-44">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-xs cursor-pointer"
+            className="w-full appearance-none pl-3 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-2xs cursor-pointer"
           >
             <option value="todos" className="text-black font-semibold">Todos os Status</option>
             <option value="agendado" className="text-black font-semibold">Agendado</option>
@@ -279,8 +279,8 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
             <option value="concluido" className="text-black font-semibold">Concluído</option>
             <option value="cancelado" className="text-black font-semibold">Cancelado</option>
           </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-500">
-            <ChevronDown className="w-4 h-4" />
+          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-gray-500">
+            <ChevronDown className="w-3.5 h-3.5" />
           </div>
         </div>
       </section>
@@ -288,31 +288,31 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
       {/* 4. TABELA DE VENDAS */}
       <section 
         aria-label="Lista de Vendas"
-        className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl shadow-lg overflow-hidden"
+        className="crm-card bg-[#87AFE3] dark:bg-stone-900 border border-blue-200/80 dark:border-stone-800 rounded-xl shadow-md overflow-hidden"
       >
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b-2 border-blue-200/80 dark:border-stone-800 bg-[#87AFE3] dark:bg-stone-900">
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider w-20">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider w-16">
                   Nº
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
                   CLIENTE
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider">
                   DATA DA VENDA
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
                   TONELADAS / QTD
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-center">
                   STATUS
                 </th>
-                <th scope="col" className="px-5 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right">
+                <th scope="col" className="px-3 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right">
                   TOTAL
                 </th>
-                <th scope="col" className="px-4 py-3.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right w-24">
+                <th scope="col" className="px-2.5 py-1.5 text-xs font-black text-black dark:text-white uppercase tracking-wider text-right w-20">
                   <span className="sr-only">Ações</span>
                 </th>
               </tr>
@@ -321,15 +321,15 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
             <tbody className="divide-y divide-blue-200/60 dark:divide-stone-800 bg-[#87AFE3] dark:bg-stone-900">
               {filteredSales.length === 0 ? (
                 <tr className="bg-[#87AFE3] dark:bg-stone-900">
-                  <td colSpan={7} className="px-6 py-16 text-center bg-[#87AFE3] dark:bg-stone-900">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="p-3 bg-blue-100 rounded-full text-blue-700">
-                        <ShoppingCart className="w-8 h-8" />
+                  <td colSpan={7} className="px-4 py-8 text-center bg-[#87AFE3] dark:bg-stone-900">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="p-2 bg-blue-100 rounded-full text-blue-700">
+                        <ShoppingCart className="w-6 h-6" />
                       </div>
-                      <p className="text-base font-bold text-black dark:text-white">
+                      <p className="text-sm font-bold text-black dark:text-white">
                         Nenhuma venda encontrada
                       </p>
-                      <p className="text-xs text-black/70 dark:text-stone-300 max-w-sm">
+                      <p className="text-[11px] text-black/70 dark:text-stone-300 max-w-sm">
                         {searchTerm || statusFilter !== 'todos' 
                           ? 'Tente ajustar os filtros ou o termo de busca para visualizar os registros.' 
                           : 'Cadastre a primeira venda de silagem clicando no botão abaixo.'}
@@ -337,9 +337,9 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
                       <button
                         type="button"
                         onClick={handleOpenNew}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-3 h-3" />
                         <span>Cadastrar Venda</span>
                       </button>
                     </div>
@@ -378,41 +378,41 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
                       className="bg-[#87AFE3] dark:bg-stone-900 hover:bg-blue-200/50 dark:hover:bg-stone-800 transition-colors duration-150 group border-b border-blue-200/60 dark:border-stone-800"
                     >
                       {/* Nº */}
-                      <td className="px-5 py-4 text-xs font-mono text-black font-bold">
+                      <td className="px-3 py-1.5 text-xs font-mono text-black font-bold">
                         #{itemNumber}
                       </td>
 
                       {/* Cliente */}
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-black text-sm">
+                      <td className="px-3 py-1.5">
+                        <div className="font-bold text-black text-sm leading-snug">
                           {sale.clientName}
                         </div>
                         {sale.farmName && (
-                          <div className="text-xs text-black font-semibold">
+                          <div className="text-[11px] text-black font-semibold">
                             {sale.farmName}
                           </div>
                         )}
                         {sale.orderNumber && (
-                          <div className="text-xs text-blue-900 font-medium">
+                          <div className="text-[11px] text-blue-950 font-medium">
                             Pedido: {sale.orderNumber}
                           </div>
                         )}
                       </td>
 
                       {/* Data */}
-                      <td className="px-5 py-4 text-sm text-black font-semibold">
+                      <td className="px-3 py-1.5 text-xs text-black font-semibold whitespace-nowrap">
                         {sale.startDate ? formatDateBR(sale.startDate) : '--'}
                       </td>
 
                       {/* Quantidade / Toneladas */}
-                      <td className="px-5 py-4 text-sm text-center text-black font-black">
+                      <td className="px-3 py-1.5 text-xs text-center text-black font-black whitespace-nowrap">
                         {quantityDisplay}
                       </td>
 
                       {/* Status */}
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-3 py-1.5 text-center whitespace-nowrap">
                         <span 
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                          className={`inline-flex items-center px-2 py-0.2 rounded-full text-[10px] font-bold border ${
                             statusColors[currentStatus] || 'bg-gray-100 text-black border-gray-300'
                           }`}
                         >
@@ -421,28 +421,28 @@ export const VendaModule: React.FC<VendaModuleProps> = ({
                       </td>
 
                       {/* Total */}
-                      <td className="px-5 py-4 text-right font-black text-black text-sm">
+                      <td className="px-3 py-1.5 text-right font-black text-black text-xs sm:text-sm whitespace-nowrap">
                         {formatCurrencyBRL(sale.totalAmount || 0)}
                       </td>
 
                       {/* Ações */}
-                      <td className="px-4 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <td className="px-2.5 py-1.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(sale)}
-                            className="p-1.5 text-black hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1 text-black hover:text-emerald-800 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
                             title="Editar venda"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteService(sale.id, sale.clientName)}
-                            className="p-1.5 text-black hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1 text-black hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                             title="Excluir venda"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
