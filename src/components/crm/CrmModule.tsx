@@ -125,14 +125,6 @@ export const CrmModule: React.FC<CrmModuleProps> = ({
           </div>
 
           <button
-            onClick={() => onNewOrder()}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-black text-black dark:text-emerald-300 bg-white/80 dark:bg-emerald-950/60 hover:bg-white rounded-xl transition border border-slate-300 dark:border-emerald-800 cursor-pointer"
-          >
-            <ShoppingCart className="w-3.5 h-3.5 text-black dark:text-emerald-400" />
-            <span>+ Pedido</span>
-          </button>
-
-          <button
             onClick={onNewClient}
             className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-black text-white bg-emerald-700 hover:bg-emerald-600 rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
           >
