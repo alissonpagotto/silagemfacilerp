@@ -658,7 +658,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                        {exp.status.toUpperCase()}
+                        {exp.status?.toUpperCase() || 'N/A'}
                       </span>
                     </td>
                   </tr>
