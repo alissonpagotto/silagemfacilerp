@@ -41,7 +41,7 @@ export const CrmModule: React.FC<CrmModuleProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCattleType, setSelectedCattleType] = useState<string>('todos');
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('list');
 
   const filteredClients = clients.filter((c) => {
     const matchSearch =
@@ -305,78 +305,86 @@ export const CrmModule: React.FC<CrmModuleProps> = ({
         </div>
       ) : (
         /* List View */
-        <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
+        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-2xs">
           <table className="w-full text-left text-xs text-stone-700">
             <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200 uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="py-3 px-4">Produtor & Fazenda</th>
-                <th className="py-3 px-4">Cidade / UF</th>
-                <th className="py-3 px-4">Atividade / Rebanho</th>
-                <th className="py-3 px-4">Demanda Estimada</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Ações</th>
+                <th className="py-1.5 px-3">Produtor & Fazenda</th>
+                <th className="py-1.5 px-3">Cidade / UF</th>
+                <th className="py-1.5 px-3">Atividade / Rebanho</th>
+                <th className="py-1.5 px-3">Demanda Estimada</th>
+                <th className="py-1.5 px-3">Status</th>
+                <th className="py-1.5 px-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 font-medium">
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-stone-50">
-                  <td className="py-3 px-4">
-                    <div className="font-bold text-stone-900">{client.name}</div>
-                    <div className="text-[11px] text-stone-500">{client.farmName}</div>
-                  </td>
-                  <td className="py-3 px-4">
-                    {client.city}/{client.state}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
-                      {getCattleBadge(client.cattleType)}
-                      <span className="text-stone-500">{client.headCount || 0} cab.</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <strong className="text-emerald-700 font-bold">{client.monthlyDemandTons || 0} ton/mês</strong>
-                  </td>
-                  <td className="py-3 px-4 capitalize">
-                    <span className="font-semibold text-stone-700">{client.status.replace('_', ' ')}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end space-x-1.5">
-                      {client.phone && (
-                        <a
-                          href={getWhatsAppLink(client)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"
-                          title="Conversar no WhatsApp"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </a>
-                      )}
-                      <button
-                        onClick={() => onNewOrder(client.id)}
-                        className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded"
-                        title="Novo Pedido"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onEditClient(client)}
-                        className="p-1.5 text-stone-600 hover:bg-stone-100 rounded"
-                        title="Editar"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteClient(client.id)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {filteredClients.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-stone-400">
+                    Nenhum cliente encontrado com os filtros atuais.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredClients.map((client) => (
+                  <tr key={client.id} className="hover:bg-stone-50">
+                    <td className="py-1.5 px-3">
+                      <div className="font-bold text-stone-900 leading-snug">{client.name}</div>
+                      <div className="text-[10px] text-stone-500">{client.farmName}</div>
+                    </td>
+                    <td className="py-1.5 px-3 whitespace-nowrap">
+                      {client.city}/{client.state}
+                    </td>
+                    <td className="py-1.5 px-3">
+                      <div className="flex items-center space-x-1.5">
+                        {getCattleBadge(client.cattleType)}
+                        <span className="text-stone-500 text-[11px]">{client.headCount || 0} cab.</span>
+                      </div>
+                    </td>
+                    <td className="py-1.5 px-3 whitespace-nowrap">
+                      <strong className="text-emerald-700 font-bold">{client.monthlyDemandTons || 0} ton/mês</strong>
+                    </td>
+                    <td className="py-1.5 px-3 capitalize whitespace-nowrap">
+                      <span className="font-semibold text-stone-700 text-xs">{client.status.replace('_', ' ')}</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end space-x-1">
+                        {client.phone && (
+                          <a
+                            href={getWhatsAppLink(client)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition cursor-pointer"
+                            title="Conversar no WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => onNewOrder(client.id)}
+                          className="p-1 text-emerald-700 hover:bg-emerald-50 rounded transition cursor-pointer"
+                          title="Novo Pedido"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onEditClient(client)}
+                          className="p-1 text-stone-600 hover:bg-stone-100 rounded transition cursor-pointer"
+                          title="Editar"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteClient(client.id)}
+                          className="p-1 text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
