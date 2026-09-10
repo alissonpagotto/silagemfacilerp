@@ -182,10 +182,14 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       const supplierName = (emit ? (getTag(emit, 'xNome') || getTag(emit, 'xFant')) : '') || getTag(xmlDoc, 'xNome') || 'Fornecedor Identificado no XML';
       const supplierCnpj = (emit ? (getTag(emit, 'CNPJ') || getTag(emit, 'CPF')) : '') || getTag(xmlDoc, 'CNPJ') || getTag(xmlDoc, 'CPF') || '';
 
-      // 5. Destinatário com valores padrão
+      // 5. Destinatário com valores padrão (Permite qualquer CNPJ ou CPF sem bloqueios)
       const dest = getEl(xmlDoc, 'dest');
       const recipientName = (dest ? (getTag(dest, 'xNome') || getTag(dest, 'xFant')) : '') || '';
       const recipientCnpj = (dest ? (getTag(dest, 'CNPJ') || getTag(dest, 'CPF')) : '') || '';
+
+      // [REGRA DE NEGÓCIO]:
+      // NUNCA rejeitar ou bloquear a leitura da nota por divergência de CNPJ.
+      // Toda e qualquer NF-e deve ser importada com sucesso independentemente do CNPJ do destinatário ou emitente.
 
       // 6. Totais com valores padrão
       const total = getEl(xmlDoc, 'total') || getEl(xmlDoc, 'ICMSTot') || xmlDoc;
@@ -251,7 +255,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   const processXmlDirectly = (text: string) => {
     setErrorMessage('');
     if (!text || !text.trim()) {
-      console.error("Erro detalhado do XML: Conteúdo vazio retornado na leitura do arquivo.");
+      console.error("Conteúdo lido está vazio");
       setErrorMessage('Não foi possível ler o conteúdo do arquivo XML (conteúdo em branco).');
       setParsedData(null);
       return;
@@ -259,6 +263,16 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
     try {
       const result = parseXmlNFe(text);
+
+      // Validação não-bloqueante de CNPJ: apenas exibe aviso amigável sem interromper a importação
+      const systemCnpj = companyProfile?.cnpjCpf?.replace(/\D/g, '') || '';
+      const nfeCnpj = result.recipientCnpj?.replace(/\D/g, '') || '';
+      if (systemCnpj && nfeCnpj && systemCnpj !== nfeCnpj) {
+        console.warn(
+          `Aviso: CNPJ da nota difere do sistema. Destinatário: ${result.recipientCnpj} | Sistema: ${companyProfile?.cnpjCpf}. A importação prossegue normalmente.`
+        );
+      }
+
       setParsedData(result);
       setXmlContent(text);
       setSuccessMessage(`NF-e ${result.invoiceNumber} importada com sucesso! Confira os dados abaixo.`);
@@ -274,95 +288,30 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     processXmlDirectly(text);
   };
 
-  const readFileContent = async (file: File) => {
+  // Upload direto e simples via FileReader nativo
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMessage('');
     setSuccessMessage('');
+
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size === 0) {
-      console.error("Erro detalhado do XML: O arquivo selecionado possui 0 bytes.");
-      setErrorMessage('O arquivo XML selecionado está vazio (tamanho 0 bytes).');
-      return;
-    }
-
-    const fileName = (file.name || '').toLowerCase();
-    if (!fileName.endsWith('.xml') && file.type && !file.type.includes('xml') && file.type !== 'text/plain') {
-      setErrorMessage('Por favor, selecione um arquivo com extensão .xml válido.');
-      return;
-    }
-
-    let fileContent = '';
-
-    // Estratégia 1: file.text() nativo assíncrono (moderno, seguro contra reset de input)
-    try {
-      if (typeof file.text === 'function') {
-        fileContent = await file.text();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) {
+        console.error("Conteúdo lido está vazio");
+        setErrorMessage('Conteúdo lido do arquivo está vazio.');
+        return;
       }
-    } catch (err) {
-      console.warn("file.text() falhou, tentando FileReader fallback...", err);
-    }
-
-    // Estratégia 2: FileReader com Promise (aguarda 100% da leitura antes de prosseguir)
-    if (!fileContent || !fileContent.trim()) {
-      try {
-        fileContent = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-
-          reader.onload = (event) => {
-            // Garante leitura de e.target.result ou reader.result
-            const content = (event.target?.result ?? reader.result ?? '') as string;
-            resolve(content);
-          };
-
-          reader.onerror = (readErr) => {
-            console.error("Erro detalhado do XML (FileReader.onerror):", readErr);
-            reject(new Error('Falha ao ler o arquivo no navegador.'));
-          };
-
-          reader.readAsText(file, 'UTF-8');
-        });
-      } catch (frErr) {
-        console.error("Erro detalhado do XML (FileReader):", frErr);
-      }
-    }
-
-    // Estratégia 3: Caso UTF-8 venha vazio por codificação Latin1 / ISO-8859-1
-    if (!fileContent || !fileContent.trim()) {
-      try {
-        fileContent = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const content = (event.target?.result ?? reader.result ?? '') as string;
-            resolve(content);
-          };
-          reader.onerror = () => reject(new Error('Falha no fallback ISO-8859-1'));
-          reader.readAsText(file, 'ISO-8859-1');
-        });
-      } catch (isoErr) {
-        console.error("Erro detalhado do XML (ISO-8859-1 fallback):", isoErr);
-      }
-    }
-
-    // Processamento síncrono e direto com a string obtida
-    if (fileContent && fileContent.trim()) {
-      processXmlDirectly(fileContent);
-    } else {
-      console.error("Erro detalhado do XML: Conteúdo vazio retornado na leitura do arquivo.");
-      setErrorMessage('Não foi possível ler o conteúdo do arquivo XML (arquivo retornou vazio).');
-    }
-  };
-
-  // Upload via botão nativo compacto
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputEl = e.target;
-    const file = inputEl.files?.[0];
-    if (file) {
-      await readFileContent(file);
-    }
-    // Reseta o input SOMENTE após o arquivo ter sido totalmente lido e processado
-    if (inputEl) {
-      inputEl.value = '';
-    }
+      // Chame a função de parse diretamente passando o 'text'
+      processXmlDirectly(text);
+    };
+    reader.onerror = (err) => {
+      console.error("Erro detalhado do XML:", err);
+      setErrorMessage('Erro ao ler o arquivo no navegador.');
+    };
+    reader.readAsText(file);
   };
 
   // Busca por Número da NF-e (ou leitor de código)
@@ -446,7 +395,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setParsedData(null);
     setXmlContent('');
     setSearchNfeNumber('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
@@ -581,7 +529,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                     setParsedData(null);
                     setXmlContent('');
                     setSearchNfeNumber('');
-                    if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                   className="inline-flex items-center space-x-1 text-xs text-stone-500 hover:text-rose-600 transition cursor-pointer font-medium"
                 >
@@ -593,15 +540,15 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
             {parsedData ? (
               <div className="space-y-5 animate-in fade-in">
-                {/* Alerta de Divergência de CNPJ caso aplicável */}
+                {/* Aviso amigável de CNPJ (não bloqueante) */}
                 {parsedData.recipientCnpj && companyProfile?.cnpjCpf && (
                   parsedData.recipientCnpj.replace(/\D/g, '') !== companyProfile.cnpjCpf.replace(/\D/g, '')
                 ) && (
                   <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start space-x-2.5 text-amber-800 dark:text-amber-300">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <div className="text-xs leading-relaxed">
-                      <strong className="block font-bold mb-0.5">Atenção: Nota emitida para outro CNPJ</strong>
-                      O destinatário na nota ({formatCpfCnpj(parsedData.recipientCnpj)}) diverge do CNPJ cadastrado no sistema ({formatCpfCnpj(companyProfile.cnpjCpf)}). A importação pode prosseguir normalmente.
+                      <strong className="block font-bold mb-0.5">Aviso: CNPJ da nota difere do sistema</strong>
+                      O destinatário na nota ({formatCpfCnpj(parsedData.recipientCnpj)}) difere do CNPJ cadastrado no sistema ({formatCpfCnpj(companyProfile.cnpjCpf)}). Os dados foram carregados normalmente e você pode prosseguir com a importação.
                     </div>
                   </div>
                 )}
