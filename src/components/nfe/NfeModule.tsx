@@ -8,7 +8,6 @@ import {
   DollarSign, 
   Building, 
   Calendar,
-  Sparkles,
   ArrowRight,
   Plus,
   Hash,
@@ -405,8 +404,8 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               </div>
             </form>
 
-            {/* Grupo de Ações: Botão Compacto "Carregar XML" + Exemplo SEFAZ */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            {/* Grupo de Ações: Botão Compacto "Carregar XML" */}
+            <div className="flex items-center shrink-0">
               <button
                 type="button"
                 id="btn-carregar-xml"
@@ -423,20 +422,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 onChange={handleFileUpload}
                 className="hidden"
               />
-
-              {/* Exemplo rápido de teste */}
-              <button
-                type="button"
-                onClick={() => {
-                  const sampleXml = `<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe35260812345678000195550010000482911837492810"><ide><nNF>48291</nNF><serie>1</serie><dhEmi>2026-08-29T14:20:00-03:00</dhEmi></ide><emit><CNPJ>12345678000195</CNPJ><xNome>Distribuidora de Diesel Sul Ltda</xNome><xFant>Diesel Sul</xFant></emit><dest><CNPJ>98765432000110</CNPJ><xNome>Agropecuária Silagem Fácil</xNome></dest><det nItem="1"><prod><cProd>001</cProd><xProd>ÓLEO DIESEL S10 COMUM</xProd><NCM>27101921</NCM><qCom>800.0000</qCom><uCom>LT</uCom><vUnCom>4.80</vUnCom><vProd>3840.00</vProd></prod></det><total><ICMSTot><vProd>3840.00</vProd><vNF>3840.00</vNF></ICMSTot></total></infNFe></NFe></nfeProc>`;
-                  handleProcessXml(sampleXml);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold rounded-xl transition cursor-pointer whitespace-nowrap"
-                title="Carregar exemplo de NF-e Diesel SEFAZ para teste rápido"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">Exemplo SEFAZ</span>
-              </button>
             </div>
 
           </div>

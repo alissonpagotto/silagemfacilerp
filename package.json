@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && (mkdir -p build && cp -r dist/* build/ 2>/dev/null || true)",
+    "build": "vite build && cp server.cjs dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist build server.js",
     "lint": "tsc --noEmit"
