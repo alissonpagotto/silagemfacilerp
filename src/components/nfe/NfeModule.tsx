@@ -69,114 +69,190 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // XML Parser robusto para NF-e SEFAZ Brasil usando DOMParser
+  // XML Parser robusto para NF-e SEFAZ Brasil com suporte a namespaces e fallbacks
   const parseXmlNFe = (xmlText: string): ParsedNfeData => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+    try {
+      const cleanXml = (xmlText || '').replace(/^\uFEFF/, '').trim();
+      if (!cleanXml) {
+        throw new Error('Conteúdo do arquivo XML está vazio.');
+      }
 
-    // Verifica erros de sintaxe XML
-    const parseErrors = xmlDoc.getElementsByTagName('parsererror');
-    if (parseErrors.length > 0) {
-      throw new Error('O arquivo selecionado contém sintaxe XML inválida ou corrompida.');
-    }
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(cleanXml, 'application/xml');
 
-    // Helper imune a namespaces SEFAZ (<nfe:emit> ou <emit xmlns="...">)
-    const getTag = (parent: Element | Document, tagName: string): string => {
-      const el = parent.getElementsByTagName(tagName)[0];
-      return el?.textContent?.trim() || '';
-    };
+      // Verifica erros de sintaxe XML
+      const parseErrors = xmlDoc.getElementsByTagName('parsererror');
+      if (parseErrors.length > 0) {
+        const errorText = parseErrors[0]?.textContent || 'Erro de sintaxe desconhecido';
+        console.error("Erro detalhado do XML (sintaxe DOMParser):", errorText);
+        throw new Error(`Sintaxe XML corrompida ou inválida: ${errorText.slice(0, 120)}`);
+      }
 
-    const infNFe = xmlDoc.getElementsByTagName('infNFe')[0];
-    if (!infNFe) {
-      throw new Error('Estrutura de NF-e não localizada (<infNFe>). Certifique-se de carregar um XML de Nota Fiscal Eletrônica padrão SEFAZ.');
-    }
-
-    // 1. Chave de Acesso
-    let accessKey = getTag(xmlDoc, 'chNFe');
-    if (!accessKey) {
-      const idAttr = infNFe.getAttribute('Id') || '';
-      accessKey = idAttr.replace(/^NFe/, '');
-    }
-
-    // 2. Número e Série da NF-e
-    const ide = xmlDoc.getElementsByTagName('ide')[0];
-    const nNF = ide ? getTag(ide, 'nNF') : getTag(xmlDoc, 'nNF');
-    const serie = ide ? getTag(ide, 'serie') : '';
-    const invoiceNumber = nNF ? `NF-e ${nNF}` : `NF-e ${(accessKey ? accessKey.slice(25, 34) : 'S/N')}`;
-
-    // 3. Data de Emissão (dhEmi ou dEmi)
-    let issueDate = ide ? (getTag(ide, 'dhEmi') || getTag(ide, 'dEmi')) : '';
-    if (issueDate.includes('T')) {
-      issueDate = issueDate.split('T')[0];
-    }
-    if (!issueDate) {
-      issueDate = new Date().toISOString().split('T')[0];
-    }
-
-    // 4. Emitente (Fornecedor)
-    const emit = xmlDoc.getElementsByTagName('emit')[0];
-    const supplierName = emit ? (getTag(emit, 'xNome') || getTag(emit, 'xFant')) : 'Fornecedor Identificado no XML';
-    const supplierCnpj = emit ? (getTag(emit, 'CNPJ') || getTag(emit, 'CPF')) : '';
-
-    // 5. Destinatário
-    const dest = xmlDoc.getElementsByTagName('dest')[0];
-    const recipientName = dest ? getTag(dest, 'xNome') : '';
-    const recipientCnpj = dest ? (getTag(dest, 'CNPJ') || getTag(dest, 'CPF')) : '';
-
-    // 6. Totais
-    const total = xmlDoc.getElementsByTagName('total')[0] || xmlDoc;
-    const vNFStr = getTag(total, 'vNF');
-    const vProdStr = getTag(total, 'vProd');
-    const totalAmount = parseFloat(vNFStr) || parseFloat(vProdStr) || 0;
-    const productsAmount = parseFloat(vProdStr) || totalAmount;
-
-    // 7. Itens da Nota Fiscal (<det>)
-    const detElements = Array.from(xmlDoc.getElementsByTagName('det'));
-    const items: ParsedNfeItem[] = detElements.map((det) => {
-      const prod = det.getElementsByTagName('prod')[0] || det;
-      return {
-        code: getTag(prod, 'cProd'),
-        description: getTag(prod, 'xProd'),
-        ncm: getTag(prod, 'NCM'),
-        quantity: parseFloat(getTag(prod, 'qCom')) || 1,
-        unit: getTag(prod, 'uCom') || 'UN',
-        unitPrice: parseFloat(getTag(prod, 'vUnCom')) || 0,
-        totalPrice: parseFloat(getTag(prod, 'vProd')) || 0,
+      // Helper seguro para leitura de tags, tolerante a namespaces (ex: <nfe:emit> ou <emit>)
+      const getTag = (parent: Element | Document | null | undefined, tagName: string): string => {
+        if (!parent) return '';
+        try {
+          // 1. Busca direta por nome da tag
+          const direct = parent.getElementsByTagName(tagName);
+          if (direct && direct.length > 0 && direct[0]?.textContent) {
+            return direct[0].textContent.trim();
+          }
+          // 2. Busca ignorando namespace
+          if (parent.getElementsByTagNameNS) {
+            const ns = parent.getElementsByTagNameNS('*', tagName);
+            if (ns && ns.length > 0 && ns[0]?.textContent) {
+              return ns[0].textContent.trim();
+            }
+          }
+          // 3. Busca via querySelector
+          const el = parent.querySelector?.(tagName);
+          if (el?.textContent) return el.textContent.trim();
+        } catch (tagErr) {
+          console.error(`Erro detalhado do XML: Falha ao ler tag <${tagName}>`, tagErr);
+        }
+        return '';
       };
-    });
 
-    // 8. Sugestão automática de categoria
-    const allText = (supplierName + ' ' + items.map(i => i.description).join(' ')).toLowerCase();
-    let suggestedCategory = 'cat_insumos';
-    if (allText.includes('diesel') || allText.includes('combustivel') || allText.includes('combustível') || allText.includes('s10') || allText.includes('arla')) {
-      suggestedCategory = 'cat_combustivel';
-    } else if (allText.includes('peca') || allText.includes('peça') || allText.includes('faca') || allText.includes('filtro') || allText.includes('oleo') || allText.includes('óleo') || allText.includes('correia')) {
-      suggestedCategory = 'cat_manutencao';
-    } else if (allText.includes('lona') || allText.includes('filme') || allText.includes('plastico') || allText.includes('plástico') || allText.includes('inoculante')) {
-      suggestedCategory = 'cat_lona_embalagem';
+      // Helper seguro para obter nós de elementos
+      const getEl = (parent: Element | Document | null | undefined, tagName: string): Element | null => {
+        if (!parent) return null;
+        try {
+          const direct = parent.getElementsByTagName(tagName);
+          if (direct && direct.length > 0) return direct[0];
+          if (parent.getElementsByTagNameNS) {
+            const ns = parent.getElementsByTagNameNS('*', tagName);
+            if (ns && ns.length > 0) return ns[0];
+          }
+          const el = parent.querySelector?.(tagName);
+          if (el) return el;
+        } catch (elErr) {
+          console.error(`Erro detalhado do XML: Falha ao obter elemento <${tagName}>`, elErr);
+        }
+        return null;
+      };
+
+      // Helper seguro para obter listas de elementos (ex: múltiplos <det>)
+      const getAllEls = (parent: Element | Document | null | undefined, tagName: string): Element[] => {
+        if (!parent) return [];
+        try {
+          const direct = Array.from(parent.getElementsByTagName(tagName));
+          if (direct.length > 0) return direct;
+          if (parent.getElementsByTagNameNS) {
+            const ns = Array.from(parent.getElementsByTagNameNS('*', tagName));
+            if (ns.length > 0) return ns;
+          }
+          const els = Array.from(parent.querySelectorAll?.(tagName) || []);
+          if (els.length > 0) return els;
+        } catch (allErr) {
+          console.error(`Erro detalhado do XML: Falha ao listar elementos <${tagName}>`, allErr);
+        }
+        return [];
+      };
+
+      const infNFe = getEl(xmlDoc, 'infNFe') || getEl(xmlDoc, 'NFe') || xmlDoc.documentElement;
+
+      // 1. Chave de Acesso (com múltiplos fallbacks seguros)
+      let accessKey = getTag(xmlDoc, 'chNFe') || '';
+      if (!accessKey && infNFe) {
+        const idAttr = infNFe.getAttribute('Id') || infNFe.getAttribute('id') || '';
+        accessKey = idAttr.replace(/^NFe/i, '').trim();
+      }
+      if (!accessKey) {
+        const keyMatch = cleanXml.match(/\b\d{44}\b/);
+        accessKey = keyMatch ? keyMatch[0] : '';
+      }
+
+      // 2. Número e Série da NF-e
+      const ide = getEl(xmlDoc, 'ide');
+      const nNF = (ide ? getTag(ide, 'nNF') : '') || getTag(xmlDoc, 'nNF') || (accessKey.length === 44 ? accessKey.slice(25, 34).replace(/^0+/, '') : '') || '';
+      const serie = (ide ? getTag(ide, 'serie') : '') || getTag(xmlDoc, 'serie') || '';
+      const invoiceNumber = nNF ? `NF-e ${nNF}` : (accessKey ? `NF-e ${accessKey.slice(25, 34)}` : 'NF-e S/N');
+
+      // 3. Data de Emissão (dhEmi ou dEmi)
+      let issueDate = (ide ? (getTag(ide, 'dhEmi') || getTag(ide, 'dEmi')) : '') || getTag(xmlDoc, 'dhEmi') || getTag(xmlDoc, 'dEmi') || '';
+      if (issueDate.includes('T')) {
+        issueDate = issueDate.split('T')[0];
+      }
+      if (!issueDate) {
+        issueDate = new Date().toISOString().split('T')[0];
+      }
+
+      // 4. Emitente (Fornecedor) com valores padrão
+      const emit = getEl(xmlDoc, 'emit');
+      const supplierName = (emit ? (getTag(emit, 'xNome') || getTag(emit, 'xFant')) : '') || getTag(xmlDoc, 'xNome') || 'Fornecedor Identificado no XML';
+      const supplierCnpj = (emit ? (getTag(emit, 'CNPJ') || getTag(emit, 'CPF')) : '') || getTag(xmlDoc, 'CNPJ') || getTag(xmlDoc, 'CPF') || '';
+
+      // 5. Destinatário com valores padrão
+      const dest = getEl(xmlDoc, 'dest');
+      const recipientName = (dest ? (getTag(dest, 'xNome') || getTag(dest, 'xFant')) : '') || '';
+      const recipientCnpj = (dest ? (getTag(dest, 'CNPJ') || getTag(dest, 'CPF')) : '') || '';
+
+      // 6. Totais com valores padrão
+      const total = getEl(xmlDoc, 'total') || getEl(xmlDoc, 'ICMSTot') || xmlDoc;
+      const vNFStr = getTag(total, 'vNF') || getTag(xmlDoc, 'vNF') || '0';
+      const vProdStr = getTag(total, 'vProd') || getTag(xmlDoc, 'vProd') || '0';
+      let totalAmount = parseFloat(vNFStr) || parseFloat(vProdStr) || 0;
+      let productsAmount = parseFloat(vProdStr) || totalAmount || 0;
+
+      // 7. Itens da Nota Fiscal (<det>) com valores padrão
+      const detElements = getAllEls(xmlDoc, 'det');
+      const items: ParsedNfeItem[] = detElements.map((det, index) => {
+        const prod = getEl(det, 'prod') || det;
+        return {
+          code: getTag(prod, 'cProd') || String(index + 1),
+          description: getTag(prod, 'xProd') || 'Item NF-e',
+          ncm: getTag(prod, 'NCM') || '',
+          quantity: parseFloat(getTag(prod, 'qCom')) || parseFloat(getTag(prod, 'qTrib')) || 1,
+          unit: getTag(prod, 'uCom') || getTag(prod, 'uTrib') || 'UN',
+          unitPrice: parseFloat(getTag(prod, 'vUnCom')) || parseFloat(getTag(prod, 'vUnTrib')) || 0,
+          totalPrice: parseFloat(getTag(prod, 'vProd')) || 0,
+        };
+      });
+
+      // Se o total geral não estiver preenchido e houver itens, soma o total dos itens
+      if (totalAmount === 0 && items.length > 0) {
+        totalAmount = items.reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
+        productsAmount = totalAmount;
+      }
+
+      // 8. Sugestão automática de categoria
+      const allText = (supplierName + ' ' + items.map(i => i.description).join(' ')).toLowerCase();
+      let suggestedCategory = 'cat_insumos';
+      if (allText.includes('diesel') || allText.includes('combustivel') || allText.includes('combustível') || allText.includes('s10') || allText.includes('arla')) {
+        suggestedCategory = 'cat_combustivel';
+      } else if (allText.includes('peca') || allText.includes('peça') || allText.includes('faca') || allText.includes('filtro') || allText.includes('oleo') || allText.includes('óleo') || allText.includes('correia')) {
+        suggestedCategory = 'cat_manutencao';
+      } else if (allText.includes('lona') || allText.includes('filme') || allText.includes('plastico') || allText.includes('plástico') || allText.includes('inoculante')) {
+        suggestedCategory = 'cat_lona_embalagem';
+      }
+
+      return {
+        accessKey,
+        invoiceNumber,
+        series: serie || '',
+        supplier: supplierName || 'Fornecedor Identificado no XML',
+        supplierCnpj: supplierCnpj || '',
+        recipient: recipientName || '',
+        recipientCnpj: recipientCnpj || '',
+        totalAmount: totalAmount || 0,
+        productsAmount: productsAmount || totalAmount || 0,
+        issueDate: issueDate || new Date().toISOString().split('T')[0],
+        itemsSummary: items.length > 0 ? `${items.length} produto(s) listado(s)` : 'Sem detalhamento de itens',
+        suggestedCategory,
+        items
+      };
+    } catch (error) {
+      console.error("Erro detalhado do XML:", error);
+      throw error;
     }
-
-    return {
-      accessKey,
-      invoiceNumber,
-      series: serie,
-      supplier: supplierName,
-      supplierCnpj,
-      recipient: recipientName,
-      recipientCnpj,
-      totalAmount,
-      productsAmount,
-      issueDate,
-      itemsSummary: items.length > 0 ? `${items.length} produto(s) listado(s)` : 'Sem detalhamento de itens',
-      suggestedCategory,
-      items
-    };
   };
 
-  const handleProcessXml = (text: string) => {
-    setXmlContent(text);
+  // Processa diretamente a string XML extraída sem depender de estado assíncrono intermediário
+  const processXmlDirectly = (text: string) => {
     setErrorMessage('');
-    if (!text.trim()) {
+    if (!text || !text.trim()) {
+      console.error("Erro detalhado do XML: Conteúdo vazio retornado na leitura do arquivo.");
+      setErrorMessage('Não foi possível ler o conteúdo do arquivo XML (conteúdo em branco).');
       setParsedData(null);
       return;
     }
@@ -184,44 +260,109 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     try {
       const result = parseXmlNFe(text);
       setParsedData(result);
-    } catch (err: any) {
+      setXmlContent(text);
+      setSuccessMessage(`NF-e ${result.invoiceNumber} importada com sucesso! Confira os dados abaixo.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (error: any) {
+      console.error("Erro detalhado do XML:", error);
       setParsedData(null);
-      setErrorMessage(err.message || 'Falha ao processar o arquivo XML da NF-e.');
+      setErrorMessage(error?.message || 'Falha ao processar o arquivo XML da NF-e.');
     }
   };
 
-  const readFileContent = (file: File) => {
+  const handleProcessXml = (text: string) => {
+    processXmlDirectly(text);
+  };
+
+  const readFileContent = async (file: File) => {
     setErrorMessage('');
+    setSuccessMessage('');
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.xml') && file.type !== 'text/xml' && file.type !== 'application/xml') {
+    if (file.size === 0) {
+      console.error("Erro detalhado do XML: O arquivo selecionado possui 0 bytes.");
+      setErrorMessage('O arquivo XML selecionado está vazio (tamanho 0 bytes).');
+      return;
+    }
+
+    const fileName = (file.name || '').toLowerCase();
+    if (!fileName.endsWith('.xml') && file.type && !file.type.includes('xml') && file.type !== 'text/plain') {
       setErrorMessage('Por favor, selecione um arquivo com extensão .xml válido.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        handleProcessXml(text);
-      } else {
-        setErrorMessage('Não foi possível ler o conteúdo do arquivo XML.');
+    let fileContent = '';
+
+    // Estratégia 1: file.text() nativo assíncrono (moderno, seguro contra reset de input)
+    try {
+      if (typeof file.text === 'function') {
+        fileContent = await file.text();
       }
-    };
-    reader.onerror = () => {
-      setErrorMessage('Erro na leitura do arquivo pelo navegador.');
-    };
-    reader.readAsText(file, 'UTF-8');
+    } catch (err) {
+      console.warn("file.text() falhou, tentando FileReader fallback...", err);
+    }
+
+    // Estratégia 2: FileReader com Promise (aguarda 100% da leitura antes de prosseguir)
+    if (!fileContent || !fileContent.trim()) {
+      try {
+        fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+
+          reader.onload = (event) => {
+            // Garante leitura de e.target.result ou reader.result
+            const content = (event.target?.result ?? reader.result ?? '') as string;
+            resolve(content);
+          };
+
+          reader.onerror = (readErr) => {
+            console.error("Erro detalhado do XML (FileReader.onerror):", readErr);
+            reject(new Error('Falha ao ler o arquivo no navegador.'));
+          };
+
+          reader.readAsText(file, 'UTF-8');
+        });
+      } catch (frErr) {
+        console.error("Erro detalhado do XML (FileReader):", frErr);
+      }
+    }
+
+    // Estratégia 3: Caso UTF-8 venha vazio por codificação Latin1 / ISO-8859-1
+    if (!fileContent || !fileContent.trim()) {
+      try {
+        fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const content = (event.target?.result ?? reader.result ?? '') as string;
+            resolve(content);
+          };
+          reader.onerror = () => reject(new Error('Falha no fallback ISO-8859-1'));
+          reader.readAsText(file, 'ISO-8859-1');
+        });
+      } catch (isoErr) {
+        console.error("Erro detalhado do XML (ISO-8859-1 fallback):", isoErr);
+      }
+    }
+
+    // Processamento síncrono e direto com a string obtida
+    if (fileContent && fileContent.trim()) {
+      processXmlDirectly(fileContent);
+    } else {
+      console.error("Erro detalhado do XML: Conteúdo vazio retornado na leitura do arquivo.");
+      setErrorMessage('Não foi possível ler o conteúdo do arquivo XML (arquivo retornou vazio).');
+    }
   };
 
   // Upload via botão nativo compacto
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.target;
+    const file = inputEl.files?.[0];
     if (file) {
-      readFileContent(file);
+      await readFileContent(file);
     }
-    // Reseta o input para permitir selecionar o mesmo arquivo novamente
-    e.target.value = '';
+    // Reseta o input SOMENTE após o arquivo ter sido totalmente lido e processado
+    if (inputEl) {
+      inputEl.value = '';
+    }
   };
 
   // Busca por Número da NF-e (ou leitor de código)
