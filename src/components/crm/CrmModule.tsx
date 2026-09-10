@@ -94,15 +94,12 @@ export const CrmModule: React.FC<CrmModuleProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <h2 className="text-sm font-black text-black dark:text-stone-100 tracking-tight font-['Outfit']">
-              Quadro de Negociações
+              Carteira de Clientes
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-white/80 dark:bg-stone-800 text-black dark:text-stone-300 border border-slate-300 dark:border-stone-700 text-[10px] font-black">
-              {filteredClients.filter(c => c.status !== 'cliente_ativo').length} Negociações ativas
+              {filteredClients.filter(c => c.status === 'cliente_ativo').length} Clientes ativos
             </span>
           </div>
-          <p className="text-xs text-black/90 dark:text-stone-400 font-bold">
-            Gestão da carteira de pecuaristas e funil de vendas
-          </p>
         </div>
 
         <div className="flex items-center space-x-2">
