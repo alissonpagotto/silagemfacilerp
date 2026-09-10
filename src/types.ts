@@ -314,6 +314,12 @@ export interface InventoryItem {
   minQuantity: number;
   unitCost: number;
   location?: string;
+  code?: string;
+  fiscalName?: string;
+  barcode?: string;
+  profitMargin?: number;
+  salePrice?: number;
+  maxQuantity?: number;
 }
 
 export interface ServiceOrder {

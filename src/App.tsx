@@ -593,6 +593,8 @@ export default function App() {
                 expenses={expenses}
                 companyProfile={companyProfile}
                 viewMode="import"
+                inventory={inventory}
+                onSaveInventory={(updatedInv) => setInventory(updatedInv)}
                 onAddExpenseFromNfe={(newExp) => {
                   const created: Expense = {
                     id: `exp_nfe_${Date.now()}`,

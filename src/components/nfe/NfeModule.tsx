@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Upload,
   UploadCloud, 
@@ -15,10 +15,15 @@ import {
   X,
   Search,
   ReceiptText,
-  RotateCcw
+  RotateCcw,
+  Layers,
+  Barcode,
+  Check,
+  TrendingUp,
+  Percent
 } from 'lucide-react';
-import { Expense, CompanyProfile } from '../../types';
-import { formatCurrencyBRL, formatDateBR } from '../../lib/storage';
+import { Expense, CompanyProfile, InventoryItem } from '../../types';
+import { formatCurrencyBRL, formatDateBR, getStoredInventory, saveStoredInventory } from '../../lib/storage';
 import { formatCpfCnpj } from '../../lib/formatters';
 
 interface ParsedNfeItem {
@@ -29,6 +34,8 @@ interface ParsedNfeItem {
   unit: string;
   unitPrice: number;
   totalPrice: number;
+  barcode?: string;
+  linkedInventoryId?: string;
 }
 
 interface ParsedNfeData {
@@ -52,6 +59,8 @@ interface NfeModuleProps {
   companyProfile?: CompanyProfile;
   onAddExpenseFromNfe: (expense: Partial<Expense>) => void;
   viewMode?: 'import' | 'list';
+  inventory?: InventoryItem[];
+  onSaveInventory?: (inventory: InventoryItem[]) => void;
 }
 
 export const NfeModule: React.FC<NfeModuleProps> = ({
@@ -59,6 +68,8 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   companyProfile,
   onAddExpenseFromNfe,
   viewMode = 'import',
+  inventory,
+  onSaveInventory,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'import' | 'list'>(viewMode);
   const [xmlContent, setXmlContent] = useState('');
@@ -68,6 +79,63 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   const [searchNfeNumber, setSearchNfeNumber] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Estado local do inventário sincronizado com props ou storage
+  const [localInventory, setLocalInventory] = useState<InventoryItem[]>(() => {
+    return (inventory && inventory.length > 0) ? inventory : getStoredInventory();
+  });
+
+  useEffect(() => {
+    if (inventory && inventory.length > 0) {
+      setLocalInventory(inventory);
+    }
+  }, [inventory]);
+
+  const saveInventory = (updated: InventoryItem[]) => {
+    setLocalInventory(updated);
+    if (onSaveInventory) {
+      onSaveInventory(updated);
+    }
+    saveStoredInventory(updated);
+  };
+
+  // IDs dos produtos cadastrados durante a sessão atual de importação
+  const [sessionCreatedProductIds, setSessionCreatedProductIds] = useState<Set<string>>(new Set());
+
+  // Modal para cadastrar novo produto a partir da linha da NF-e
+  const [newProductModal, setNewProductModal] = useState<{
+    isOpen: boolean;
+    rowIndex: number;
+    code: string;
+    name: string;
+    fiscalName: string;
+    barcode: string;
+    unit: string;
+    category: InventoryItem['category'];
+    unitCost: number;
+    profitMargin: number;
+    salePrice: number;
+    initialQuantity: number;
+    minQuantity: number;
+    maxQuantity: number;
+    location: string;
+  }>({
+    isOpen: false,
+    rowIndex: -1,
+    code: '',
+    name: '',
+    fiscalName: '',
+    barcode: '',
+    unit: 'UN',
+    category: 'outro',
+    unitCost: 0,
+    profitMargin: 30,
+    salePrice: 0,
+    initialQuantity: 1,
+    minQuantity: 10,
+    maxQuantity: 100,
+    location: 'Barracão Principal'
+  });
 
   // XML Parser robusto para NF-e SEFAZ Brasil com suporte a namespaces e fallbacks
   const parseXmlNFe = (xmlText: string): ParsedNfeData => {
@@ -202,6 +270,8 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       const detElements = getAllEls(xmlDoc, 'det');
       const items: ParsedNfeItem[] = detElements.map((det, index) => {
         const prod = getEl(det, 'prod') || det;
+        const ean = getTag(prod, 'cEAN') || getTag(prod, 'cEANTrib') || '';
+        const barcode = (ean && ean.toUpperCase() !== 'SEM GTIN') ? ean : '';
         return {
           code: getTag(prod, 'cProd') || String(index + 1),
           description: getTag(prod, 'xProd') || 'Item NF-e',
@@ -210,6 +280,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
           unit: getTag(prod, 'uCom') || getTag(prod, 'uTrib') || 'UN',
           unitPrice: parseFloat(getTag(prod, 'vUnCom')) || parseFloat(getTag(prod, 'vUnTrib')) || 0,
           totalPrice: parseFloat(getTag(prod, 'vProd')) || 0,
+          barcode,
         };
       });
 
@@ -271,6 +342,22 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
         console.warn(
           `Aviso: CNPJ da nota difere do sistema. Destinatário: ${result.recipientCnpj} | Sistema: ${companyProfile?.cnpjCpf}. A importação prossegue normalmente.`
         );
+      }
+
+      // Auto-match inicial com itens do estoque ("De-Para" automático inteligente)
+      if (result.items && result.items.length > 0) {
+        result.items = result.items.map((item) => {
+          const match = localInventory.find(inv => 
+            (inv.code && item.code && inv.code.trim().toLowerCase() === item.code.trim().toLowerCase()) ||
+            (inv.barcode && item.barcode && inv.barcode === item.barcode) ||
+            (inv.name && item.description && inv.name.trim().toLowerCase() === item.description.trim().toLowerCase()) ||
+            (inv.fiscalName && item.description && inv.fiscalName.trim().toLowerCase() === item.description.trim().toLowerCase())
+          );
+          return {
+            ...item,
+            linkedInventoryId: match?.id
+          };
+        });
       }
 
       setParsedData(result);
@@ -360,6 +447,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             unit: 'LT',
             unitPrice: 4.80,
             totalPrice: 3840.00,
+            linkedInventoryId: localInventory.find(i => 
+              i.code === '001' || 
+              i.name.toLowerCase().includes('diesel')
+            )?.id
           }
         ]
       };
@@ -374,6 +465,132 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
       setTimeout(() => setSuccessMessage(''), 5000);
     }, 250);
+  };
+
+  // Vinculação de produto do estoque à linha da NF-e ("De-Para")
+  const handleLinkProduct = (rowIndex: number, productId?: string) => {
+    if (!parsedData || !parsedData.items) return;
+    const updatedItems = [...parsedData.items];
+    updatedItems[rowIndex] = {
+      ...updatedItems[rowIndex],
+      linkedInventoryId: productId
+    };
+    setParsedData({
+      ...parsedData,
+      items: updatedItems
+    });
+  };
+
+  // Abre modal para cadastrar novo produto baseado na linha da nota
+  const handleOpenNewProductModal = (rowIndex: number) => {
+    if (!parsedData?.items || !parsedData.items[rowIndex]) return;
+    const item = parsedData.items[rowIndex];
+
+    // Dedução de categoria inteligente baseada na descrição do item
+    const descLower = item.description.toLowerCase();
+    let cat: InventoryItem['category'] = 'outro';
+    if (descLower.includes('diesel') || descLower.includes('combustivel') || descLower.includes('s10') || descLower.includes('arla')) {
+      cat = 'combustivel';
+    } else if (descLower.includes('lona') || descLower.includes('filme') || descLower.includes('plastico')) {
+      cat = 'lona_embalagem';
+    } else if (descLower.includes('inoculante') || descLower.includes('biologico')) {
+      cat = 'inoculante';
+    } else if (descLower.includes('semente') || descLower.includes('milho') || descLower.includes('sorgo')) {
+      cat = 'sementes';
+    } else if (descLower.includes('adubo') || descLower.includes('fertilizante')) {
+      cat = 'adubo';
+    } else if (descLower.includes('peca') || descLower.includes('peça') || descLower.includes('filtro') || descLower.includes('faca') || descLower.includes('oleo') || descLower.includes('óleo')) {
+      cat = 'pecas';
+    }
+
+    const unitCost = item.unitPrice || 0;
+    const profitMargin = 30;
+    const salePrice = Math.round((unitCost * (1 + profitMargin / 100)) * 100) / 100;
+
+    setNewProductModal({
+      isOpen: true,
+      rowIndex,
+      code: item.code || `PRD${Date.now().toString().slice(-4)}`,
+      name: item.description || '',
+      fiscalName: item.description || '',
+      barcode: item.barcode || '',
+      unit: item.unit || 'UN',
+      category: cat,
+      unitCost,
+      profitMargin,
+      salePrice,
+      initialQuantity: item.quantity || 1,
+      minQuantity: 10,
+      maxQuantity: 100,
+      location: 'Barracão Principal'
+    });
+  };
+
+  // Recálculo dinâmico de Custo, Margem (%) e Preço de Venda
+  const handlePriceCalculation = (field: 'unitCost' | 'profitMargin' | 'salePrice', val: number) => {
+    setNewProductModal(prev => {
+      let cost = prev.unitCost;
+      let margin = prev.profitMargin;
+      let sale = prev.salePrice;
+
+      if (field === 'unitCost') {
+        cost = Math.max(0, val);
+        sale = Math.round((cost * (1 + margin / 100)) * 100) / 100;
+      } else if (field === 'profitMargin') {
+        margin = val;
+        sale = Math.round((cost * (1 + margin / 100)) * 100) / 100;
+      } else if (field === 'salePrice') {
+        sale = Math.max(0, val);
+        margin = cost > 0 ? Math.round((((sale - cost) / cost) * 100) * 10) / 10 : 0;
+      }
+
+      return {
+        ...prev,
+        unitCost: cost,
+        profitMargin: margin,
+        salePrice: sale
+      };
+    });
+  };
+
+  // Salva o novo produto no cadastro do estoque e o vincula à linha da nota
+  const handleSaveNewProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProductModal.name.trim()) {
+      alert('Por favor, preencha o nome do produto.');
+      return;
+    }
+
+    const newProductId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    const newProduct: InventoryItem = {
+      id: newProductId,
+      name: newProductModal.name.trim(),
+      code: newProductModal.code.trim() || undefined,
+      fiscalName: newProductModal.fiscalName.trim() || undefined,
+      barcode: newProductModal.barcode.trim() || undefined,
+      unit: newProductModal.unit.trim() || 'UN',
+      category: newProductModal.category,
+      unitCost: Number(newProductModal.unitCost) || 0,
+      profitMargin: Number(newProductModal.profitMargin) || 0,
+      salePrice: Number(newProductModal.salePrice) || 0,
+      quantity: Number(newProductModal.initialQuantity) || 0,
+      minQuantity: Number(newProductModal.minQuantity) || 0,
+      maxQuantity: Number(newProductModal.maxQuantity) || 0,
+      location: newProductModal.location.trim() || 'Barracão Principal'
+    };
+
+    const updated = [...localInventory, newProduct];
+    saveInventory(updated);
+
+    // Marca como criado nesta sessão para que na confirmação o estoque não seja somado em duplicidade
+    setSessionCreatedProductIds(prev => new Set(prev).add(newProductId));
+
+    // Vincula a linha da nota ao produto recém-cadastrado
+    handleLinkProduct(newProductModal.rowIndex, newProductId);
+
+    setNewProductModal(prev => ({ ...prev, isOpen: false }));
+    setSuccessMessage(`Produto "${newProduct.name}" cadastrado e vinculado com sucesso!`);
+    setTimeout(() => setSuccessMessage(''), 4000);
   };
 
   // Atualização interativa dos itens da NF-e com recálculo automático dos totais
@@ -420,6 +637,45 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   const handleConfirmImport = () => {
     if (!parsedData) return;
 
+    // 1. Atualizar estoque dos produtos vinculados ("De-Para")
+    let updatedInventory = [...localInventory];
+    const updatedSummary: string[] = [];
+
+    parsedData.items?.forEach((item) => {
+      if (item.linkedInventoryId) {
+        const invIndex = updatedInventory.findIndex(i => i.id === item.linkedInventoryId);
+        if (invIndex !== -1) {
+          const invItem = { ...updatedInventory[invIndex] };
+
+          // Se já foi cadastrado nesta sessão com o estoque inicial da nota, não soma novamente;
+          // Se for produto pré-existente no estoque do sistema, soma a quantidade recebida na NF-e:
+          if (!sessionCreatedProductIds.has(invItem.id)) {
+            invItem.quantity = Math.round(((invItem.quantity || 0) + item.quantity) * 100) / 100;
+          }
+
+          // Atualiza o preço de custo unitário com o valor da nota fiscal
+          invItem.unitCost = item.unitPrice || invItem.unitCost;
+
+          // Se o produto tiver margem de lucro, recalcula o preço de venda atualizado
+          if (invItem.profitMargin) {
+            invItem.salePrice = Math.round((invItem.unitCost * (1 + invItem.profitMargin / 100)) * 100) / 100;
+          }
+
+          updatedInventory[invIndex] = invItem;
+          updatedSummary.push(`${invItem.name} (Saldo: ${invItem.quantity} ${invItem.unit})`);
+        }
+      }
+    });
+
+    if (updatedSummary.length > 0) {
+      saveInventory(updatedInventory);
+    }
+
+    // 2. Gerar despesa financeira
+    const stockNote = updatedSummary.length > 0
+      ? ` Estoque atualizado: ${updatedSummary.join(', ')}.`
+      : '';
+
     onAddExpenseFromNfe({
       description: `Compra ${parsedData.invoiceNumber} - ${parsedData.supplier}`,
       amount: parsedData.totalAmount,
@@ -429,14 +685,21 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       invoiceNumber: parsedData.invoiceNumber,
       status: 'pago',
       paymentMethod: 'boleto',
-      notes: `Lançamento automático via NF-e XML. Chave: ${parsedData.accessKey || 'N/A'}. ${parsedData.itemsSummary}.`,
+      notes: `Lançamento automático via NF-e XML. Chave: ${parsedData.accessKey || 'N/A'}. ${parsedData.itemsSummary}.${stockNote}`,
     });
 
-    setSuccessMessage(`Nota Fiscal ${parsedData.invoiceNumber} importada e convertida em despesa com sucesso!`);
+    setSuccessMessage(
+      `Nota Fiscal ${parsedData.invoiceNumber} importada e convertida em despesa com sucesso! ${
+        updatedSummary.length > 0
+          ? `${updatedSummary.length} produto(s) tiveram estoque e custo atualizados no sistema.`
+          : ''
+      }`
+    );
     setParsedData(null);
     setXmlContent('');
     setSearchNfeNumber('');
-    setTimeout(() => setSuccessMessage(''), 4000);
+    setSessionCreatedProductIds(new Set());
+    setTimeout(() => setSuccessMessage(''), 5000);
   };
 
   const nfeExpenses = expenses.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf'));
@@ -607,164 +870,267 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                   </div>
                 )}
 
-                {/* Estrutura Expandida em 2 Colunas: Detalhes e Ação Financeira */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                {/* Conteúdo Principal com 100% de Largura: Cabeçalho da Nota, Tabela de Itens e Resumo Horizontal */}
+                <div className="space-y-4 w-full">
                   
-                  {/* Coluna 1 (8 de 12): Informações Principais e Tabela de Produtos */}
-                  <div className="lg:col-span-8 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 text-xs sm:text-sm">
-                      <div>
-                        <span className="text-stone-500 block text-xs">Número da NF-e:</span>
-                        <span className="font-bold text-stone-900 dark:text-stone-100 font-mono text-sm">
-                          {parsedData.invoiceNumber} {parsedData.series ? `(Série ${parsedData.series})` : ''}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-stone-500 block text-xs">Data de Emissão:</span>
-                        <span className="font-bold text-stone-900 dark:text-stone-100 text-sm">
-                          {formatDateBR(parsedData.issueDate)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-stone-500 block text-xs">Emitente / Fornecedor:</span>
-                        <span className="font-bold text-stone-900 dark:text-stone-100 block text-sm">
-                          {parsedData.supplier}
-                        </span>
-                        {parsedData.supplierCnpj && (
-                          <span className="text-xs text-stone-500 font-mono">
-                            CNPJ: {formatCpfCnpj(parsedData.supplierCnpj)}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <span className="text-stone-500 block text-xs">Destinatário:</span>
-                        <span className="font-bold text-stone-900 dark:text-stone-100 block text-sm">
-                          {parsedData.recipient || companyProfile?.name || 'Não informado'}
-                        </span>
-                        {parsedData.recipientCnpj && (
-                          <span className="text-xs text-stone-500 font-mono">
-                            CNPJ: {formatCpfCnpj(parsedData.recipientCnpj)}
-                          </span>
-                        )}
-                      </div>
+                  {/* Informações Principais da Nota Fiscal em 4 Colunas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 text-xs sm:text-sm">
+                    <div>
+                      <span className="text-stone-500 block text-xs">Número da NF-e:</span>
+                      <span className="font-bold text-stone-900 dark:text-stone-100 font-mono text-sm">
+                        {parsedData.invoiceNumber} {parsedData.series ? `(Série ${parsedData.series})` : ''}
+                      </span>
                     </div>
-
-                    {/* Tabela de Produtos da NF-e */}
-                    {parsedData.items && parsedData.items.length > 0 && (
-                      <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden shadow-xs">
-                        <div className="bg-stone-100 dark:bg-stone-800/80 px-4 py-2.5 flex items-center justify-between">
-                          <div className="flex items-center space-x-2 text-xs font-bold text-stone-800 dark:text-stone-200">
-                            <Package className="w-4 h-4 text-sky-600" />
-                            <span>Itens Identificados na Nota Fiscal ({parsedData.items.length})</span>
-                          </div>
-                          <span className="text-[11px] text-sky-700 dark:text-sky-300 font-medium">Campos editáveis antes de lançar</span>
-                        </div>
-                        <div className="overflow-x-auto max-h-64 overflow-y-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead className="bg-stone-50 dark:bg-stone-800/40 text-stone-500 uppercase text-[10px] font-bold border-b border-stone-200 dark:border-stone-700 sticky top-0 z-10">
-                              <tr>
-                                <th className="py-2.5 px-3 w-14">Cód</th>
-                                <th className="py-2.5 px-3 min-w-[200px]">Descrição do Produto</th>
-                                <th className="py-2.5 px-3 text-center w-20">NCM</th>
-                                <th className="py-2.5 px-3 text-right w-28">Qtd</th>
-                                <th className="py-2.5 px-3 text-right w-32">Unitário</th>
-                                <th className="py-2.5 px-3 text-right w-28">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900/40">
-                              {parsedData.items.map((item, idx) => (
-                                <tr key={idx} className="hover:bg-stone-50/70 dark:hover:bg-stone-800/30 transition-colors">
-                                  <td className="py-2 px-3 font-mono text-stone-500 text-[11px] align-middle">{item.code || '-'}</td>
-                                  <td className="py-2 px-3 align-middle">
-                                    <input
-                                      type="text"
-                                      value={item.description}
-                                      onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                                      className="w-full px-2 py-1 text-xs rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-medium"
-                                      placeholder="Descrição do produto"
-                                    />
-                                  </td>
-                                  <td className="py-2 px-3 text-center font-mono text-stone-500 text-[11px] align-middle">{item.ncm || '-'}</td>
-                                  <td className="py-2 px-3 text-right align-middle">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        min="0"
-                                        value={item.quantity}
-                                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                                        className="w-20 px-2 py-1 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
-                                        placeholder="0"
-                                      />
-                                      <span className="text-[10px] text-stone-500 font-semibold uppercase shrink-0">{item.unit || 'UN'}</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-3 text-right align-middle">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <span className="text-[11px] text-stone-500 font-semibold shrink-0">R$</span>
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        min="0"
-                                        value={item.unitPrice}
-                                        onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
-                                        className="w-24 px-2 py-1 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
-                                        placeholder="0.00"
-                                      />
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-3 text-right font-bold text-stone-900 dark:text-stone-100 font-mono align-middle">
-                                    {formatCurrencyBRL(item.totalPrice)}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      <span className="text-stone-500 block text-xs">Data de Emissão:</span>
+                      <span className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                        {formatDateBR(parsedData.issueDate)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-stone-500 block text-xs">Emitente / Fornecedor:</span>
+                      <span className="font-bold text-stone-900 dark:text-stone-100 block text-sm">
+                        {parsedData.supplier}
+                      </span>
+                      {parsedData.supplierCnpj && (
+                        <span className="text-xs text-stone-500 font-mono">
+                          CNPJ: {formatCpfCnpj(parsedData.supplierCnpj)}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-stone-500 block text-xs">Destinatário:</span>
+                      <span className="font-bold text-stone-900 dark:text-stone-100 block text-sm">
+                        {parsedData.recipient || companyProfile?.name || 'Não informado'}
+                      </span>
+                      {parsedData.recipientCnpj && (
+                        <span className="text-xs text-stone-500 font-mono">
+                          CNPJ: {formatCpfCnpj(parsedData.recipientCnpj)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Coluna 2 (4 de 12): Resumo Financeiro e Confirmação de Lançamento */}
-                  <div className="lg:col-span-4 flex flex-col justify-between space-y-4 p-5 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700">
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block">
-                        Resumo do Lançamento
-                      </span>
-
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-stone-600 dark:text-stone-400">Total dos Produtos:</span>
-                        <span className="font-semibold text-stone-800 dark:text-stone-200">
-                          {formatCurrencyBRL(parsedData.productsAmount || parsedData.totalAmount)}
-                        </span>
+                  {/* Tabela de Produtos da NF-e (100% da Largura da Tela) */}
+                  {parsedData.items && parsedData.items.length > 0 && (
+                    <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden shadow-xs w-full">
+                      <div className="bg-stone-100 dark:bg-stone-800/80 px-4 py-2.5 flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-xs font-bold text-stone-800 dark:text-stone-200">
+                          <Package className="w-4 h-4 text-sky-600" />
+                          <span>Itens Identificados na Nota Fiscal ({parsedData.items.length})</span>
+                        </div>
+                        <span className="text-[11px] text-sky-700 dark:text-sky-300 font-medium">Campos editáveis e vinculação De-Para com o estoque</span>
                       </div>
-
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-stone-600 dark:text-stone-400">Categoria Sugerida:</span>
-                        <span className="font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[11px]">
-                          {parsedData.suggestedCategory === 'cat_combustivel' ? 'Combustível & Arla' : 
-                           parsedData.suggestedCategory === 'cat_manutencao' ? 'Peças & Manutenção' : 
-                           parsedData.suggestedCategory === 'cat_lona_embalagem' ? 'Lonas & Embalagens' : 'Insumos Agrícolas'}
-                        </span>
-                      </div>
-
-                      <div className="pt-3 border-t border-stone-200 dark:border-stone-700 flex justify-between items-baseline">
-                        <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Valor Total NF-e:</span>
-                        <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                          {formatCurrencyBRL(parsedData.totalAmount)}
-                        </span>
+                      <div className="overflow-x-auto max-h-80 overflow-y-auto w-full">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-stone-50 dark:bg-stone-800/40 text-stone-500 uppercase text-[10px] font-bold border-b border-stone-200 dark:border-stone-700 sticky top-0 z-10">
+                            <tr>
+                              <th className="py-2.5 px-3 w-14 text-center">Cód</th>
+                              <th className="py-2.5 px-3 min-w-[200px]">Descrição do Produto</th>
+                              <th className="py-2.5 px-3 min-w-[280px]">Produto no Sistema (De-Para)</th>
+                              <th className="py-2.5 px-3 text-center w-20">NCM</th>
+                              <th className="py-2.5 px-3 text-right w-28">Qtd</th>
+                              <th className="py-2.5 px-3 text-right w-32">Unitário</th>
+                              <th className="py-2.5 px-3 text-right w-28">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900/40">
+                            {parsedData.items.map((item, idx) => (
+                              <tr key={idx} className="hover:bg-stone-50/70 dark:hover:bg-stone-800/30 transition-colors">
+                                <td className="py-2.5 px-3 font-mono text-stone-500 text-[11px] text-center align-middle">{item.code || '-'}</td>
+                                <td className="py-2.5 px-3 align-middle">
+                                  <input
+                                    type="text"
+                                    value={item.description}
+                                    onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                                    className="w-full px-2.5 py-1.5 text-xs rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-medium"
+                                    placeholder="Descrição do produto"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-3 align-middle">
+                                  {item.linkedInventoryId ? (
+                                    (() => {
+                                      const linked = localInventory.find(p => p.id === item.linkedInventoryId);
+                                      return (
+                                        <div className="flex items-center justify-between gap-2 p-1.5 px-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg">
+                                          <div className="min-w-0 flex-1">
+                                            <div className="flex items-center space-x-1.5">
+                                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                              <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-100 truncate block" title={linked?.name}>
+                                                {linked?.code ? `[${linked.code}] ` : ''}{linked?.name || 'Produto Vinculado'}
+                                              </span>
+                                            </div>
+                                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center space-x-2 mt-0.5 font-medium">
+                                              <span>Estoque: <strong>{linked?.quantity || 0} {linked?.unit || 'UN'}</strong></span>
+                                              <span>•</span>
+                                              <span>Custo: {formatCurrencyBRL(linked?.unitCost || 0)}</span>
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleLinkProduct(idx, undefined)}
+                                            title="Desvincular produto"
+                                            className="p-1 text-stone-400 hover:text-red-500 rounded hover:bg-stone-200 dark:hover:bg-stone-800 transition cursor-pointer shrink-0"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      );
+                                    })()
+                                  ) : (
+                                    <div className="flex items-center space-x-1.5">
+                                      <select
+                                        value={item.linkedInventoryId || ''}
+                                        onChange={(e) => {
+                                          if (e.target.value === '__NEW__') {
+                                            handleOpenNewProductModal(idx);
+                                          } else if (e.target.value) {
+                                            handleLinkProduct(idx, e.target.value);
+                                          }
+                                        }}
+                                        className="flex-1 min-w-[150px] px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-medium"
+                                      >
+                                        <option value="">Selecione no estoque...</option>
+                                        <option value="__NEW__" className="font-bold text-sky-600 dark:text-sky-400">
+                                          + Cadastrar Novo Produto
+                                        </option>
+                                        {localInventory.map((inv) => (
+                                          <option key={inv.id} value={inv.id}>
+                                            {inv.code ? `[${inv.code}] ` : ''}{inv.name} ({inv.quantity} {inv.unit})
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenNewProductModal(idx)}
+                                        title="Cadastrar Novo Produto no Estoque"
+                                        className="px-2.5 py-1.5 text-xs font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900 border border-sky-300 dark:border-sky-700 rounded-lg transition flex items-center space-x-1 shrink-0 cursor-pointer"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>Novo</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-mono text-stone-500 text-[11px] align-middle">{item.ncm || '-'}</td>
+                                <td className="py-2.5 px-3 text-right align-middle">
+                                  <div className="flex items-center justify-end space-x-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      min="0"
+                                      value={item.quantity}
+                                      onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                      className="w-20 px-2 py-1.5 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
+                                      placeholder="0"
+                                    />
+                                    <span className="text-[10px] text-stone-500 font-semibold uppercase shrink-0 w-6 text-left">{item.unit || 'UN'}</span>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-right align-middle">
+                                  <div className="flex items-center justify-end space-x-1">
+                                    <span className="text-[11px] text-stone-500 font-semibold shrink-0">R$</span>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      min="0"
+                                      value={item.unitPrice}
+                                      onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
+                                      className="w-24 px-2 py-1.5 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-bold text-stone-900 dark:text-stone-100 font-mono align-middle text-xs sm:text-sm">
+                                  {formatCurrencyBRL(item.totalPrice)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
+                  )}
 
-                    <button
-                      type="button"
-                      id="btn-confirmar-importacao-nfe"
-                      onClick={handleConfirmImport}
-                      className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer active:scale-98"
-                    >
-                      <Plus className="w-4 h-4 stroke-[2.5]" />
-                      <span>Confirmar e Gerar Despesa</span>
-                    </button>
+                  {/* Card de Resumo Horizontal no Rodapé (100% de Largura) */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-700 w-full shadow-xs">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                      
+                      {/* Grid Horizontal dos 4 Blocos de Informação */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 flex-1">
+                        
+                        {/* Bloco 1: Total dos Produtos */}
+                        <div className="p-3.5 bg-white dark:bg-stone-900 rounded-xl border border-stone-200/80 dark:border-stone-700/80 flex flex-col justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block mb-1">
+                            Total dos Produtos
+                          </span>
+                          <span className="text-base font-bold text-stone-900 dark:text-stone-100 font-mono">
+                            {formatCurrencyBRL(parsedData.productsAmount || parsedData.totalAmount)}
+                          </span>
+                        </div>
+
+                        {/* Bloco 2: Categoria Sugerida */}
+                        <div className="p-3.5 bg-white dark:bg-stone-900 rounded-xl border border-stone-200/80 dark:border-stone-700/80 flex flex-col justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block mb-1">
+                            Categoria Sugerida
+                          </span>
+                          <div>
+                            <span className="inline-block font-bold px-2.5 py-1 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs">
+                              {parsedData.suggestedCategory === 'cat_combustivel' ? 'Combustível & Arla' : 
+                               parsedData.suggestedCategory === 'cat_manutencao' ? 'Peças & Manutenção' : 
+                               parsedData.suggestedCategory === 'cat_lona_embalagem' ? 'Lonas & Embalagens' : 'Insumos Agrícolas'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bloco 3: Vinculação ao Estoque */}
+                        <div className="p-3.5 bg-white dark:bg-stone-900 rounded-xl border border-stone-200/80 dark:border-stone-700/80 flex flex-col justify-between">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center space-x-1">
+                              <Package className="w-3.5 h-3.5 text-sky-600" />
+                              <span>Vinculação ao Estoque</span>
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              (parsedData.items?.filter(i => i.linkedInventoryId).length || 0) === (parsedData.items?.length || 0)
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            }`}>
+                              {parsedData.items?.filter(i => i.linkedInventoryId).length || 0} de {parsedData.items?.length || 0}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-stone-500 truncate block">
+                            {(parsedData.items?.filter(i => i.linkedInventoryId).length || 0) === (parsedData.items?.length || 0)
+                              ? 'Todos os itens vinculados ao estoque'
+                              : 'Vincule os itens para atualizar o estoque'}
+                          </span>
+                        </div>
+
+                        {/* Bloco 4: Valor Total NF-e */}
+                        <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/70 flex flex-col justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block mb-1">
+                            Valor Total NF-e
+                          </span>
+                          <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">
+                            {formatCurrencyBRL(parsedData.totalAmount)}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      {/* Botão de Ação: Confirmar e Gerar Despesa */}
+                      <div className="xl:w-72 shrink-0 flex items-center">
+                        <button
+                          type="button"
+                          id="btn-confirmar-importacao-nfe"
+                          onClick={handleConfirmImport}
+                          className="w-full py-3.5 px-5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer active:scale-98 text-sm min-h-[50px]"
+                        >
+                          <Plus className="w-5 h-5 stroke-[2.5]" />
+                          <span>Confirmar e Gerar Despesa</span>
+                        </button>
+                      </div>
+
+                    </div>
                   </div>
 
                 </div>
@@ -830,6 +1196,287 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cadastrar Novo Produto no Estoque (De-Para) */}
+      {newProductModal.isOpen && (
+        <div 
+          id="modal-cadastrar-produto-nfe"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95">
+            {/* Header do Modal */}
+            <div className="px-6 py-4 bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 flex items-center justify-center font-bold">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-['Outfit']">
+                    Cadastrar Novo Produto no Estoque
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Preenchimento padrão de retaguarda para vinculação direta com a NF-e (De-Para)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNewProductModal(prev => ({ ...prev, isOpen: false }))}
+                className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Formulário do Produto */}
+            <form onSubmit={handleSaveNewProduct} className="p-6 space-y-5">
+              
+              {/* Bloco 1: Dados Gerais */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider pb-1 border-b border-stone-200 dark:border-stone-800">
+                  <FileText className="w-3.5 h-3.5 text-sky-600" />
+                  <span>Dados Gerais</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-4">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Código Interno
+                    </label>
+                    <input
+                      type="text"
+                      value={newProductModal.code}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, code: e.target.value }))}
+                      placeholder="Ex: 001, PRD102"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-8">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Nome do Produto <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newProductModal.name}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ex: ÓLEO DIESEL S10 COMUM A GRANEL"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 font-medium"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Nome Fiscal (NF-e)
+                    </label>
+                    <input
+                      type="text"
+                      value={newProductModal.fiscalName}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, fiscalName: e.target.value }))}
+                      placeholder="Descrição fiscal idêntica à nota"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Cód Barras (GTIN)
+                    </label>
+                    <input
+                      type="text"
+                      value={newProductModal.barcode}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, barcode: e.target.value }))}
+                      placeholder="789..."
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Unidade (Un)
+                    </label>
+                    <input
+                      type="text"
+                      value={newProductModal.unit}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, unit: e.target.value.toUpperCase() }))}
+                      placeholder="UN, LT, KG..."
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 uppercase font-mono font-bold"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Categoria no Estoque
+                    </label>
+                    <select
+                      value={newProductModal.category}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, category: e.target.value as any }))}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="combustivel">Combustível & Arla</option>
+                      <option value="lona_embalagem">Lona & Embalagem</option>
+                      <option value="inoculante">Inoculante & Biológico</option>
+                      <option value="sementes">Sementes</option>
+                      <option value="adubo">Adubo & Fertilizante</option>
+                      <option value="pecas">Peças & Manutenção</option>
+                      <option value="outro">Outros Insumos</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Localização Física
+                    </label>
+                    <input
+                      type="text"
+                      value={newProductModal.location}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="Ex: Barracão Principal, Tanque 1"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bloco 2: Cálculo de Preço */}
+              <div className="space-y-3 p-4 bg-sky-50/50 dark:bg-sky-950/20 rounded-xl border border-sky-200 dark:border-sky-900/50">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-900 dark:text-sky-300 uppercase tracking-wider pb-1">
+                  <span className="flex items-center space-x-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Cálculo de Preço & Formação de Margem</span>
+                  </span>
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-normal">
+                    Preço de Custo extraído do XML
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                      Preço de Custo (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newProductModal.unitCost}
+                      onChange={(e) => handlePriceCalculation('unitCost', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sky-300 dark:border-sky-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                      Margem de Lucro (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="any"
+                        value={newProductModal.profitMargin}
+                        onChange={(e) => handlePriceCalculation('profitMargin', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 pr-7 text-xs rounded-lg border border-sky-300 dark:border-sky-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-mono font-bold"
+                      />
+                      <span className="absolute right-2.5 top-2 text-xs text-stone-400 font-bold">%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                      Preço de Venda (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newProductModal.salePrice}
+                      onChange={(e) => handlePriceCalculation('salePrice', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-emerald-400 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bloco 3: Estoque */}
+              <div className="space-y-3 p-4 bg-stone-50 dark:bg-stone-800/40 rounded-xl border border-stone-200 dark:border-stone-700">
+                <div className="flex items-center justify-between text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider pb-1">
+                  <span className="flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-stone-500" />
+                    <span>Controle de Estoque</span>
+                  </span>
+                  <span className="text-[10px] text-stone-500 font-normal">
+                    Estoque Inicial preenchido com a quantidade da NF-e
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Estoque Inicial ({newProductModal.unit})
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newProductModal.initialQuantity}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, initialQuantity: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Estoque Mínimo
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newProductModal.minQuantity}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, minQuantity: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
+                      Estoque Máximo
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={newProductModal.maxQuantity}
+                      onChange={(e) => setNewProductModal(prev => ({ ...prev, maxQuantity: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Rodapé do Modal */}
+              <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setNewProductModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer active:scale-98"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Salvar e Vincular Produto</span>
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}
