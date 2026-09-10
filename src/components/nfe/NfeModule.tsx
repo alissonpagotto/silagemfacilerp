@@ -26,7 +26,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Expense, CompanyProfile, InventoryItem } from '../../types';
-import { formatCurrencyBRL, formatDateBR, getStoredInventory, saveStoredInventory, saveStoredExpenses } from '../../lib/storage';
+import { formatCurrencyBRL, formatDateBR, getStoredInventory, saveStoredInventory, saveStoredExpenses, getStoredExpenses } from '../../lib/storage';
 import { formatCpfCnpj } from '../../lib/formatters';
 
 interface ParsedNfeItem {
@@ -345,10 +345,16 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   onSaveInventory,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'import' | 'list'>(viewMode);
-  const [localExpenses, setLocalExpenses] = useState<Expense[]>(expenses);
+  // Estado dedicado reativo para Notas Fiscais Lançadas (NF-e)
+  const [notasLancadas, setNotasLancadas] = useState<Expense[]>(() => {
+    const list = (expenses && expenses.length > 0) ? expenses : getStoredExpenses();
+    return list.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf'));
+  });
 
   useEffect(() => {
-    setLocalExpenses(expenses);
+    if (expenses) {
+      setNotasLancadas(expenses.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf')));
+    }
   }, [expenses]);
 
   const [xmlContent, setXmlContent] = useState('');
@@ -358,6 +364,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   const [searchNfeNumber, setSearchNfeNumber] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [notaParaExcluir, setNotaParaExcluir] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Estado local do inventário sincronizado com props ou storage
@@ -1071,7 +1078,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
     onAddExpenseFromNfe(newExpenseRecord);
 
-    setLocalExpenses(prev => {
+    setNotasLancadas(prev => {
       const idx = prev.findIndex(e => e.id === expenseId);
       if (idx >= 0) {
         const copy = [...prev];
@@ -1124,31 +1131,40 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
-  // Exclusão de nota fiscal com confirmação segura e atualização imediata do contador e lista
-  const handleDeleteNota = (notaIdOrNumber: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta nota fiscal? Esta ação não poderá ser desfeita.")) {
-      const updated = localExpenses.filter(e => 
-        e.id !== notaIdOrNumber && 
-        e.invoiceNumber !== notaIdOrNumber
-      );
+  // Exclusão de nota fiscal confirmada via modal customizado (compatível com sandbox de iframe)
+  const handleConfirmarExclusao = () => {
+    if (!notaParaExcluir) return;
+    const notaId = notaParaExcluir;
 
-      setLocalExpenses(updated);
-      saveStoredExpenses(updated);
+    // 1. Filtre a lista de notas para remover o item atualizado
+    setNotasLancadas(prev => prev.filter(nota => nota.id !== notaId && nota.invoiceNumber !== notaId));
 
-      if (onDeleteExpense) {
-        onDeleteExpense(notaIdOrNumber);
-      }
-
-      // Se a nota excluída for a que estava aberta em edição, limpa e retorna para a listagem
-      if (editingExpenseId === notaIdOrNumber || (parsedData && parsedData.invoiceNumber === notaIdOrNumber)) {
-        setParsedData(null);
-        setEditingExpenseId(null);
-        setActiveSubTab('list');
-      }
-
-      setSuccessMessage('Nota fiscal excluída com sucesso!');
-      setTimeout(() => setSuccessMessage(''), 4000);
+    // 2. Remove do armazenamento local persistente (LocalStorage)
+    try {
+      const stored = getStoredExpenses();
+      const updatedStored = stored.filter(nota => nota.id !== notaId && nota.invoiceNumber !== notaId);
+      saveStoredExpenses(updatedStored);
+    } catch (err) {
+      console.error('Erro ao atualizar storage após excluir nota:', err);
     }
+
+    // 3. Notifica o componente pai se a prop existir
+    if (onDeleteExpense) {
+      onDeleteExpense(notaId);
+    }
+
+    // 4. Se a nota excluída for a que estava aberta para edição, limpa e retorna para a listagem
+    if (editingExpenseId === notaId || (parsedData && (parsedData.invoiceNumber === notaId || parsedData.accessKey === notaId))) {
+      setParsedData(null);
+      setEditingExpenseId(null);
+      setActiveSubTab('list');
+    }
+
+    // 5. Fecha o modal customizado
+    setNotaParaExcluir(null);
+
+    setSuccessMessage('Nota fiscal excluída com sucesso!');
+    setTimeout(() => setSuccessMessage(''), 4000);
   };
 
   // Cancela ou retorna da visualização de detalhes para a lista geral
@@ -1158,8 +1174,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setActiveSubTab('list');
     setErrorMessage('');
   };
-
-  const nfeExpenses = localExpenses.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf'));
 
   return (
     <div id="nfe-module" className="space-y-5 w-full max-w-full overflow-hidden">
@@ -1204,7 +1218,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 : 'text-stone-800 dark:text-stone-300 hover:text-black'
             }`}
           >
-            Notas Lançadas ({nfeExpenses.length})
+            Notas Lançadas ({notasLancadas.length})
           </button>
         </div>
       </div>
@@ -1715,11 +1729,17 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                {nfeExpenses.map((exp) => (
+                {notasLancadas.map((exp) => (
                   <tr 
                     key={exp.id} 
                     id={`row-nfe-${exp.id}`}
-                    onClick={() => handleEditNota(exp)}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target && target.closest('button')) {
+                        return;
+                      }
+                      handleEditNota(exp);
+                    }}
                     className="hover:bg-sky-50/60 dark:hover:bg-stone-800/80 cursor-pointer transition group"
                     title={`Clique para abrir e editar os detalhes da nota ${exp.invoiceNumber || ''}`}
                   >
@@ -1752,8 +1772,18 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                         {exp.status?.toUpperCase() || 'PAGO'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end space-x-1.5">
+                    <td 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="py-3.5 px-3 text-right whitespace-nowrap"
+                    >
+                      <div 
+                        className="flex items-center justify-end space-x-1.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
                         <button
                           type="button"
                           id={`btn-edit-nfe-${exp.id}`}
@@ -1764,27 +1794,27 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                           className="w-[115px] inline-flex items-center justify-center space-x-1 px-2 py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer group-hover:shadow-xs"
                           title={`Abrir e editar detalhes da nota ${exp.invoiceNumber || ''}`}
                         >
-                          <FileEdit className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">Abrir & Editar</span>
+                          <FileEdit className="w-3.5 h-3.5 shrink-0 pointer-events-none" />
+                          <span className="truncate pointer-events-none">Abrir & Editar</span>
                         </button>
                         <button
                           type="button"
                           id={`btn-delete-nfe-${exp.id}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteNota(exp.id);
+                            setNotaParaExcluir(exp.id);
                           }}
                           className="p-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-lg transition shadow-2xs cursor-pointer hover:scale-105 active:scale-95 shrink-0"
                           title={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
                           aria-label={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                          <Trash2 className="w-3.5 h-3.5 shrink-0 pointer-events-none" />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {nfeExpenses.length === 0 && (
+                {notasLancadas.length === 0 && (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-stone-400">
                       <ReceiptText className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -2083,6 +2113,69 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Customizado de Confirmação de Exclusão de NF-e */}
+      {notaParaExcluir && (
+        <div 
+          id="modal-confirm-delete-nfe"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setNotaParaExcluir(null)}
+        >
+          <div 
+            className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start space-x-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
+                  Excluir Nota Fiscal
+                </h3>
+                <p className="text-sm text-stone-600 dark:text-stone-300">
+                  Tem certeza que deseja excluir esta nota fiscal?
+                </p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Esta ação não poderá ser desfeita.
+                </p>
+                {(() => {
+                  const nota = notasLancadas.find(n => n.id === notaParaExcluir);
+                  if (nota) {
+                    return (
+                      <div className="mt-2 p-2.5 bg-stone-50 dark:bg-stone-800/60 rounded-lg text-xs font-mono text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800">
+                        <div className="font-bold text-sky-600 dark:text-sky-400">{nota.invoiceNumber}</div>
+                        <div className="truncate">{nota.supplier} • {formatCurrencyBRL(nota.amount)}</div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end space-x-2.5">
+              <button
+                type="button"
+                id="btn-cancel-delete-nfe"
+                onClick={() => setNotaParaExcluir(null)}
+                className="px-4 py-2 text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-delete-nfe"
+                onClick={handleConfirmarExclusao}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Sim, Excluir</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
