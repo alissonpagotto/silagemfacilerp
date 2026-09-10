@@ -1171,21 +1171,21 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   };
 
   return (
-    <div id="nfe-module" className="space-y-5 w-full max-w-full overflow-hidden">
+    <div id="nfe-module" className="space-y-3 w-full max-w-full overflow-hidden">
       
       {/* 1. Header Unificado com Título, Contador e Botão Importar XML */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/15 dark:border-stone-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-stone-800 pb-2.5">
         <div>
-          <h2 className="text-base font-black text-black dark:text-white tracking-tight font-['Outfit']">
+          <h2 className="text-sm sm:text-base font-black text-black dark:text-white tracking-tight font-['Outfit']">
             NF-e & Notas Fiscais Eletrônicas
           </h2>
-          <p className="text-xs font-bold text-stone-600 dark:text-stone-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs font-bold text-black mt-0.5">
             Importação de arquivos XML de compras de diesel, lonas, inoculantes e manutenção de maquinários
           </p>
         </div>
 
-        <div className="flex items-center space-x-2.5 shrink-0">
-          <div className="px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 shadow-2xs">
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-[11px] sm:text-xs font-bold text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 shadow-2xs">
             Notas Lançadas ({notasLancadas.length})
           </div>
 
@@ -1193,10 +1193,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             type="button"
             id="btn-importar-xml-topo"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow-md transition cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-bold rounded-lg shadow-2xs hover:shadow-xs transition cursor-pointer whitespace-nowrap"
             title="Selecionar arquivo XML de NF-e para importar"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
             <span>Importar XML</span>
           </button>
           <input
@@ -1210,16 +1210,16 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       </div>
 
       {successMessage && (
-        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center space-x-3 text-emerald-800 dark:text-emerald-200 text-sm font-semibold animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center space-x-2.5 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-semibold animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-3.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between text-rose-800 dark:text-rose-200 text-sm font-semibold animate-in fade-in">
-          <div className="flex items-center space-x-3">
-            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center justify-between text-rose-800 dark:text-rose-200 text-xs sm:text-sm font-semibold animate-in fade-in">
+          <div className="flex items-center space-x-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{errorMessage}</span>
           </div>
           <button 
@@ -1227,17 +1227,17 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             onClick={() => setErrorMessage('')} 
             className="text-rose-500 hover:text-rose-700 p-1 rounded-md cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
       {/* Barra de Ações: Campo de Busca Rápida de NF-e e Ações de XML */}
-      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl py-2 px-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <form onSubmit={handleSearchNfe} className="flex-1 max-w-lg">
           <div className="relative flex items-center w-full">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-              <Search className="w-4 h-4" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+              <Search className="w-3.5 h-3.5" />
             </div>
             <input
               id="nfe-search-number-input"
@@ -1245,15 +1245,15 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               value={searchNfeNumber}
               onChange={(e) => setSearchNfeNumber(e.target.value)}
               placeholder="Buscar por número da NF-e (ex: 48291 ou chave de acesso)..."
-              className="w-full pl-10 pr-12 py-2 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 font-bold placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition shadow-xs"
+              className="w-full pl-9 pr-10 py-1.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-lg text-xs text-stone-900 dark:text-stone-100 font-bold placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition shadow-2xs"
             />
             <button
               type="submit"
               disabled={isSearching}
               title="Buscar NF-e"
-              className="absolute inset-y-1 right-1 px-3 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white rounded-lg flex items-center justify-center transition shadow-xs cursor-pointer disabled:opacity-50"
+              className="absolute inset-y-0.5 right-0.5 px-2.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white rounded-md flex items-center justify-center transition shadow-2xs cursor-pointer disabled:opacity-50"
             >
-              <Search className="w-3.5 h-3.5" />
+              <Search className="w-3 h-3" />
             </button>
           </div>
         </form>
@@ -1264,9 +1264,9 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               type="button"
               id="btn-fechar-painel-nfe"
               onClick={handleBackToList}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800 rounded-xl transition cursor-pointer"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800 rounded-lg transition cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
               <span>Fechar Detalhes da Nota</span>
             </button>
           ) : (
@@ -1274,7 +1274,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
               type="button"
               id="btn-carregar-xml-toolbar"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-200 dark:border-stone-700 transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-lg border border-stone-200 dark:border-stone-700 transition cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Carregar XML</span>
@@ -1656,31 +1656,31 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       )}
 
       {/* 3. HISTÓRICO PERMANENTE DE NOTAS FISCAIS LANÇADAS */}
-      <div id="painel-historico-notas-nfe" className="space-y-3">
+      <div id="painel-historico-notas-nfe" className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center space-x-2">
-            <ReceiptText className="w-4 h-4 text-sky-600" />
+          <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center space-x-1.5">
+            <ReceiptText className="w-3.5 h-3.5 text-sky-600" />
             <span>Histórico de Notas Fiscais Lançadas ({notasLancadas.length})</span>
           </h3>
           {notasLancadas.length > 0 && (
-            <span className="text-xs text-stone-500 hidden sm:inline-block">
+            <span className="text-[11px] sm:text-xs text-black hidden sm:inline-block">
               Clique em uma linha ou em "Abrir & Editar" para visualizar ou editar os itens.
             </span>
           )}
         </div>
 
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs w-full max-w-full">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-2xs w-full max-w-full">
           <div className="w-full max-w-full overflow-hidden">
             <table className="w-full table-fixed text-left text-xs sm:text-sm">
               <thead className="bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
-                  <th className="py-3 px-3 w-[110px] shrink-0">Nota Fiscal</th>
-                  <th className="py-3 px-3 w-[160px] lg:w-[190px]">Fornecedor</th>
-                  <th className="py-3 px-3 min-w-0">Descrição da Despesa</th>
-                  <th className="py-3 px-2 w-[95px] text-center shrink-0">Data</th>
-                  <th className="py-3 px-2.5 w-[110px] text-right shrink-0">Valor</th>
-                  <th className="py-3 px-2 w-[85px] text-center shrink-0">Status</th>
-                  <th className="py-3 px-3 text-right w-[165px] shrink-0">Ação</th>
+                  <th className="py-1.5 px-2.5 w-[100px] shrink-0">Nota Fiscal</th>
+                  <th className="py-1.5 px-2.5 w-[160px] lg:w-[190px]">Fornecedor</th>
+                  <th className="py-1.5 px-2.5 min-w-0">Descrição da Despesa</th>
+                  <th className="py-1.5 px-2 w-[85px] text-center shrink-0">Data</th>
+                  <th className="py-1.5 px-2.5 w-[100px] text-right shrink-0">Valor</th>
+                  <th className="py-1.5 px-2 w-[75px] text-center shrink-0">Status</th>
+                  <th className="py-1.5 px-2.5 text-right w-[145px] shrink-0">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -1698,32 +1698,32 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                     className="hover:bg-sky-50/60 dark:hover:bg-stone-800/80 cursor-pointer transition group"
                     title={`Clique para abrir e editar os detalhes da nota ${exp.invoiceNumber || ''}`}
                   >
-                    <td className="py-3.5 px-3 font-mono font-bold text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 transition">
-                      <div className="flex items-center space-x-1.5 truncate">
-                        <FileEdit className="w-3.5 h-3.5 text-stone-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 shrink-0 transition" />
+                    <td className="py-1.5 px-2.5 font-mono font-bold text-xs text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 transition">
+                      <div className="flex items-center space-x-1 truncate">
+                        <FileEdit className="w-3 h-3 text-stone-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 shrink-0 transition" />
                         <span className="truncate group-hover:underline underline-offset-2">
                           {exp.invoiceNumber}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-3 font-semibold text-stone-800 dark:text-stone-200">
+                    <td className="py-1.5 px-2.5 font-semibold text-xs sm:text-sm text-stone-800 dark:text-stone-200">
                       <span className="truncate max-w-[200px] block" title={exp.supplier || '-'}>
                         {exp.supplier || '-'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-stone-600 dark:text-stone-300">
-                      <span className="truncate max-w-[200px] sm:max-w-none block break-words whitespace-normal line-clamp-2 sm:line-clamp-1" title={exp.description}>
+                    <td className="py-1.5 px-2.5 text-xs text-stone-600 dark:text-stone-300">
+                      <span className="truncate max-w-[200px] sm:max-w-none block break-words whitespace-normal line-clamp-1" title={exp.description}>
                         {exp.description}
                       </span>
                     </td>
-                    <td className="py-3.5 px-2 text-stone-500 text-center whitespace-nowrap">
+                    <td className="py-1.5 px-2 text-stone-500 text-center whitespace-nowrap text-xs">
                       {formatDateBR(exp.dueDate)}
                     </td>
-                    <td className="py-3.5 px-2.5 font-bold text-stone-900 dark:text-stone-100 text-right whitespace-nowrap font-mono">
+                    <td className="py-1.5 px-2.5 font-bold text-stone-900 dark:text-stone-100 text-right whitespace-nowrap font-mono text-xs sm:text-sm">
                       {formatCurrencyBRL(exp.amount)}
                     </td>
-                    <td className="py-3.5 px-2 text-center whitespace-nowrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 inline-block">
+                    <td className="py-1.5 px-2 text-center whitespace-nowrap">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 inline-block leading-tight">
                         {exp.status?.toUpperCase() || 'PAGO'}
                       </span>
                     </td>
@@ -1731,10 +1731,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
-                      className="py-3.5 px-3 text-right whitespace-nowrap"
+                      className="py-1.5 px-2.5 text-right whitespace-nowrap"
                     >
                       <div 
-                        className="flex items-center justify-end space-x-1.5"
+                        className="flex items-center justify-end space-x-1"
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
@@ -1746,10 +1746,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                             e.stopPropagation();
                             handleEditNota(exp);
                           }}
-                          className="w-[115px] inline-flex items-center justify-center space-x-1 px-2 py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer group-hover:shadow-xs"
+                          className="inline-flex items-center justify-center space-x-1 px-2 py-1 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-md text-[11px] font-bold transition shadow-2xs cursor-pointer group-hover:shadow-xs"
                           title={`Abrir e editar detalhes da nota ${exp.invoiceNumber || ''}`}
                         >
-                          <FileEdit className="w-3.5 h-3.5 shrink-0 pointer-events-none" />
+                          <FileEdit className="w-3 h-3 shrink-0 pointer-events-none" />
                           <span className="truncate pointer-events-none">Abrir & Editar</span>
                         </button>
                         <button
@@ -1759,11 +1759,11 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                             e.stopPropagation();
                             setNotaParaExcluir(exp.id);
                           }}
-                          className="p-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-lg transition shadow-2xs cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                          className="p-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-md transition shadow-2xs cursor-pointer hover:scale-105 active:scale-95 shrink-0"
                           title={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
                           aria-label={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5 shrink-0 pointer-events-none" />
+                          <Trash2 className="w-3 h-3 shrink-0 pointer-events-none" />
                         </button>
                       </div>
                     </td>
@@ -1771,15 +1771,15 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                 ))}
                 {notasLancadas.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-stone-400">
-                      <ReceiptText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="font-semibold text-sm">Nenhuma nota fiscal lançada até o momento.</p>
+                    <td colSpan={7} className="py-8 text-center text-stone-400">
+                      <ReceiptText className="w-7 h-7 mx-auto mb-1.5 opacity-50" />
+                      <p className="font-semibold text-xs sm:text-sm">Nenhuma nota fiscal lançada até o momento.</p>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="mt-3 inline-flex items-center space-x-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-xs"
+                        className="mt-2.5 inline-flex items-center space-x-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold cursor-pointer transition shadow-2xs"
                       >
-                        <Upload className="w-3.5 h-3.5" />
+                        <Upload className="w-3 h-3" />
                         <span>Importar Primeira NF-e</span>
                       </button>
                     </td>
