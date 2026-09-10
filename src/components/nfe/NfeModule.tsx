@@ -376,6 +376,47 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     }, 250);
   };
 
+  // Atualização interativa dos itens da NF-e com recálculo automático dos totais
+  const handleItemChange = (
+    index: number,
+    field: 'description' | 'quantity' | 'unitPrice',
+    value: string
+  ) => {
+    if (!parsedData || !parsedData.items) return;
+
+    const updatedItems = [...parsedData.items];
+    const currentItem = { ...updatedItems[index] };
+
+    if (field === 'description') {
+      currentItem.description = value;
+    } else if (field === 'quantity') {
+      const sanitized = value.replace(',', '.');
+      const num = sanitized === '' ? 0 : parseFloat(sanitized);
+      currentItem.quantity = isNaN(num) ? 0 : num;
+      currentItem.totalPrice = Math.round((currentItem.quantity * (currentItem.unitPrice || 0)) * 100) / 100;
+    } else if (field === 'unitPrice') {
+      const sanitized = value.replace(',', '.');
+      const num = sanitized === '' ? 0 : parseFloat(sanitized);
+      currentItem.unitPrice = isNaN(num) ? 0 : num;
+      currentItem.totalPrice = Math.round(((currentItem.quantity || 0) * currentItem.unitPrice) * 100) / 100;
+    }
+
+    updatedItems[index] = currentItem;
+
+    // Recalcula o valor total da NF-e e dos produtos somando todas as linhas recalculadas
+    const newTotalAmount = Math.round(
+      updatedItems.reduce((acc, it) => acc + (it.totalPrice || 0), 0) * 100
+    ) / 100;
+
+    setParsedData({
+      ...parsedData,
+      items: updatedItems,
+      productsAmount: newTotalAmount,
+      totalAmount: newTotalAmount,
+      itemsSummary: `${updatedItems.length} produto(s) listado(s)`
+    });
+  };
+
   const handleConfirmImport = () => {
     if (!parsedData) return;
 
@@ -610,35 +651,71 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
                     {/* Tabela de Produtos da NF-e */}
                     {parsedData.items && parsedData.items.length > 0 && (
-                      <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden">
+                      <div className="border border-stone-200 dark:border-stone-700 rounded-xl overflow-hidden shadow-xs">
                         <div className="bg-stone-100 dark:bg-stone-800/80 px-4 py-2.5 flex items-center justify-between">
                           <div className="flex items-center space-x-2 text-xs font-bold text-stone-800 dark:text-stone-200">
                             <Package className="w-4 h-4 text-sky-600" />
                             <span>Itens Identificados na Nota Fiscal ({parsedData.items.length})</span>
                           </div>
-                          <span className="text-[11px] text-stone-500 font-semibold">{parsedData.itemsSummary}</span>
+                          <span className="text-[11px] text-sky-700 dark:text-sky-300 font-medium">Campos editáveis antes de lançar</span>
                         </div>
-                        <div className="overflow-x-auto max-h-56 overflow-y-auto">
+                        <div className="overflow-x-auto max-h-64 overflow-y-auto">
                           <table className="w-full text-left text-xs">
-                            <thead className="bg-stone-50 dark:bg-stone-800/40 text-stone-500 uppercase text-[10px] font-bold border-b border-stone-200 dark:border-stone-700">
+                            <thead className="bg-stone-50 dark:bg-stone-800/40 text-stone-500 uppercase text-[10px] font-bold border-b border-stone-200 dark:border-stone-700 sticky top-0 z-10">
                               <tr>
-                                <th className="py-2 px-3">Cód</th>
-                                <th className="py-2 px-3">Descrição do Produto</th>
-                                <th className="py-2 px-3 text-center">NCM</th>
-                                <th className="py-2 px-3 text-right">Qtd</th>
-                                <th className="py-2 px-3 text-right">Unitário</th>
-                                <th className="py-2 px-3 text-right">Total</th>
+                                <th className="py-2.5 px-3 w-14">Cód</th>
+                                <th className="py-2.5 px-3 min-w-[200px]">Descrição do Produto</th>
+                                <th className="py-2.5 px-3 text-center w-20">NCM</th>
+                                <th className="py-2.5 px-3 text-right w-28">Qtd</th>
+                                <th className="py-2.5 px-3 text-right w-32">Unitário</th>
+                                <th className="py-2.5 px-3 text-right w-28">Total</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                            <tbody className="divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-900/40">
                               {parsedData.items.map((item, idx) => (
-                                <tr key={idx} className="hover:bg-stone-50/60 dark:hover:bg-stone-800/30">
-                                  <td className="py-2 px-3 font-mono text-stone-500">{item.code || '-'}</td>
-                                  <td className="py-2 px-3 font-semibold text-stone-800 dark:text-stone-200">{item.description}</td>
-                                  <td className="py-2 px-3 text-center font-mono text-stone-500">{item.ncm || '-'}</td>
-                                  <td className="py-2 px-3 text-right font-medium">{item.quantity} {item.unit}</td>
-                                  <td className="py-2 px-3 text-right text-stone-600 dark:text-stone-300">{formatCurrencyBRL(item.unitPrice)}</td>
-                                  <td className="py-2 px-3 text-right font-bold text-stone-900 dark:text-stone-100">{formatCurrencyBRL(item.totalPrice)}</td>
+                                <tr key={idx} className="hover:bg-stone-50/70 dark:hover:bg-stone-800/30 transition-colors">
+                                  <td className="py-2 px-3 font-mono text-stone-500 text-[11px] align-middle">{item.code || '-'}</td>
+                                  <td className="py-2 px-3 align-middle">
+                                    <input
+                                      type="text"
+                                      value={item.description}
+                                      onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                                      className="w-full px-2 py-1 text-xs rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-medium"
+                                      placeholder="Descrição do produto"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-3 text-center font-mono text-stone-500 text-[11px] align-middle">{item.ncm || '-'}</td>
+                                  <td className="py-2 px-3 text-right align-middle">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        value={item.quantity}
+                                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                                        className="w-20 px-2 py-1 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
+                                        placeholder="0"
+                                      />
+                                      <span className="text-[10px] text-stone-500 font-semibold uppercase shrink-0">{item.unit || 'UN'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-right align-middle">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <span className="text-[11px] text-stone-500 font-semibold shrink-0">R$</span>
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        value={item.unitPrice}
+                                        onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
+                                        className="w-24 px-2 py-1 text-xs text-right rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 font-mono font-medium"
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-bold text-stone-900 dark:text-stone-100 font-mono align-middle">
+                                    {formatCurrencyBRL(item.totalPrice)}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
