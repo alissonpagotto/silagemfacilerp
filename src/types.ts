@@ -77,6 +77,7 @@ export interface Expense {
   quantity?: number;
   unit?: string; // 'litros', 'horas', 'unidades', 'sc', 'kg', etc.
   unitPrice?: number;
+  nfeItems?: any[]; // Array completo de itens/sub-produtos da NF-e (cProd, xProd, qCom, vUnCom, vProd, etc.)
   isRecurring?: boolean;
   createdAt: string;
 }

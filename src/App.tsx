@@ -597,7 +597,7 @@ export default function App() {
                 onSaveInventory={(updatedInv) => setInventory(updatedInv)}
                 onAddExpenseFromNfe={(newExp) => {
                   const created: Expense = {
-                    id: `exp_nfe_${Date.now()}`,
+                    id: newExp.id || `exp_nfe_${Date.now()}`,
                     description: newExp.description || 'Despesa Importada via NF-e',
                     amount: newExp.amount || 0,
                     categoryId: newExp.categoryId || 'cat_combustivel',
@@ -609,7 +609,8 @@ export default function App() {
                     supplier: newExp.supplier || 'Fornecedor NF-e',
                     invoiceNumber: newExp.invoiceNumber || 'NF-e',
                     notes: newExp.notes,
-                    createdAt: new Date().toISOString(),
+                    nfeItems: newExp.nfeItems,
+                    createdAt: newExp.createdAt || new Date().toISOString(),
                   };
                   handleSaveExpense(created);
                 }}
