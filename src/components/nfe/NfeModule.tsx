@@ -519,7 +519,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       unitCost,
       profitMargin,
       salePrice,
-      initialQuantity: item.quantity || 1,
+      initialQuantity: 0,
       minQuantity: 10,
       maxQuantity: 100,
       location: 'Barracão Principal'
@@ -634,10 +634,81 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     });
   };
 
+  // Validação para impedir o lançamento de nota duplicada
+  const isNfeDuplicate = (
+    nfe: ParsedNfeData,
+    expenseList: Expense[]
+  ): boolean => {
+    if (!nfe) return false;
+
+    // 1. Chave de Acesso (44 dígitos)
+    const nfeKey = (nfe.accessKey || '').replace(/\D/g, '').trim();
+
+    // 2. Número da NF-e
+    const nfeNumRaw = (nfe.invoiceNumber || '').trim().toLowerCase();
+    const nfeNumDigits = (nfe.invoiceNumber || '').replace(/\D/g, '').trim();
+    const nfeNumInt = nfeNumDigits ? parseInt(nfeNumDigits, 10) : null;
+
+    return expenseList.some(exp => {
+      // A. Verificação por Chave de Acesso na observação ou número
+      if (nfeKey && nfeKey.length >= 20) {
+        if (exp.notes && exp.notes.replace(/\D/g, '').includes(nfeKey)) {
+          return true;
+        }
+        if (exp.invoiceNumber && exp.invoiceNumber.replace(/\D/g, '').includes(nfeKey)) {
+          return true;
+        }
+      }
+
+      // B. Verificação por Número da NF-e
+      if (exp.invoiceNumber) {
+        const expNumRaw = exp.invoiceNumber.trim().toLowerCase();
+        // Comparação de texto (ex: "NF-e 142" === "NF-e 142")
+        if (expNumRaw === nfeNumRaw) {
+          return true;
+        }
+
+        const expNumDigits = exp.invoiceNumber.replace(/\D/g, '').trim();
+        if (nfeNumDigits && expNumDigits) {
+          // Comparação direta de dígitos
+          if (nfeNumDigits === expNumDigits) {
+            return true;
+          }
+          // Comparação numérica (ex: "000142" === "142")
+          if (nfeNumInt !== null && parseInt(expNumDigits, 10) === nfeNumInt) {
+            return true;
+          }
+        }
+      }
+
+      // C. Verificação por menção ao número da nota nas notas da despesa
+      if (exp.notes && nfeNumDigits && nfeNumDigits.length >= 3) {
+        const notesLower = exp.notes.toLowerCase();
+        if (
+          notesLower.includes(`nf-e ${nfeNumDigits}`) ||
+          notesLower.includes(`nfe ${nfeNumDigits}`) ||
+          notesLower.includes(`nf ${nfeNumDigits}`) ||
+          notesLower.includes(`nota ${nfeNumDigits}`)
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  };
+
   const handleConfirmImport = () => {
     if (!parsedData) return;
 
-    // 1. Atualizar estoque dos produtos vinculados ("De-Para")
+    // 1. Bloqueio de Nota Duplicada
+    if (isNfeDuplicate(parsedData, expenses)) {
+      setErrorMessage('Nota já importada');
+      setSuccessMessage('');
+      return;
+    }
+
+    // 2. Entrada Automática no Estoque
     let updatedInventory = [...localInventory];
     const updatedSummary: string[] = [];
 
@@ -647,14 +718,16 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
         if (invIndex !== -1) {
           const invItem = { ...updatedInventory[invIndex] };
 
-          // Se já foi cadastrado nesta sessão com o estoque inicial da nota, não soma novamente;
-          // Se for produto pré-existente no estoque do sistema, soma a quantidade recebida na NF-e:
-          if (!sessionCreatedProductIds.has(invItem.id)) {
-            invItem.quantity = Math.round(((invItem.quantity || 0) + item.quantity) * 100) / 100;
-          }
+          // Some a quantidade (QTD) importada da nota diretamente ao "Estoque Atual" desse produto correspondente no sistema
+          const currentQty = Number(invItem.quantity) || 0;
+          const addQty = Number(item.quantity) || 0;
+          invItem.quantity = Math.round((currentQty + addQty) * 100) / 100;
 
-          // Atualiza o preço de custo unitário com o valor da nota fiscal
-          invItem.unitCost = item.unitPrice || invItem.unitCost;
+          // Atualize também o "Preço de Custo" desse produto no cadastro usando o valor "Unitário" vindo da nota
+          const newUnitCost = Number(item.unitPrice) || 0;
+          if (newUnitCost > 0) {
+            invItem.unitCost = newUnitCost;
+          }
 
           // Se o produto tiver margem de lucro, recalcula o preço de venda atualizado
           if (invItem.profitMargin) {
@@ -662,7 +735,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
           }
 
           updatedInventory[invIndex] = invItem;
-          updatedSummary.push(`${invItem.name} (Saldo: ${invItem.quantity} ${invItem.unit})`);
+          updatedSummary.push(`${invItem.name} (+${addQty} ${invItem.unit || 'UN'} | Saldo: ${invItem.quantity})`);
         }
       }
     });
@@ -671,9 +744,9 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       saveInventory(updatedInventory);
     }
 
-    // 2. Gerar despesa financeira
+    // 3. Finalização do Fluxo: Adiciona despesa à lista de Notas Lançadas
     const stockNote = updatedSummary.length > 0
-      ? ` Estoque atualizado: ${updatedSummary.join(', ')}.`
+      ? ` Entrada de estoque registrada: ${updatedSummary.join(', ')}.`
       : '';
 
     onAddExpenseFromNfe({
@@ -688,16 +761,21 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       notes: `Lançamento automático via NF-e XML. Chave: ${parsedData.accessKey || 'N/A'}. ${parsedData.itemsSummary}.${stockNote}`,
     });
 
+    // Limpa os dados da tela após o salvamento bem-sucedido e exibe uma mensagem de sucesso
+    setErrorMessage('');
     setSuccessMessage(
       `Nota Fiscal ${parsedData.invoiceNumber} importada e convertida em despesa com sucesso! ${
         updatedSummary.length > 0
-          ? `${updatedSummary.length} produto(s) tiveram estoque e custo atualizados no sistema.`
+          ? `${updatedSummary.length} produto(s) tiveram entrada adicionada ao estoque.`
           : ''
       }`
     );
     setParsedData(null);
     setXmlContent('');
     setSearchNfeNumber('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setSessionCreatedProductIds(new Set());
     setTimeout(() => setSuccessMessage(''), 5000);
   };
@@ -1118,7 +1196,13 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                       </div>
 
                       {/* Botão de Ação: Confirmar e Gerar Despesa */}
-                      <div className="xl:w-72 shrink-0 flex items-center">
+                      <div className="xl:w-72 shrink-0 flex flex-col justify-center gap-2">
+                        {errorMessage && (
+                          <div className="p-2.5 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center space-x-2 text-rose-700 dark:text-rose-300 text-xs font-bold animate-in fade-in">
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                            <span>{errorMessage}</span>
+                          </div>
+                        )}
                         <button
                           type="button"
                           id="btn-confirmar-importacao-nfe"
@@ -1409,14 +1493,14 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                     <span>Controle de Estoque</span>
                   </span>
                   <span className="text-[10px] text-stone-500 font-normal">
-                    Estoque Inicial preenchido com a quantidade da NF-e
+                    Saldo base (a quantidade da NF-e será somada na confirmação)
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400 mb-1">
-                      Estoque Inicial ({newProductModal.unit})
+                      Estoque Anterior / Base ({newProductModal.unit})
                     </label>
                     <input
                       type="number"
