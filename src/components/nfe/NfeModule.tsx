@@ -344,7 +344,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   inventory,
   onSaveInventory,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'import' | 'list'>(viewMode);
   // Estado dedicado reativo para Notas Fiscais Lançadas (NF-e)
   const [notasLancadas, setNotasLancadas] = useState<Expense[]>(() => {
     const list = (expenses && expenses.length > 0) ? expenses : getStoredExpenses();
@@ -1110,9 +1109,6 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       fileInputRef.current.value = '';
     }
     setSessionCreatedProductIds(new Set());
-    if (isEdit) {
-      setActiveSubTab('list');
-    }
     setTimeout(() => setSuccessMessage(''), 5000);
   };
 
@@ -1126,9 +1122,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       items: nfeData.items || []
     });
     setEditingExpenseId(exp.id);
-    setActiveSubTab('import');
     setSuccessMessage(`Nota ${exp.invoiceNumber || 'selecionada'} aberta para edição com ${nfeData.items?.length || 0} produto(s).`);
     setTimeout(() => setSuccessMessage(''), 4000);
+    // Rola a página suavemente para os detalhes abertos da nota
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Exclusão de nota fiscal confirmada via modal customizado (compatível com sandbox de iframe)
@@ -1153,11 +1150,10 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       onDeleteExpense(notaId);
     }
 
-    // 4. Se a nota excluída for a que estava aberta para edição, limpa e retorna para a listagem
+    // 4. Se a nota excluída for a que estava aberta para edição, limpa e fecha o formulário
     if (editingExpenseId === notaId || (parsedData && (parsedData.invoiceNumber === notaId || parsedData.accessKey === notaId))) {
       setParsedData(null);
       setEditingExpenseId(null);
-      setActiveSubTab('list');
     }
 
     // 5. Fecha o modal customizado
@@ -1167,59 +1163,49 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
-  // Cancela ou retorna da visualização de detalhes para a lista geral
+  // Cancela ou retorna da visualização de detalhes
   const handleBackToList = () => {
     setParsedData(null);
     setEditingExpenseId(null);
-    setActiveSubTab('list');
     setErrorMessage('');
   };
 
   return (
     <div id="nfe-module" className="space-y-5 w-full max-w-full overflow-hidden">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/15 dark:border-stone-800 pb-3">
+      {/* 1. Header Unificado com Título, Contador e Botão Importar XML */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/15 dark:border-stone-800 pb-4">
         <div>
           <h2 className="text-base font-black text-black dark:text-white tracking-tight font-['Outfit']">
             NF-e & Notas Fiscais Eletrônicas
           </h2>
-          <p className="text-xs font-bold text-black dark:text-white mt-0.5">
+          <p className="text-xs font-bold text-stone-600 dark:text-stone-400 mt-0.5">
             Importação de arquivos XML de compras de diesel, lonas, inoculantes e manutenção de maquinários
           </p>
         </div>
 
-        {/* Subtabs */}
-        <div className="flex items-center space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
-          <button
-            onClick={() => setActiveSubTab('import')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center space-x-1 ${
-              activeSubTab === 'import'
-                ? 'bg-white dark:bg-stone-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                : 'text-stone-800 dark:text-stone-300 hover:text-black'
-            }`}
-          >
-            {editingExpenseId ? (
-              <>
-                <FileEdit className="w-3.5 h-3.5" />
-                <span>Editando Nota</span>
-              </>
-            ) : (
-              <span>Importar XML</span>
-            )}
-          </button>
-          <button
-            onClick={() => {
-              setActiveSubTab('list');
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              activeSubTab === 'list'
-                ? 'bg-white dark:bg-stone-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                : 'text-stone-800 dark:text-stone-300 hover:text-black'
-            }`}
-          >
+        <div className="flex items-center space-x-2.5 shrink-0">
+          <div className="px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 shadow-2xs">
             Notas Lançadas ({notasLancadas.length})
+          </div>
+
+          <button
+            type="button"
+            id="btn-importar-xml-topo"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow-md transition cursor-pointer whitespace-nowrap"
+            title="Selecionar arquivo XML de NF-e para importar"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Importar XML</span>
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xml,text/xml,application/xml"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
         </div>
       </div>
 
@@ -1246,136 +1232,109 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
         </div>
       )}
 
-      {activeSubTab === 'import' ? (
-        <div className="space-y-5">
-          
-          {/* 1. BARRA DE AÇÕES HORIZONTAL NO TOPO (Alinhamento Horizontal: Campo de Busca + Botão Carregar XML) */}
-          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            
-            {/* Campo de Entrada de Texto: Número da NF-e com botão de busca acoplado */}
-            <form onSubmit={handleSearchNfe} className="flex-1 max-w-lg">
-              <div className="relative flex items-center w-full">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-                  <Search className="w-4 h-4" />
-                </div>
-                <input
-                  id="nfe-search-number-input"
-                  type="text"
-                  value={searchNfeNumber}
-                  onChange={(e) => setSearchNfeNumber(e.target.value)}
-                  placeholder="Número da NF-e (ex: 48291 ou chave de acesso)..."
-                  className="w-full pl-10 pr-12 py-2.5 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 font-bold placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition shadow-xs"
-                />
-                <button
-                  type="submit"
-                  disabled={isSearching}
-                  title="Buscar NF-e"
-                  className="absolute inset-y-1 right-1 px-3 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white rounded-lg flex items-center justify-center transition shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
+      {/* Barra de Ações: Campo de Busca Rápida de NF-e e Ações de XML */}
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-3.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <form onSubmit={handleSearchNfe} className="flex-1 max-w-lg">
+          <div className="relative flex items-center w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              id="nfe-search-number-input"
+              type="text"
+              value={searchNfeNumber}
+              onChange={(e) => setSearchNfeNumber(e.target.value)}
+              placeholder="Buscar por número da NF-e (ex: 48291 ou chave de acesso)..."
+              className="w-full pl-10 pr-12 py-2 bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-stone-100 font-bold placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition shadow-xs"
+            />
+            <button
+              type="submit"
+              disabled={isSearching}
+              title="Buscar NF-e"
+              className="absolute inset-y-1 right-1 px-3 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white rounded-lg flex items-center justify-center transition shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </form>
 
-            {/* Grupo de Ações: Botão Compacto "Carregar XML" */}
-            <div className="flex items-center shrink-0">
+        <div className="flex items-center space-x-2 shrink-0">
+          {parsedData ? (
+            <button
+              type="button"
+              id="btn-fechar-painel-nfe"
+              onClick={handleBackToList}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800 rounded-xl transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              <span>Fechar Detalhes da Nota</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              id="btn-carregar-xml-toolbar"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-200 dark:border-stone-700 transition cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Carregar XML</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 2. PAINEL DADOS EXTRAÍDOS DA NOTA - APARECE DINAMICAMENTE LOGO ACIMA DA TABELA DE HISTÓRICO */}
+      {parsedData && (
+        <div id="painel-itens-nfe-aberta" className="w-full bg-white dark:bg-stone-900 border-2 border-sky-400/50 dark:border-sky-600/50 rounded-2xl p-5 sm:p-6 shadow-md space-y-4 animate-in fade-in duration-200">
+          
+          {/* Banner de Modo de Edição ou Importação Ativo */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 rounded-xl animate-in fade-in">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold shrink-0">
+                <FileEdit className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-sky-800 dark:text-sky-300">
+                    {editingExpenseId ? 'Editando Detalhes da Nota Fiscal' : 'Itens Identificados na Nota Fiscal'}
+                  </span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-sky-200 dark:bg-sky-900 text-sky-900 dark:text-sky-200 font-mono">
+                    {parsedData.invoiceNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
+                  Revise os produtos, quantidades, valores e vínculos com o estoque antes de confirmar.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 shrink-0">
               <button
                 type="button"
-                id="btn-carregar-xml"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer whitespace-nowrap"
+                id="btn-limpar-dados-painel"
+                onClick={() => {
+                  setParsedData(null);
+                  setXmlContent('');
+                  setSearchNfeNumber('');
+                  setEditingExpenseId(null);
+                }}
+                className="inline-flex items-center space-x-1 text-xs text-stone-500 hover:text-rose-600 transition cursor-pointer font-medium px-2.5 py-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30"
               >
-                <Upload className="w-4 h-4" />
-                <span>Carregar XML</span>
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Limpar</span>
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xml,text/xml,application/xml"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+              <button
+                type="button"
+                id="btn-voltar-para-lista-topo"
+                onClick={handleBackToList}
+                className="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-300 dark:border-stone-700 shadow-xs transition cursor-pointer shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Fechar</span>
+              </button>
             </div>
-
           </div>
 
-          {/* 2. PAINEL DADOS EXTRAÍDOS DA NOTA - EXPANDIDO HORIZONTALMENTE OCUPANDO O RESTANTE DA TELA */}
-          <div className="w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            
-            {/* Banner de Modo de Edição Ativo */}
-            {editingExpenseId && parsedData && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 rounded-xl animate-in fade-in">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold shrink-0">
-                    <FileEdit className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-sky-800 dark:text-sky-300">
-                        Editando Detalhes da Nota Fiscal
-                      </span>
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-sky-200 dark:bg-sky-900 text-sky-900 dark:text-sky-200 font-mono">
-                        {parsedData.invoiceNumber}
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
-                      Você pode revisar produtos, quantidades, valores e vínculos com o estoque antes de salvar as alterações.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  id="btn-voltar-para-lista-topo"
-                  onClick={handleBackToList}
-                  className="inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-300 dark:border-stone-700 shadow-xs transition cursor-pointer shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Voltar para a Lista</span>
-                </button>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 flex items-center space-x-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <span>Dados Extraídos da Nota</span>
-                {editingExpenseId && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                    Edição Ativa
-                  </span>
-                )}
-              </h3>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  id="btn-voltar-para-lista-painel"
-                  onClick={handleBackToList}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-lg text-xs font-bold transition cursor-pointer"
-                  title="Voltar para a lista de notas lançadas"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Voltar para a Lista</span>
-                </button>
-                {parsedData && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setParsedData(null);
-                      setXmlContent('');
-                      setSearchNfeNumber('');
-                      setEditingExpenseId(null);
-                    }}
-                    className="inline-flex items-center space-x-1 text-xs text-stone-500 hover:text-rose-600 transition cursor-pointer font-medium px-2 py-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Limpar Dados</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {parsedData ? (
-              <div className="space-y-5 animate-in fade-in">
+          <div className="space-y-5 animate-in fade-in">
                 {/* Aviso amigável de CNPJ (não bloqueante) */}
                 {parsedData.recipientCnpj && companyProfile?.cnpjCpf && (
                   parsedData.recipientCnpj.replace(/\D/g, '') !== companyProfile.cnpjCpf.replace(/\D/g, '')
@@ -1664,8 +1623,8 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                             onClick={handleBackToList}
                             className="w-full sm:w-auto px-4 py-3.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold rounded-xl border border-stone-200 dark:border-stone-700 transition flex items-center justify-center space-x-2 cursor-pointer text-sm min-h-[50px]"
                           >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Voltar para a Lista</span>
+                            <X className="w-4 h-4" />
+                            <span>Cancelar</span>
                           </button>
                           <button
                             type="button"
@@ -1693,27 +1652,23 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
 
                 </div>
               </div>
-            ) : (
-              <div className="py-16 flex flex-col items-center justify-center text-center text-stone-400 space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-stone-100 dark:bg-stone-800/80 flex items-center justify-center text-stone-400">
-                  <ReceiptText className="w-7 h-7 stroke-1" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-stone-700 dark:text-stone-300">
-                    Nenhum arquivo XML carregado ou pesquisado no momento.
-                  </p>
-                  <p className="text-xs text-stone-500 mt-1 max-w-md">
-                    Utilize o botão <strong className="text-sky-600">"Carregar XML"</strong> acima para abrir o arquivo da nota fiscal ou digite o <strong className="text-sky-600">"Número da NF-e"</strong> no campo de busca para consultar.
-                  </p>
-                </div>
-              </div>
-            )}
-
-          </div>
-
         </div>
-      ) : (
-        /* List of NFe Invoices */
+      )}
+
+      {/* 3. HISTÓRICO PERMANENTE DE NOTAS FISCAIS LANÇADAS */}
+      <div id="painel-historico-notas-nfe" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center space-x-2">
+            <ReceiptText className="w-4 h-4 text-sky-600" />
+            <span>Histórico de Notas Fiscais Lançadas ({notasLancadas.length})</span>
+          </h3>
+          {notasLancadas.length > 0 && (
+            <span className="text-xs text-stone-500 hidden sm:inline-block">
+              Clique em uma linha ou em "Abrir & Editar" para visualizar ou editar os itens.
+            </span>
+          )}
+        </div>
+
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden shadow-xs w-full max-w-full">
           <div className="w-full max-w-full overflow-hidden">
             <table className="w-full table-fixed text-left text-xs sm:text-sm">
@@ -1821,8 +1776,8 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                       <p className="font-semibold text-sm">Nenhuma nota fiscal lançada até o momento.</p>
                       <button
                         type="button"
-                        onClick={() => setActiveSubTab('import')}
-                        className="mt-3 inline-flex items-center space-x-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold cursor-pointer transition"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-3 inline-flex items-center space-x-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-xs"
                       >
                         <Upload className="w-3.5 h-3.5" />
                         <span>Importar Primeira NF-e</span>
@@ -1834,7 +1789,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             </table>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Modal: Cadastrar Novo Produto no Estoque (De-Para) */}
       {newProductModal.isOpen && (
