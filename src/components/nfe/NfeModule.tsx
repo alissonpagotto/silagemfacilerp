@@ -22,10 +22,11 @@ import {
   Barcode,
   Check,
   TrendingUp,
-  Percent
+  Percent,
+  Trash2
 } from 'lucide-react';
 import { Expense, CompanyProfile, InventoryItem } from '../../types';
-import { formatCurrencyBRL, formatDateBR, getStoredInventory, saveStoredInventory } from '../../lib/storage';
+import { formatCurrencyBRL, formatDateBR, getStoredInventory, saveStoredInventory, saveStoredExpenses } from '../../lib/storage';
 import { formatCpfCnpj } from '../../lib/formatters';
 
 interface ParsedNfeItem {
@@ -328,6 +329,7 @@ interface NfeModuleProps {
   expenses: Expense[];
   companyProfile?: CompanyProfile;
   onAddExpenseFromNfe: (expense: Partial<Expense>) => void;
+  onDeleteExpense?: (id: string) => void;
   viewMode?: 'import' | 'list';
   inventory?: InventoryItem[];
   onSaveInventory?: (inventory: InventoryItem[]) => void;
@@ -337,11 +339,18 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
   expenses,
   companyProfile,
   onAddExpenseFromNfe,
+  onDeleteExpense,
   viewMode = 'import',
   inventory,
   onSaveInventory,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'import' | 'list'>(viewMode);
+  const [localExpenses, setLocalExpenses] = useState<Expense[]>(expenses);
+
+  useEffect(() => {
+    setLocalExpenses(expenses);
+  }, [expenses]);
+
   const [xmlContent, setXmlContent] = useState('');
   const [parsedData, setParsedData] = useState<ParsedNfeData | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -1034,11 +1043,22 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     const itemsJson = JSON.stringify(parsedData.items || []);
     const itemsEmbed = `<!-- NFE_ITEMS_JSON:${itemsJson} -->`;
 
-    onAddExpenseFromNfe({
+    const catName = parsedData.suggestedCategory === 'cat_combustivel' ? 'Combustível & Arla (Diesel)' :
+                    parsedData.suggestedCategory === 'cat_lona' ? 'Lonas & Filmes Plásticos' :
+                    parsedData.suggestedCategory === 'cat_inoculante' ? 'Inoculantes & Aditivos' :
+                    parsedData.suggestedCategory === 'cat_manutencao' ? 'Manutenção & Peças' : 'Despesas Operacionais';
+    const catColor = parsedData.suggestedCategory === 'cat_combustivel' ? '#d97706' :
+                     parsedData.suggestedCategory === 'cat_lona' ? '#059669' :
+                     parsedData.suggestedCategory === 'cat_inoculante' ? '#2563eb' :
+                     parsedData.suggestedCategory === 'cat_manutencao' ? '#dc2626' : '#64748b';
+
+    const newExpenseRecord: Expense = {
       id: expenseId,
       description: `Compra ${parsedData.invoiceNumber} - ${parsedData.supplier}`,
       amount: parsedData.totalAmount,
       categoryId: parsedData.suggestedCategory,
+      categoryName: catName,
+      categoryColor: catColor,
       dueDate: parsedData.issueDate,
       supplier: parsedData.supplier,
       invoiceNumber: parsedData.invoiceNumber,
@@ -1046,6 +1066,19 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
       paymentMethod: 'boleto',
       notes: `Lançamento automático via NF-e XML. Chave: ${parsedData.accessKey || 'N/A'}. ${parsedData.itemsSummary}.${stockNote}\n${itemsEmbed}`,
       nfeItems: parsedData.items,
+      createdAt: new Date().toISOString(),
+    };
+
+    onAddExpenseFromNfe(newExpenseRecord);
+
+    setLocalExpenses(prev => {
+      const idx = prev.findIndex(e => e.id === expenseId);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = newExpenseRecord;
+        return copy;
+      }
+      return [newExpenseRecord, ...prev];
     });
 
     saveCachedNfe(parsedData, expenseId);
@@ -1091,6 +1124,33 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setTimeout(() => setSuccessMessage(''), 4000);
   };
 
+  // Exclusão de nota fiscal com confirmação segura e atualização imediata do contador e lista
+  const handleDeleteNota = (notaIdOrNumber: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta nota fiscal? Esta ação não poderá ser desfeita.")) {
+      const updated = localExpenses.filter(e => 
+        e.id !== notaIdOrNumber && 
+        e.invoiceNumber !== notaIdOrNumber
+      );
+
+      setLocalExpenses(updated);
+      saveStoredExpenses(updated);
+
+      if (onDeleteExpense) {
+        onDeleteExpense(notaIdOrNumber);
+      }
+
+      // Se a nota excluída for a que estava aberta em edição, limpa e retorna para a listagem
+      if (editingExpenseId === notaIdOrNumber || (parsedData && parsedData.invoiceNumber === notaIdOrNumber)) {
+        setParsedData(null);
+        setEditingExpenseId(null);
+        setActiveSubTab('list');
+      }
+
+      setSuccessMessage('Nota fiscal excluída com sucesso!');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
+  };
+
   // Cancela ou retorna da visualização de detalhes para a lista geral
   const handleBackToList = () => {
     setParsedData(null);
@@ -1099,7 +1159,7 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
     setErrorMessage('');
   };
 
-  const nfeExpenses = expenses.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf'));
+  const nfeExpenses = localExpenses.filter(e => e.invoiceNumber && e.invoiceNumber.toLowerCase().includes('nf'));
 
   return (
     <div id="nfe-module" className="space-y-5 w-full max-w-full overflow-hidden">
@@ -1645,13 +1705,13 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
             <table className="w-full table-fixed text-left text-xs sm:text-sm">
               <thead className="bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
-                  <th className="py-3 px-3 w-[120px] shrink-0">Nota Fiscal</th>
-                  <th className="py-3 px-3 w-[170px] lg:w-[200px]">Fornecedor</th>
+                  <th className="py-3 px-3 w-[110px] shrink-0">Nota Fiscal</th>
+                  <th className="py-3 px-3 w-[160px] lg:w-[190px]">Fornecedor</th>
                   <th className="py-3 px-3 min-w-0">Descrição da Despesa</th>
                   <th className="py-3 px-2 w-[95px] text-center shrink-0">Data</th>
                   <th className="py-3 px-2.5 w-[110px] text-right shrink-0">Valor</th>
                   <th className="py-3 px-2 w-[85px] text-center shrink-0">Status</th>
-                  <th className="py-3 px-3 text-right w-[130px] shrink-0">Ação</th>
+                  <th className="py-3 px-3 text-right w-[165px] shrink-0">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -1693,17 +1753,34 @@ export const NfeModule: React.FC<NfeModuleProps> = ({
                       </span>
                     </td>
                     <td className="py-3.5 px-3 text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditNota(exp);
-                        }}
-                        className="w-[120px] ml-auto inline-flex items-center justify-center space-x-1 px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer group-hover:shadow-xs"
-                      >
-                        <FileEdit className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">Abrir & Editar</span>
-                      </button>
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button
+                          type="button"
+                          id={`btn-edit-nfe-${exp.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditNota(exp);
+                          }}
+                          className="w-[115px] inline-flex items-center justify-center space-x-1 px-2 py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer group-hover:shadow-xs"
+                          title={`Abrir e editar detalhes da nota ${exp.invoiceNumber || ''}`}
+                        >
+                          <FileEdit className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Abrir & Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          id={`btn-delete-nfe-${exp.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteNota(exp.id);
+                          }}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 rounded-lg transition shadow-2xs cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                          title={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
+                          aria-label={`Excluir nota fiscal ${exp.invoiceNumber || ''}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

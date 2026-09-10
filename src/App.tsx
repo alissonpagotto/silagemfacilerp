@@ -595,6 +595,9 @@ export default function App() {
                 viewMode="import"
                 inventory={inventory}
                 onSaveInventory={(updatedInv) => setInventory(updatedInv)}
+                onDeleteExpense={(idOrNumber) => {
+                  setExpenses((prev) => prev.filter((e) => e.id !== idOrNumber && e.invoiceNumber !== idOrNumber));
+                }}
                 onAddExpenseFromNfe={(newExp) => {
                   const created: Expense = {
                     id: newExp.id || `exp_nfe_${Date.now()}`,
